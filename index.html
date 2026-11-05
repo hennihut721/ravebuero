@@ -1583,6 +1583,11 @@ function briefPanel(e, L){
   const open = A.filter(l => actBrief(l, e).missing.length && l.status === 'zugesagt').length;
   return h + '<div class="foot"><span>' + (open ? open + (open === 1 ? ' Act schuldet noch Infos' : ' Acts schulden noch Infos') : 'Von allen zugesagten Acts ist alles da') + '</span><span class="muted small">Tippe auf ein Material, wenn es angekommen ist.</span></div></section>';
 }
+function glText(l){
+  const n = int(l.gl) || 0; if (!n) return '';
+  const names = String(l.glNames || '').split('\n').filter(x => x.trim()).length;
+  return 'Gästeliste ' + n + (names ? ' (' + names + ' eingetragen)' : '');
+}
 function tabLineup(e, c){
   const L = S.lineup.filter(l => l.eventId === e.id).sort((a, b) => timeKey(a.start) - timeKey(b.start) || (a.createdAt || 0) - (b.createdAt || 0));
   let h = briefPanel(e, L) + '<section class="panel"><div class="panel-h"><h2>Running Order</h2>' + addBtn('new-lineup', e.id, 'Act') + '</div>';
@@ -1590,11 +1595,20 @@ function tabLineup(e, c){
   else h += '<ul class="rows">' + L.map(l => {
     const st = LST[l.status] || LST.angefragt;
     const inner = '<span class="time">' + (l.start ? esc(l.start) + (l.end ? '–' + esc(l.end) : '') : 'Slot offen') + '</span>' +
-      '<span class="row-main"><span class="who">' + esc(l.name) + '</span><span class="row-sub">' + [l.role, (S.floors.find(fl => fl.id === l.floorId) || {}).name, l.contact].filter(Boolean).map(esc).join(' · ') + '</span></span>' +
+      '<span class="row-main"><span class="who">' + esc(l.name) + '</span><span class="row-sub">' + [l.role, (S.floors.find(fl => fl.id === l.floorId) || {}).name, l.contact, glText(l)].filter(Boolean).map(esc).join(' · ') + '</span></span>' +
       '<span class="lu-r"><span class="num">' + (num(l.fee) ? eur(l.fee) : '–') + '</span><span class="pill ' + st.cls + '">' + st.label + '</span></span>';
     return '<li>' + (S.ro ? '<div class="row lu' + (l.status === 'abgesagt' ? ' off' : '') + '">' + inner + '</div>' : '<button class="row lu' + (l.status === 'abgesagt' ? ' off' : '') + '" data-act="edit-lineup" data-id="' + esc(l.id) + '">' + inner + '</button>') + '</li>';
   }).join('') + '</ul>';
+  const glSum = L.filter(l => l.status !== 'abgesagt').reduce((s, l) => s + (int(l.gl) || 0), 0);
+  if (glSum) h += '<div class="foot"><span>Gästeliste ohne Absagen</span><span class="num">' + glSum + (glSum === 1 ? ' Platz' : ' Plätze') + '</span></div>';
+  const GL = L.filter(l => l.status !== 'abgesagt' && (int(l.gl) || 0) > 0);
   h += '<div class="foot"><span>Gagen ohne Absagen' + (c.feesOpen > 0.004 ? ', davon ' + eur(c.feesOpen) + ' offen' : '') + '</span><span class="num">' + eur(c.fees) + '</span></div></section>';
+  if (GL.length) {
+    h += '<section class="panel"><div class="panel-h"><h2>Gästeliste</h2><button class="btn btn-ghost" data-gl-copy="' + esc(e.id) + '">Kopieren</button></div><ul class="rows">' + GL.map(l => {
+      const names = String(l.glNames || '').split('\n').map(x => x.trim()).filter(Boolean), n = int(l.gl) || 0, frei = Math.max(0, n - names.length);
+      return '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(l.name) + '</span><span class="row-sub" style="display:block">' + (names.length ? names.map(esc).join('<br>') : 'Noch keine Namen') + '</span></span><span class="num" style="white-space:nowrap">' + n + (n === 1 ? ' Platz' : ' Plätze') + (frei && names.length ? '<br><small class="muted">' + frei + ' frei</small>' : '') + '</span></div></li>';
+    }).join('') + '</ul></section>';
+  }
   return h;
 }
 const peopleSorted = () => S.people.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
@@ -2559,6 +2573,8 @@ function lineupForm(evId, item){
     (floorsOf(item ? item.eventId : evId).length ? field('l-floor', 'Floor', '<select id="l-floor" name="floorId">' + opts([['', 'Noch offen']].concat(floorsOf(item ? item.eventId : evId).map(fl => [fl.id, fl.name])), v.floorId || '') + '</select>') : '') +
     '<div class="two">' + field('l-start', 'Slot von', '<input id="l-start" name="start" type="time" value="' + esc(v.start) + '">') + field('l-end', 'Slot bis', '<input id="l-end" name="end" type="time" value="' + esc(v.end) + '">') + '</div>' +
     '<div class="two">' + field('l-fee', 'Gage (€)', '<input id="l-fee" name="fee" inputmode="decimal" placeholder="0" value="' + esc(numIn(v.fee)) + '">') + '<label class="check" style="align-self:end;min-height:44px"><input type="checkbox" id="l-paid" name="paid"' + (v.paid ? ' checked' : '') + '> Gage bezahlt</label></div>' +
+    field('l-gl', 'Gästeliste (Plätze)', '<input id="l-gl" name="gl" type="number" inputmode="numeric" min="0" max="99" step="1" placeholder="0" value="' + esc(int(v.gl) || '') + '">') +
+    field('l-glnames', 'Namen auf der Gästeliste (optional, einer pro Zeile)', '<textarea id="l-glnames" name="glNames" rows="2" maxlength="1500" placeholder="z. B. Lena Müller">' + esc(v.glNames || '') + '</textarea>') +
     '<div class="two">' + field('l-wa', 'WhatsApp-Nummer', '<input id="l-wa" name="wa" type="tel" inputmode="tel" maxlength="30" autocomplete="off" placeholder="z. B. 0171 2345678" value="' + esc(v.wa) + '">') + field('l-tg', 'Telegram', '<input id="l-tg" name="tg" maxlength="60" autocomplete="off" placeholder="@name" value="' + esc(v.tg) + '">') + '</div>' +
     '<div class="two">' + field('l-ig', 'Instagram', '<input id="l-ig" name="ig" maxlength="60" autocomplete="off" placeholder="@name" value="' + esc(v.ig) + '">') + field('l-mail', 'E-Mail', '<input id="l-mail" name="mail" type="email" inputmode="email" maxlength="120" autocomplete="off" value="' + esc(v.mail) + '">') + '</div>' +
     field('l-contact', 'Booker oder Notiz zum Kontakt', '<input id="l-contact" name="contact" maxlength="160" placeholder="z. B. über Booking-Agentur" value="' + esc(v.contact) + '">') +
@@ -2767,7 +2783,11 @@ const FORMS = {
     if (isNaN(fee) || fee < 0) return formErr(f, 'Gib die Gage als Zahl an, z. B. 350 oder 350,50.');
     if (d.mail && !okMail(d.mail)) return formErr(f, 'Die E-Mail-Adresse sieht nicht vollständig aus.');
     if (d.wa && !waNum(d.wa)) return formErr(f, 'Gib die WhatsApp-Nummer mit Vorwahl an, z. B. 0171 2345678 oder +49 171 2345678.');
-    const data = { eventId:f.dataset.ev, name, role:d.role || '', status:d.status || 'angefragt', start:d.start || '', end:d.end || '', fee, paid:!!d.paid, contact:(d.contact || '').trim(), notes:(d.notes || '').trim(),
+    const gl = d.gl === '' || d.gl == null ? 0 : int(d.gl);
+    if (gl == null || isNaN(gl) || gl < 0) return formErr(f, 'Gib die Gästelisten-Plätze als ganze Zahl an, z. B. 2.');
+    const glNames = String(d.glNames || '').split('\n').map(x => x.trim()).filter(Boolean).join('\n');
+    if (glNames.split('\n').filter(Boolean).length > gl && gl > 0) return formErr(f, 'Es stehen mehr Namen auf der Gästeliste als Plätze frei sind.');
+    const data = { gl, glNames, eventId:f.dataset.ev, name, role:d.role || '', status:d.status || 'angefragt', start:d.start || '', end:d.end || '', fee, paid:!!d.paid, contact:(d.contact || '').trim(), notes:(d.notes || '').trim(),
       wa:(d.wa || '').trim(), tg:tgUser(d.tg), ig:igUser(d.ig), mail:(d.mail || '').trim() };
     if ('floorId' in d) data.floorId = d.floorId || '';
     const id = f.dataset.id;
@@ -3019,6 +3039,19 @@ document.addEventListener('click', ev => {
     case 'invite-ok': LS.set('invite-ok', '1'); render(); break;
     case 'close-sheet': closeSheet(); break;
   }
+});
+function glListe(e){
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt' && (int(l.gl) || 0) > 0).sort((a, b) => timeKey(a.start) - timeKey(b.start));
+  const sum = L.reduce((s, l) => s + (int(l.gl) || 0), 0);
+  return 'Gästeliste ' + (e.name || '') + (isDate(e.date) ? ' · ' + fmtD(e.date) : '') + ' (' + sum + ' Plätze)\n\n' + L.map(l => {
+    const names = String(l.glNames || '').split('\n').map(x => x.trim()).filter(Boolean), n = int(l.gl) || 0;
+    return l.name + ' – ' + n + (n === 1 ? ' Platz' : ' Plätze') + (names.length ? '\n' + names.map(x => '• ' + x).join('\n') : '') + (n > names.length && names.length ? '\n• ' + (n - names.length) + ' frei' : '');
+  }).join('\n\n');
+}
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-gl-copy]'); if (!b) return;
+  const e = S.events.find(x => x.id === b.getAttribute('data-gl-copy')); if (!e) return;
+  toast(await copyText(glListe(e)) ? 'Gästeliste kopiert.' : 'Kopieren hat nicht geklappt.');
 });
 document.addEventListener('submit', async ev => {
   const f = ev.target; if (!f.dataset || !f.dataset.form) return;
