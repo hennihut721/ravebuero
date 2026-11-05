@@ -2202,7 +2202,8 @@ function mkPlan(e){
   h += '<p class="muted" style="margin:0 14px 10px">' + (P.length - open.length) + ' von ' + P.length + ' erledigt' + (od ? ' · <strong style="color:var(--bad)">' + od + ' überfällig</strong>' : '') + '</p><ul class="rows">';
   h += P.map(p => {
     const late = !p.done && isDate(p.date) && p.date < t;
-    const chs = (Array.isArray(p.channels) ? p.channels : []).map(c => '<span class="pill">' + esc(mkLabel(MK_CH, c)) + '</span>').join('');
+    const accs = (Array.isArray(p.accounts) ? p.accounts : []).map(id => mkCol('mkchannels').find(c => c.id === id)).filter(Boolean);
+    const chs = accs.length ? accs.map(c => '<span class="pill">' + esc(mkAccName(c)) + '</span>').join('') : (Array.isArray(p.channels) ? p.channels : []).map(c => '<span class="pill">' + esc(mkLabel(MK_CH, c)) + '</span>').join('');
     return '<li><div class="task' + (p.done ? ' done' : '') + '"><button class="chk" role="checkbox" aria-checked="' + !!p.done + '" aria-label="' + esc(p.title) + ' erledigt" data-mk="toggle-post" data-id="' + esc(p.id) + '"' + (S.ro ? ' disabled' : '') + '>' + I.check + '</button>' +
       '<button class="task-main" data-mk="edit-post" data-id="' + esc(p.id) + '"><span class="row-title">' + esc(p.title || 'Post') + '</span><span class="row-sub"><span' + (late ? ' style="color:var(--bad);font-weight:600"' : '') + '>' + (isDate(p.date) ? fmtD(p.date) + ' · ' + mkRel(p.date) : 'ohne Datum') + '</span>' + chs + '</span>' +
       (p.notes ? '<span class="row-sub">' + esc(p.notes) + '</span>' : '') + '</button>' +
@@ -2251,13 +2252,20 @@ function mkConfirmDel(c, id, what){
   if (!confirm(what + ' löschen?')) return;
   mkDel(c, id, 'Gelöscht.').then(ok => { if (ok) closeSheet(); });
 }
+const mkAccounts = () => mkCol('mkchannels').slice().sort((a, b) => (Number(b.followers) || 0) - (Number(a.followers) || 0));
+const mkAccName = c => (c.name || mkLabel(MK_CH, c.kind)) + (c.name && c.kind && c.kind !== 'sonstiges' && c.name.toLowerCase().indexOf(mkLabel(MK_CH, c.kind).toLowerCase()) < 0 ? ' · ' + mkLabel(MK_CH, c.kind) : '');
+const mkDefaultAcc = () => { const ig = mkAccounts().find(c => c.kind === 'instagram'); return ig ? [ig.id] : []; };
 function mkPostForm(p, e){
   const it = p || { title:'', date:'', channels:['instagram'], notes:'', done:false };
   const ch = Array.isArray(it.channels) ? it.channels : [];
+  const ACC = mkAccounts();
+  const accSel = Array.isArray(it.accounts) ? it.accounts : p ? [] : mkDefaultAcc();
   showSheet('<h2 id="sheet-title">' + (p ? 'Post bearbeiten' : 'Neuer Post') + '</h2><form class="f" id="mk-form" novalidate>' +
     field('mk-title', 'Was wird gepostet?', '<input id="mk-title" maxlength="80" autocomplete="off" placeholder="z. B. Line-up-Reveal" value="' + esc(it.title) + '">') +
     field('mk-date', 'Datum', '<input id="mk-date" type="date" value="' + esc(it.date || '') + '">') +
-    '<div class="field"><label>Kanäle</label><div class="chips">' + MK_CH.map(c => '<label class="chip" style="gap:6px"><input type="checkbox" name="mkch" value="' + c[0] + '"' + (ch.indexOf(c[0]) >= 0 ? ' checked' : '') + '>' + esc(c[1]) + '</label>').join('') + '</div></div>' +
+    (ACC.length
+      ? '<div class="field"><label>Von welchen Konten?</label><div class="chips">' + ACC.map(c => '<label class="chip" style="gap:6px"><input type="checkbox" name="mkacc" value="' + esc(c.id) + '"' + (accSel.indexOf(c.id) >= 0 ? ' checked' : '') + '>' + esc(mkAccName(c)) + '</label>').join('') + '</div><p class="hint" style="margin:0">Konten verwaltest du unter Marketing → Kanäle.</p></div>'
+      : '<div class="field"><label>Kanäle</label><div class="chips">' + MK_CH.map(c => '<label class="chip" style="gap:6px"><input type="checkbox" name="mkch" value="' + c[0] + '"' + (ch.indexOf(c[0]) >= 0 ? ' checked' : '') + '>' + esc(c[1]) + '</label>').join('') + '</div><p class="hint" style="margin:0">Tipp: Lege unter Marketing → Kanäle eure Konten an, dann wählst du hier das Konto aus.</p></div>') +
     field('mk-notes', 'Notiz', '<textarea id="mk-notes" rows="2" maxlength="300" placeholder="z. B. Reel mit Snippet von Deku">' + esc(it.notes || '') + '</textarea>') +
     '<label class="check"><input type="checkbox" id="mk-done"' + (it.done ? ' checked' : '') + '> Erledigt</label>' + mkEnd(!!p) + '</form>');
   $('#mk-form').onsubmit = async ev => {
@@ -2266,6 +2274,10 @@ function mkPostForm(p, e){
     if (!title) return mkErr('Gib an, was gepostet wird.');
     const data = Object.assign({}, p || { eventId:e.id, typ:'eigen', createdAt:Date.now() }, { title, date, notes:$('#mk-notes').value.trim(), done:$('#mk-done').checked,
       channels:[...document.querySelectorAll('input[name=mkch]:checked')].map(x => x.value) });
+    if (ACC.length) {
+      data.accounts = [...document.querySelectorAll('input[name=mkacc]:checked')].map(x => x.value);
+      data.channels = [...new Set(data.accounts.map(id => (ACC.find(c => c.id === id) || {}).kind).filter(Boolean))];
+    }
     delete data.id;
     if (await mkSet('mkposts', p ? p.id : newId('mp'), data, p ? 'Gespeichert.' : 'Post angelegt.')) closeSheet();
   };
@@ -2371,7 +2383,9 @@ async function mkInstaSheet(p, e){
   const M = mkFertig(e), cap = mkCaption(p, e);
   let sel = M[0] ? M[0].id : '';
   const pick = M.length > 1 ? '<div class="chips" style="margin:0 0 10px">' + M.map(m => '<button type="button" class="chip" data-pick="' + esc(m.id) + '" aria-pressed="' + (m.id === sel) + '">' + esc(m.title || 'Bild') + '</button>').join('') + '</div>' : '';
+  const igAcc = (Array.isArray(p.accounts) ? p.accounts : []).map(id => mkCol('mkchannels').find(c => c.id === id)).filter(c => c && c.kind === 'instagram');
   showSheet('<h2 id="sheet-title">Instagram-Post</h2><p class="muted" style="margin:-6px 0 12px">' + esc(p.title || 'Post') + (isDate(p.date) ? ' · ' + fmtD(p.date) : '') + '</p>' +
+    (igAcc.length ? '<p style="margin:0 0 12px">Posten mit: <strong>' + igAcc.map(c => esc(c.name || 'Instagram')).join(', ') + '</strong><br><span class="hint">Achte darauf, dass du in Instagram mit ' + (igAcc.length > 1 ? 'diesen Konten' : 'diesem Konto') + ' angemeldet bist.</span></p>' : '') +
     (M.length ? pick + '<img id="ig-img" alt="Vorschau" style="width:100%;aspect-ratio:4/5;object-fit:contain;background:#091C41;border-radius:10px;margin:0 0 12px">'
       : '<div class="empty" style="margin:0 0 12px;padding:16px"><p style="margin:0 0 10px">Für dieses Event gibt es noch kein Bild mit Status „Fertig“. Lade unter „Flyer & Medien“ einen Flyer hoch und setze ihn auf „Fertig“.</p><button type="button" class="btn btn-sm" id="ig-up">Flyer hochladen</button></div>') +
     '<div class="field"><label>Caption</label><div id="ig-cap" style="white-space:pre-wrap;background:var(--sunk);border-radius:10px;padding:12px;font-size:14.5px;line-height:1.45">' + esc(cap) + '</div></div>' +
@@ -2413,7 +2427,7 @@ async function mkStdPlan(e){
   const now = Date.now();
   await save(async () => {
     const b = db.batch();
-    MK_TYPES.forEach((t, i) => b.set(db.collection('mkposts').doc(newId('mp')), { eventId:e.id, typ:t[0], title:t[1], date:addDays(e.date, t[2]), channels:['instagram'], notes:'', done:false, createdAt:now + i }));
+    MK_TYPES.forEach((t, i) => b.set(db.collection('mkposts').doc(newId('mp')), { eventId:e.id, typ:t[0], title:t[1], date:addDays(e.date, t[2]), channels:['instagram'], accounts:mkDefaultAcc(), notes:'', done:false, createdAt:now + i }));
     await b.commit();
   }, 'Standardplan angelegt.');
 }
