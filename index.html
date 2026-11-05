@@ -804,7 +804,7 @@ const WKIND = { veranstalter:'Veranstalter', location:'Location', allgemein:'All
 const now = new Date();
 const S = {
   more:{}, legendOpen:false, events:[], lineup:[], money:[], tasks:[], blockers:[], phases:[], people:[], local:[], localAll:[], meta:[], lprate:[], watch:[], scene:[], floors:[], techsets:[], fsearch:[], fsQ:'', wq:'',
-  asView: ['partys', 'burns', 'zeitraeume', 'sperr', 'fest'].indexOf(LS.get('asView')) >= 0 ? LS.get('asView') : 'sperr', burnFilter:'alle', lpFilter:'alle', lpRateFilter:'alle', fdAll:false, fdOpen:false,
+  asView: ['partys', 'burns', 'zeitraeume', 'sperr', 'fest'].indexOf(LS.get('asView')) >= 0 ? LS.get('asView') : 'partys', burnFilter:'alle', lpFilter:'alle', lpRateFilter:'alle', fdAll:false, fdOpen:false,
   fd:(() => { const d = { from:'', to:'', days:[5, 6], eves:true, gap:21, sort:'score' }; try { const x = JSON.parse(LS.get('finder') || '{}'); return Object.assign(d, x && typeof x === 'object' ? x : {}); } catch (e) { return d; } })(),
   hidden:(() => { try { const x = JSON.parse(LS.get('hiddenTypes') || '[]'); return Array.isArray(x) ? x : []; } catch (e) { return []; } })(), btFilter:'alle', asFilter:'alle',
   quick:{ ev:null, title:'', who:'', due:'', prio:'' }, taskWho:'alle', taskSort: LS.get('taskSort') === 'prio' ? 'prio' : 'frist', afterPeople:null,
@@ -2445,10 +2445,10 @@ function viewAssess(){
   const t = today();
   const every = S.blockers.filter(b => isSoft(b) && !isBurn(b) && !isFest(b) && isDate(b.from) && isDate(b.to) && b.to >= t);
   if (!RATING[S.asFilter] && S.asFilter !== 'alle') S.asFilter = 'alle';
-  const v = ['sperr', 'fest', 'zeitraeume', 'burns', 'partys'].indexOf(S.asView) >= 0 ? S.asView : 'sperr';
+  const v = ['sperr', 'fest', 'zeitraeume', 'burns', 'partys'].indexOf(S.asView) >= 0 ? S.asView : 'partys';
   const add = { sperr:['new-blocker', 'Sperrtermin'], fest:['new-fest', 'Festival'], zeitraeume:['new-soft', 'Ferien'], burns:['new-burn', 'Burn'] }[v];
   let h = '<section class="vh"><h1>Umfeld</h1>' + (v === 'partys' ? '<a class="btn" href="#veranstalter">Veranstalter</a>' : S.ro ? '' : '<button class="btn btn-primary" data-act="' + add[0] + '">' + I.plus + add[1] + '</button>') + '</section>';
-  h += '<div class="seg view seg-4" role="group" aria-label="Bereich">' + [['sperr', 'Sperrtermine'], ['fest', 'Festivals'], ['zeitraeume', 'Ferien'], ['burns', 'Burns'], ['partys', 'Partys']].map(x => '<button data-act="as-view" data-v="' + x[0] + '" aria-pressed="' + (v === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
+  h += '<div class="seg view seg-4" role="group" aria-label="Bereich">' + [['partys', 'Partys'], ['fest', 'Festivals'], ['zeitraeume', 'Ferien'], ['burns', 'Burns'], ['sperr', 'Sperrtermine']].map(x => '<button data-act="as-view" data-v="' + x[0] + '" aria-pressed="' + (v === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
   if (v === 'sperr') return viewBlockers(h);
   if (v === 'fest') return viewFests(h);
   if (v === 'partys') return viewLocal(h);
