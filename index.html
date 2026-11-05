@@ -1617,7 +1617,7 @@ function syncState(){
   return { last, lastTxt:m.lastRun && fmtStamp(m.lastRun) || '', running:req > last && Date.now() - req < 20 * 60000, err:r.err || '' };
 }
 function syncBtn(){
-  if (S.ro || !db) return '';
+  if (S.ro || !db || true) return '';
   const st = syncState();
   return '<div class="sync-box"><button class="btn btn-sm" data-act="sync-now"' + (st.running ? ' disabled' : '') + '>' + (st.running ? '<span class="spin"></span>Abgleich läuft …' : I.sync + 'Abgleichen') + '</button><span class="muted small">' + (st.running ? 'dauert ein paar Minuten' : st.lastTxt ? 'zuletzt ' + esc(st.lastTxt) : 'noch kein Abgleich') + '</span></div>';
 }
@@ -1876,7 +1876,7 @@ function assessRow(b){
 function viewLocal(h){
   const t = today(), meta = S.meta.find(m => m.id === 'sync');
   const syncTxt = meta && meta.lastRun && fmtStamp(meta.lastRun) ? 'Zuletzt abgeglichen am ' + fmtStamp(meta.lastRun) + '.' + (meta.failed && [].concat(meta.failed).length ? ' Diesmal nicht erreichbar: ' + esc([].concat(meta.failed).join(', ')) + '.' : '') + (meta.note ? ' ' + esc(meta.note) : '') : 'Der erste Abgleich läuft noch.';
-  h += lead('partys', 'Partys der Veranstalter und Locations, die ihr beobachtet. ' + syncTxt, 'Mit „Abgleichen“ holt Claude sie über deinen Mac aus Partyamt, goabase und weiteren Quellen (Mac an, Claude-App offen). Was ihr auf „Meiden“ setzt, zählt wie ein Sperrtermin. Offene Partys geben im Terminfinder einen Abzug: in Darmstadt den vollen, je weiter weg, desto weniger. Macht ihr irgendwo extern mit, tippt auf „Wir machen mit“, dann plant ihr eure Beteiligung als eigenes Event. Wen ihr beobachtet, legt ihr unter <a href="#veranstalter">Veranstalter</a> fest.');
+  h += lead('partys', 'Partys der Veranstalter und Locations, die ihr beobachtet. ' + syncTxt, 'Der Abgleich holt sie jeden Freitagabend automatisch aus Partyamt, goabase und weiteren Quellen. Was ihr auf „Meiden“ setzt, zählt wie ein Sperrtermin. Offene Partys geben im Terminfinder einen Abzug: in Darmstadt den vollen, je weiter weg, desto weniger. Macht ihr irgendwo extern mit, tippt auf „Wir machen mit“, dann plant ihr eure Beteiligung als eigenes Event. Wen ihr beobachtet, legt ihr unter <a href="#veranstalter">Veranstalter</a> fest.');
   h += kindBar('partys');
   if (waiting('local')) return h + loading();
   const all = S.local.filter(l => isDate(l.date) && l.date >= t);
@@ -1926,7 +1926,7 @@ function fsResults(){
     const st = x.status, old = Date.now() - (x.at || 0) > 10 * 60000;
     let body;
     if (st === 'offen' || st === 'läuft') body = old ? '<p class="pad">Die Suche dauert ungewöhnlich lange. <button class="linkish" data-act="fs-retry" data-id="' + esc(x.id) + '">Nochmal starten</button></p>'
-      : '<div class="loading" style="padding:14px 16px"><span class="spin"></span>' + (st === 'läuft' ? 'Sucht im Web …' : 'Suche startet …') + ' Das dauert etwa 1–3 Minuten.</div>';
+      : '<div class="loading" style="padding:14px 16px"><span class="spin"></span>' + (st === 'läuft' ? 'Sucht im Web …' : 'Suche startet …') + ' Die Ergebnisse kommen mit dem Abgleich am Freitagabend.</div>';
     else if (st === 'fehler') body = '<p class="pad warn-t">' + esc(x.note || 'Die Suche hat nicht geklappt.') + '</p>';
     else {
       const R = Array.isArray(x.results) ? x.results.filter(r => r && r.name).slice(0, 12) : [];
@@ -1943,7 +1943,7 @@ function fsResults(){
 async function fsFire(id, q){
   const m = await getMcp();
   const fail = msg => db && db.doc('fsearch/' + id).update({ status:'fehler', note:msg }).catch(() => {});
-  if (!m) { claudeStart('Festivals'); toast('Claude öffnet sich: Nachricht abschicken, dann sucht Claude in 1–3 Minuten.'); return; }
+  if (!m) { toast('Gespeichert. Die Suche läuft beim nächsten Abgleich am Freitagabend.'); return; }
   try { await m.callTool('Claude Code Remote', 'fire_trigger', { trigger_id:FEST_TRIGGER, text:'Neuer Suchauftrag: fsearch/' + id + ' – Suchbegriff: ' + q }); }
   catch (e) {
     const c = e && e.code;
