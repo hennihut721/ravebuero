@@ -631,7 +631,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 
 /* Tab-Leiste */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
-.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;color:var(--ink-3);text-decoration:none;font:600 11.5px var(--f-body);border-radius:10px}
 .tab[aria-current="page"]{color:var(--pink)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom, 0px));z-index:60;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font:500 14px var(--f-body);max-width:calc(100% - 32px);box-shadow:var(--shadow);text-align:center}
@@ -650,6 +650,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
   <a class="tab" href="#kalender" data-tab="kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Kalender</span></a>
   <a class="tab" href="#umfeld" data-tab="umfeld"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span>Umfeld</span></a>
   <a class="tab" href="#marketing" data-tab="marketing"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Marketing</span></a>
+  <a class="tab" href="#verzeichnis" data-tab="verzeichnis"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20v-3"/><path d="M9 8h7M9 12h5"/></svg><span>Verzeichnis</span></a>
 </div></nav>
 
 <div id="sheet" class="sheet-wrap" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></div></div>
@@ -791,7 +792,7 @@ const CHECKLIST = [
 ];
 
 /* ---------- Zustand ---------- */
-const COLS = ['events', 'lineup', 'money', 'tasks', 'blockers', 'phases', 'people', 'local', 'meta', 'lprate', 'watch', 'scene', 'floors', 'techsets', 'fsearch', 'mkposts', 'mkmedia', 'mkchannels', 'mktexte'];
+const COLS = ['events', 'lineup', 'money', 'tasks', 'blockers', 'phases', 'people', 'local', 'meta', 'lprate', 'watch', 'scene', 'floors', 'techsets', 'fsearch', 'mkposts', 'mkmedia', 'mkchannels', 'mktexte', 'artists', 'venues'];
 const LOC_CATS = ['Club-Miete', 'Technik & Licht'];
 const TECH_PRESETS = [
   ['CDJ Standard', '3× Pioneer CDJ-3000\nPioneer DJM-900NXS2\n2× Booth-Monitor\nMikrofon'],
@@ -1071,7 +1072,7 @@ function route(){
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.indexOf('ev-') === 0) return { view:'event', id:h.slice(3) };
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
-  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'finden' || h === 'veranstalter') return { view:h };
+  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'veranstalter') return { view:h };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:'events' };
 }
@@ -1097,6 +1098,7 @@ function render(){
   else if (r.view === 'umfeld') h += viewAssess();
   else if (r.view === 'veranstalter') h += viewWatch();
   else if (r.view === 'marketing') h += viewMarketing();
+  else if (r.view === 'verzeichnis') h += viewVerzeichnis();
   else h += viewEvents();
   view.innerHTML = h;
   const st = $('.subtabs', view), at = st && $('[aria-selected="true"]', st);
@@ -1534,12 +1536,22 @@ function tabLocation(e, c){
   return h;
 }
 function venueForm(e){
+  const VN = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
   showSheet('<h2 id="sheet-title">Location</h2><form class="f" data-form="venue" data-id="' + esc(e.id) + '" novalidate>' +
+    (VN.length ? field('v-pick', 'Aus dem Verzeichnis', '<select id="v-pick"><option value="">– auswählen –</option>' + VN.map(v => '<option value="' + esc(v.id) + '">' + esc(v.name) + (v.city ? ' · ' + esc(v.city) : '') + '</option>').join('') + '</select>') : '') +
     '<div class="two">' + field('v-name', 'Name', '<input id="v-name" name="venue" maxlength="120" autocomplete="off" placeholder="Club" value="' + esc(e.venue) + '">') + field('v-cap', 'Kapazität', '<input id="v-cap" name="capacity" inputmode="numeric" placeholder="Personen" value="' + esc(numIn(e.capacity)) + '">') + '</div>' +
     field('v-addr', 'Adresse', '<input id="v-addr" name="venueAddr" maxlength="200" autocomplete="off" value="' + esc(e.venueAddr) + '">') +
     field('v-contact', 'Kontakt bei der Location', '<input id="v-contact" name="venueContact" maxlength="160" autocomplete="off" placeholder="Name, Telefon" value="' + esc(e.venueContact) + '">') +
     field('v-notes', 'Notizen', '<textarea id="v-notes" name="venueNotes" rows="3" maxlength="2000" placeholder="Zugang, Aufbauzeiten, Parken …">' + esc(e.venueNotes) + '</textarea>') +
+    '<label class="check"><input type="checkbox" name="saveVenue" checked> Im Verzeichnis speichern</label>' +
     formEnd('Speichern') + '</form>');
+  const pk = $('#v-pick');
+  if (pk) pk.onchange = () => {
+    const v = VN.find(x => x.id === pk.value); if (!v) return;
+    $('#v-name').value = v.name || ''; if (num(v.capacity)) $('#v-cap').value = int(v.capacity);
+    $('#v-addr').value = [v.addr, v.city].filter(Boolean).join(', '); $('#v-contact').value = v.contact || '';
+    if (v.notes && !$('#v-notes').value.trim()) $('#v-notes').value = v.notes;
+  };
 }
 function setChoices(){
   const own = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).map(t => [t.id, t.name, t.tech, true]);
@@ -1590,7 +1602,7 @@ function glText(l){
 }
 function tabLineup(e, c){
   const L = S.lineup.filter(l => l.eventId === e.id).sort((a, b) => timeKey(a.start) - timeKey(b.start) || (a.createdAt || 0) - (b.createdAt || 0));
-  let h = briefPanel(e, L) + '<section class="panel"><div class="panel-h"><h2>Running Order</h2>' + addBtn('new-lineup', e.id, 'Act') + '</div>';
+  let h = briefPanel(e, L) + '<section class="panel"><div class="panel-h"><h2>Running Order</h2><div style="display:flex;gap:6px"><a class="btn btn-ghost btn-sm" href="#verzeichnis" data-vz="dj">DJ-Verzeichnis</a>' + addBtn('new-lineup', e.id, 'Act') + '</div></div>';
   if (!L.length) h += '<p class="pad">Noch niemand im Line-up. Trag DJs und Acts mit Zeitslot und Gage ein. Die Gagen landen automatisch in der Kalkulation.</p>';
   else h += '<ul class="rows">' + L.map(l => {
     const st = LST[l.status] || LST.angefragt;
@@ -2478,7 +2490,7 @@ function eventForm(ev, preset){
     '<div class="two">' + field('f-date', 'Datum', '<input id="f-date" name="date" type="date" value="' + esc(v.date) + '">') + field('f-status', 'Status', '<select id="f-status" name="status">' + opts(Object.keys(STATUS).map(k => [k, STATUS[k].label]), v.status || 'idee') + '</select>') + '</div>' +
     '<div id="f-conflict" class="live-cf"></div>' +
     '<div class="two">' + field('f-start', 'Beginn', '<input id="f-start" name="start" type="time" value="' + esc(v.start) + '">') + field('f-end', 'Ende', '<input id="f-end" name="end" type="time" value="' + esc(v.end) + '">') + '</div>' +
-    '<div class="two">' + field('f-venue', 'Location', '<input id="f-venue" name="venue" maxlength="120" placeholder="Club" value="' + esc(v.venue) + '">') + field('f-cap', 'Kapazität', '<input id="f-cap" name="capacity" inputmode="numeric" placeholder="Personen" value="' + esc(numIn(v.capacity)) + '">') + '</div>' +
+    '<div class="two">' + field('f-venue', 'Location', '<input id="f-venue" name="venue" maxlength="120" placeholder="Club" list="f-venues" value="' + esc(v.venue) + '"><datalist id="f-venues">' + (S.venues || []).map(x => '<option value="' + esc(x.name) + '"></option>').join('') + '</datalist>') + field('f-cap', 'Kapazität', '<input id="f-cap" name="capacity" inputmode="numeric" placeholder="Personen" value="' + esc(numIn(v.capacity)) + '">') + '</div>' +
     field('f-notes', 'Notizen', '<textarea id="f-notes" name="notes" rows="3" maxlength="2000">' + esc(v.notes) + '</textarea>') +
     formEnd(ev ? 'Speichern' : 'Event anlegen') + '</form>');
   liveConflict();
@@ -2567,7 +2579,10 @@ function briefEventForm(e){
 }
 function lineupForm(evId, item){
   const v = item || { role:'DJ', status:'angefragt' };
+  const AR = artistsSorted();
   showSheet('<h2 id="sheet-title">' + (item ? 'Act bearbeiten' : 'Act hinzufügen') + '</h2><form class="f" data-form="lineup" data-id="' + (item ? esc(item.id) : '') + '" data-ev="' + esc(item ? item.eventId : evId) + '" novalidate>' +
+    '<input type="hidden" name="artistId" id="l-art-id" value="' + esc(v.artistId || '') + '">' +
+    (!item && AR.length ? field('l-art', 'Aus dem DJ-Verzeichnis', '<select id="l-art"><option value="">– Neu eintragen –</option>' + AR.map(a => '<option value="' + esc(a.id) + '">' + esc(a.name) + (a.role && a.role !== 'DJ' ? ' (' + esc(a.role) + ')' : '') + '</option>').join('') + '</select>') : '') +
     field('l-name', 'Name', '<input id="l-name" name="name" maxlength="120" autocomplete="off" placeholder="Künstlername" value="' + esc(v.name) + '">') +
     '<div class="two">' + field('l-role', 'Rolle', '<select id="l-role" name="role">' + opts(ROLES, v.role) + '</select>') + field('l-status', 'Status', '<select id="l-status" name="status">' + opts(Object.keys(LST).map(k => [k, LST[k].label]), v.status) + '</select>') + '</div>' +
     (floorsOf(item ? item.eventId : evId).length ? field('l-floor', 'Floor', '<select id="l-floor" name="floorId">' + opts([['', 'Noch offen']].concat(floorsOf(item ? item.eventId : evId).map(fl => [fl.id, fl.name])), v.floorId || '') + '</select>') : '') +
@@ -2579,7 +2594,152 @@ function lineupForm(evId, item){
     '<div class="two">' + field('l-ig', 'Instagram', '<input id="l-ig" name="ig" maxlength="60" autocomplete="off" placeholder="@name" value="' + esc(v.ig) + '">') + field('l-mail', 'E-Mail', '<input id="l-mail" name="mail" type="email" inputmode="email" maxlength="120" autocomplete="off" value="' + esc(v.mail) + '">') + '</div>' +
     field('l-contact', 'Booker oder Notiz zum Kontakt', '<input id="l-contact" name="contact" maxlength="160" placeholder="z. B. über Booking-Agentur" value="' + esc(v.contact) + '">') +
     field('l-notes', 'Notizen', '<textarea id="l-notes" name="notes" rows="2" maxlength="2000" placeholder="Rider, Anreise, Hotel …">' + esc(v.notes) + '</textarea>') +
+    '<label class="check"><input type="checkbox" id="l-save" name="saveArt" checked> Im DJ-Verzeichnis speichern</label>' +
     formEnd(item ? 'Speichern' : 'Hinzufügen', 'lineup', item && item.id) + '</form>');
+  const sel = $('#l-art');
+  if (sel) sel.onchange = () => {
+    const a = S.artists.find(x => x.id === sel.value); $('#l-art-id').value = a ? a.id : '';
+    if (!a) return;
+    const set = (id, val) => { const el = $('#' + id); if (el && val != null) el.value = val; };
+    set('l-name', a.name || ''); set('l-role', ROLES.indexOf(a.role) >= 0 ? a.role : 'DJ'); set('l-fee', num(a.fee) ? numIn(a.fee) : '');
+    set('l-wa', a.wa || ''); set('l-tg', a.tg || ''); set('l-ig', a.ig || ''); set('l-mail', a.mail || ''); set('l-contact', a.contact || '');
+  };
+}
+const artistsSorted = () => (S.artists || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
+const artistGigs = a => S.lineup.filter(l => l.artistId === a.id || (!l.artistId && (l.name || '').trim().toLowerCase() === (a.name || '').trim().toLowerCase()));
+// Act ins DJ-Verzeichnis übernehmen (neu anlegen oder aktualisieren), liefert die artistId
+async function artistMerken(d){
+  const key = d.name.trim().toLowerCase();
+  const a = (S.artists || []).find(x => x.id === d.artistId) || (S.artists || []).find(x => (x.name || '').trim().toLowerCase() === key);
+  const data = { name:d.name, role:d.role || 'DJ', wa:d.wa || '', tg:d.tg || '', ig:d.ig || '', mail:d.mail || '', contact:d.contact || '', updatedAt:Date.now() };
+  if (num(d.fee) > 0) data.fee = d.fee;
+  const id = a ? a.id : newId('ar');
+  if (!a) { data.createdAt = Date.now(); data.notes = ''; }
+  try { await db.collection('artists').doc(id).set(data, { merge:true }); } catch (e) { console.error(e); return a ? a.id : ''; }
+  return id;
+}
+S.vzTab = ['dj', 'loc', 'tech'].indexOf(LS.get('vzTab')) >= 0 ? LS.get('vzTab') : 'dj';
+S.vzQ = '';
+const vzHit = (txt) => !S.vzQ || String(txt).toLowerCase().indexOf(S.vzQ.toLowerCase()) >= 0;
+function viewVerzeichnis(){
+  const tabs = [['dj', 'DJs & Acts', (S.artists || []).length], ['loc', 'Locations', (S.venues || []).length], ['tech', 'Technik-Setups', S.techsets.length]];
+  const add = { dj:['DJ', 'vz-new-dj'], loc:['Location', 'vz-new-loc'], tech:['Setup', 'vz-new-tech'] }[S.vzTab];
+  let h = '<section class="vh"><h1>Verzeichnis</h1>' + (S.ro ? '' : '<button class="btn btn-primary" data-vz="' + add[1] + '">' + I.plus + add[0] + '</button>') + '</section>' +
+    '<div class="subtabs" role="tablist" style="margin:0 0 14px">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.vzTab === t[0]) + '" data-vz="tab" data-v="' + t[0] + '">' + t[1] + (t[2] ? ' <span class="muted">' + t[2] + '</span>' : '') + '</button>').join('') + '</div>' +
+    '<input class="inp" id="vz-q" placeholder="Suchen …" aria-label="Im Verzeichnis suchen" autocomplete="off" value="' + esc(S.vzQ) + '" style="font-family:var(--f-body);margin:0 0 14px">';
+  if (S.vzTab === 'loc') {
+    const L = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(v => vzHit(v.name + ' ' + (v.city || '') + ' ' + (v.addr || '')));
+    if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nichts gefunden' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>';
+    return h + '<section class="panel"><ul class="rows">' + L.map(v => {
+      const n = S.events.filter(e => (e.venue || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()).length;
+      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>';
+    }).join('') + '</ul></section>';
+  }
+  if (S.vzTab === 'tech') {
+    const T = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(t => vzHit(t.name + ' ' + (t.tech || '')));
+    if (!T.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nichts gefunden' : 'Noch keine Setups') + '</h3><p>Lege Technik-Setups an, zum Beispiel „CDJ Standard“ mit allen Geräten. Bei jedem Floor wählst du sie dann mit einem Tipp aus.</p></div>';
+    return h + '<section class="panel"><ul class="rows">' + T.map(t => '<li><button type="button" class="row" data-vz="tech" data-id="' + esc(t.id) + '"><span class="row-main"><span class="row-title">' + esc(t.name) + '</span><span class="row-sub">' + techLines(t.tech).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>';
+  }
+  const A = artistsSorted().filter(a => vzHit(a.name + ' ' + (a.contact || '') + ' ' + (a.ig || '') + ' ' + (a.notes || '')));
+  if (!A.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nichts gefunden' : 'Noch keine DJs') + '</h3><p>DJs und Acts landen automatisch hier, wenn du sie ins Line-up einträgst. Beim nächsten Event wählst du sie einfach aus, Kontakt und Gage werden übernommen.</p></div>';
+  return h + '<section class="panel"><ul class="rows">' + A.map(a => {
+    const g = artistGigs(a).length;
+    return '<li><button type="button" class="row" data-vz="dj" data-id="' + esc(a.id) + '"><span class="av">' + esc(initial(a.name)) + '</span><span class="row-main"><span class="row-title">' + esc(a.name) + '</span><span class="row-sub">' + [a.role, num(a.fee) ? eur(a.fee) : '', a.ig ? '@' + a.ig : '', g ? g + (g === 1 ? ' Auftritt' : ' Auftritte') : ''].filter(Boolean).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>';
+  }).join('') + '</ul></section>';
+}
+function venueDirForm(v){
+  const x = v || {};
+  showSheet('<h2 id="sheet-title">' + (v ? esc(v.name) : 'Neue Location') + '</h2><form class="f" id="vz-form" novalidate>' +
+    '<div class="two">' + field('vl-name', 'Name', '<input id="vl-name" maxlength="120" autocomplete="off" placeholder="z. B. Schlosskeller" value="' + esc(x.name || '') + '">') + field('vl-city', 'Ort', '<input id="vl-city" maxlength="80" autocomplete="off" placeholder="z. B. Darmstadt" value="' + esc(x.city || '') + '">') + '</div>' +
+    field('vl-addr', 'Adresse', '<input id="vl-addr" maxlength="200" autocomplete="off" value="' + esc(x.addr || '') + '">') +
+    '<div class="two">' + field('vl-cap', 'Kapazität', '<input id="vl-cap" inputmode="numeric" placeholder="Personen" value="' + esc(numIn(x.capacity)) + '">') + field('vl-rent', 'Miete / Deal (€)', '<input id="vl-rent" inputmode="decimal" placeholder="0" value="' + esc(numIn(x.rent)) + '">') + '</div>' +
+    field('vl-contact', 'Ansprechpartner', '<input id="vl-contact" maxlength="160" autocomplete="off" placeholder="Name, Telefon, E-Mail" value="' + esc(x.contact || '') + '">') +
+    field('vl-tech', 'Technik vor Ort', '<select id="vl-tech"><option value="">– keine Angabe –</option>' + S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).map(t => '<option value="' + esc(t.id) + '"' + (t.id === x.techsetId ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select>') +
+    field('vl-notes', 'Notizen', '<textarea id="vl-notes" rows="3" maxlength="2000" placeholder="Zugang, Aufbauzeiten, Parken, Deal …">' + esc(x.notes || '') + '</textarea>') +
+    vzEnd(!!v) + '</form>');
+  vzWire('venues', v, 'Diese Location', () => {
+    const name = $('#vl-name').value.trim(); if (!name) return 'Gib einen Namen ein.';
+    const cap = $('#vl-cap').value.trim() ? int($('#vl-cap').value) : 0, rent = $('#vl-rent').value.trim() ? num($('#vl-rent').value) : 0;
+    if (isNaN(cap) || cap < 0) return 'Gib die Kapazität als ganze Zahl an, z. B. 300.';
+    if (isNaN(rent) || rent < 0) return 'Gib die Miete als Zahl an, z. B. 400.';
+    if ((S.venues || []).some(o => o.id !== (v && v.id) && (o.name || '').trim().toLowerCase() === name.toLowerCase())) return name + ' steht schon im Verzeichnis.';
+    return { name, city:$('#vl-city').value.trim(), addr:$('#vl-addr').value.trim(), capacity:cap, rent, contact:$('#vl-contact').value.trim(), techsetId:$('#vl-tech').value, notes:$('#vl-notes').value.trim() };
+  }, 'vn');
+}
+function techDirForm(t){
+  const x = t || {};
+  showSheet('<h2 id="sheet-title">' + (t ? esc(t.name) : 'Neues Technik-Setup') + '</h2><form class="f" id="vz-form" novalidate>' +
+    field('ts-name', 'Name', '<input id="ts-name" maxlength="60" autocomplete="off" placeholder="z. B. CDJ Standard" value="' + esc(x.name || '') + '">') +
+    (t ? '' : '<div class="field"><label>Vorlage übernehmen</label><div class="chips">' + TECH_PRESETS.map((p, i) => '<button type="button" class="chip" data-tsp="' + i + '">' + esc(p[0]) + '</button>').join('') + '</div></div>') +
+    field('ts-tech', 'Technik (eine Zeile pro Gerät)', '<textarea id="ts-tech" rows="7" maxlength="2000" placeholder="z. B. 3× Pioneer CDJ-3000">' + esc(x.tech || '') + '</textarea>') +
+    vzEnd(!!t) + '</form>');
+  document.querySelectorAll('[data-tsp]').forEach(b => b.onclick = () => { const p = TECH_PRESETS[+b.getAttribute('data-tsp')]; if (!$('#ts-name').value.trim()) $('#ts-name').value = p[0]; $('#ts-tech').value = p[1]; });
+  vzWire('techsets', t, 'Dieses Setup', () => {
+    const name = $('#ts-name').value.trim().slice(0, 60); if (!name) return 'Gib dem Setup einen Namen.';
+    const tech = techLines($('#ts-tech').value).join('\n'); if (!tech) return 'Trag mindestens ein Gerät ein.';
+    if (S.techsets.some(o => o.id !== (t && t.id) && (o.name || '').trim().toLowerCase() === name.toLowerCase())) return 'Ein Setup mit diesem Namen gibt es schon.';
+    return { name, tech };
+  }, 'ts');
+}
+const vzEnd = del => '<p class="err" id="vz-err" hidden></p><div class="actions">' + (del && !S.ro ? '<button type="button" class="btn btn-ghost" id="vz-del" style="color:var(--bad)">Löschen</button><span class="spacer"></span>' : '') + '<button type="button" class="btn" data-act="close-sheet">' + (S.ro ? 'Schließen' : 'Abbrechen') + '</button>' + (S.ro ? '' : '<button type="submit" class="btn btn-primary">Speichern</button>') + '</div>';
+function vzWire(col, item, what, read, prefix){
+  const err = m => { const e = $('#vz-err'); e.textContent = m; e.hidden = false; };
+  $('#vz-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const d = read(); if (typeof d === 'string') return err(d);
+    d.updatedAt = Date.now(); if (!item) d.createdAt = Date.now();
+    if (await save(() => db.collection(col).doc(item ? item.id : newId(prefix)).set(d, { merge:true }), item ? 'Gespeichert' : d.name + ' ist im Verzeichnis')) closeSheet();
+  };
+  if ($('#vz-del')) $('#vz-del').onclick = async () => {
+    if (!confirm(what + ' aus dem Verzeichnis löschen? Bestehende Events bleiben unverändert.')) return;
+    if (await save(() => db.collection(col).doc(item.id).delete(), 'Gelöscht')) closeSheet();
+  };
+}
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-vz]'); if (!el) return;
+  const a = el.dataset.vz, id = el.dataset.id;
+  if (a === 'tab') { S.vzTab = el.dataset.v; S.vzQ = ''; LS.set('vzTab', S.vzTab); render(); return; }
+  if (a === 'dj' && el.tagName === 'A') { S.vzTab = 'dj'; LS.set('vzTab', 'dj'); return; }
+  if (a === 'dj') { const x = (S.artists || []).find(q => q.id === id); if (x) artistForm(x); }
+  else if (a === 'loc') { const x = (S.venues || []).find(q => q.id === id); if (x) venueDirForm(x); }
+  else if (a === 'tech') { const x = S.techsets.find(q => q.id === id); if (x) techDirForm(x); }
+  else if (a === 'vz-new-dj') artistForm(null);
+  else if (a === 'vz-new-loc') venueDirForm(null);
+  else if (a === 'vz-new-tech') techDirForm(null);
+});
+document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } });
+function artistForm(a){
+  const v = a || { role:'DJ' };
+  const gigs = a ? artistGigs(a).map(l => ({ l, e:S.events.find(e => e.id === l.eventId) })).filter(x => x.e).sort((x, y) => (y.e.date || '').localeCompare(x.e.date || '')) : [];
+  showSheet('<h2 id="sheet-title">' + (a ? esc(a.name) : 'Neuer DJ') + '</h2><form class="f" id="ar-form" novalidate>' +
+    field('ar-name', 'Name', '<input id="ar-name" maxlength="120" autocomplete="off" placeholder="Künstlername" value="' + esc(v.name || '') + '">') +
+    '<div class="two">' + field('ar-role', 'Rolle', '<select id="ar-role">' + opts(ROLES, v.role) + '</select>') + field('ar-fee', 'Übliche Gage (€)', '<input id="ar-fee" inputmode="decimal" placeholder="0" value="' + esc(numIn(v.fee)) + '">') + '</div>' +
+    '<div class="two">' + field('ar-wa', 'WhatsApp-Nummer', '<input id="ar-wa" type="tel" inputmode="tel" maxlength="30" autocomplete="off" value="' + esc(v.wa || '') + '">') + field('ar-tg', 'Telegram', '<input id="ar-tg" maxlength="60" autocomplete="off" placeholder="@name" value="' + esc(v.tg || '') + '">') + '</div>' +
+    '<div class="two">' + field('ar-ig', 'Instagram', '<input id="ar-ig" maxlength="60" autocomplete="off" placeholder="@name" value="' + esc(v.ig || '') + '">') + field('ar-mail', 'E-Mail', '<input id="ar-mail" type="email" inputmode="email" maxlength="120" autocomplete="off" value="' + esc(v.mail || '') + '">') + '</div>' +
+    field('ar-contact', 'Booker oder Notiz zum Kontakt', '<input id="ar-contact" maxlength="160" value="' + esc(v.contact || '') + '">') +
+    field('ar-notes', 'Notizen', '<textarea id="ar-notes" rows="3" maxlength="2000" placeholder="Genre, Stil, Rider, wie war der letzte Gig …">' + esc(v.notes || '') + '</textarea>') +
+    (gigs.length ? '<div class="field"><label>Auftritte bei euch</label><ul class="rows" style="border:1px solid var(--line);border-radius:10px">' + gigs.map(x => '<li><div class="row" style="cursor:default;padding:9px 12px"><span class="row-main"><span class="row-title">' + esc(x.e.name || 'Event') + '</span><span class="row-sub">' + fmtD(x.e.date) + (num(x.l.fee) ? ' · ' + eur(x.l.fee) : '') + ' · ' + (LST[x.l.status] || LST.angefragt).label + '</span></span></div></li>').join('') + '</ul></div>' : '') +
+    '<p class="err" id="ar-err" hidden></p><div class="actions">' + (a && !S.ro ? '<button type="button" class="btn btn-ghost" id="ar-del" style="color:var(--bad)">Löschen</button><span class="spacer"></span>' : '') +
+    '<button type="button" class="btn" data-act="close-sheet">' + (S.ro ? 'Schließen' : 'Abbrechen') + '</button>' + (S.ro ? '' : '<button type="submit" class="btn btn-primary">Speichern</button>') + '</div></form>');
+  const err = m => { const e = $('#ar-err'); e.textContent = m; e.hidden = false; };
+  $('#ar-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const name = $('#ar-name').value.trim(); if (!name) return err('Gib einen Namen ein.');
+    const fee = $('#ar-fee').value.trim() ? num($('#ar-fee').value) : 0;
+    if (isNaN(fee) || fee < 0) return err('Gib die Gage als Zahl an, z. B. 350.');
+    const mail = $('#ar-mail').value.trim(), wa = $('#ar-wa').value.trim();
+    if (mail && !okMail(mail)) return err('Die E-Mail-Adresse sieht nicht vollständig aus.');
+    if (wa && !waNum(wa)) return err('Gib die WhatsApp-Nummer mit Vorwahl an, z. B. 0171 2345678.');
+    const dup = (S.artists || []).find(x => x.id !== (a && a.id) && (x.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (dup) return err(name + ' steht schon im Verzeichnis.');
+    const data = { name, role:$('#ar-role').value, fee, wa, tg:tgUser($('#ar-tg').value), ig:igUser($('#ar-ig').value), mail, contact:$('#ar-contact').value.trim(), notes:$('#ar-notes').value.trim(), updatedAt:Date.now() };
+    if (!a) data.createdAt = Date.now();
+    if (await save(() => db.collection('artists').doc(a ? a.id : newId('ar')).set(data, { merge:true }), a ? 'Gespeichert' : name + ' ist im Verzeichnis')) closeSheet();
+  };
+  if ($('#ar-del')) $('#ar-del').onclick = async () => {
+    if (!confirm(a.name + ' aus dem Verzeichnis löschen? Die Einträge in euren Line-ups bleiben.')) return;
+    if (await save(() => db.collection('artists').doc(a.id).delete(), 'Gelöscht')) closeSheet();
+  };
 }
 function moneyForm(evId, kind, item, cat){
   const k = item ? item.kind : kind, cats = k === 'einnahme' ? INC_CATS : COST_CATS;
@@ -2710,7 +2870,16 @@ const FORMS = {
   async venue(f, d){
     const cap = d.capacity ? int(d.capacity) : 0;
     if (isNaN(cap) || cap < 0) return formErr(f, 'Gib die Kapazität als ganze Zahl an, z. B. 300.');
-    if (await save(() => db.doc('events/' + f.dataset.id).update({ venue:(d.venue || '').trim(), capacity:cap, venueAddr:(d.venueAddr || '').trim(), venueContact:(d.venueContact || '').trim(), venueNotes:(d.venueNotes || '').trim() }), 'Gespeichert')) closeSheet();
+    const vn = (d.venue || '').trim();
+    if (d.saveVenue && vn) {
+      const ex = (S.venues || []).find(x => (x.name || '').trim().toLowerCase() === vn.toLowerCase());
+      const vd = { name:vn, updatedAt:Date.now() };
+      if (cap) vd.capacity = cap; if ((d.venueContact || '').trim()) vd.contact = d.venueContact.trim();
+      if (!ex) Object.assign(vd, { addr:(d.venueAddr || '').trim(), notes:(d.venueNotes || '').trim(), createdAt:Date.now() });
+      else if (!ex.addr && (d.venueAddr || '').trim()) vd.addr = d.venueAddr.trim();
+      try { await db.collection('venues').doc(ex ? ex.id : newId('vn')).set(vd, { merge:true }); } catch (x) { console.error(x); }
+    }
+    if (await save(() => db.doc('events/' + f.dataset.id).update({ venue:vn, capacity:cap, venueAddr:(d.venueAddr || '').trim(), venueContact:(d.venueContact || '').trim(), venueNotes:(d.venueNotes || '').trim() }), 'Gespeichert')) closeSheet();
   },
   async floor(f, d){
     const name = (d.name || '').trim();
@@ -2790,6 +2959,8 @@ const FORMS = {
     const data = { gl, glNames, eventId:f.dataset.ev, name, role:d.role || '', status:d.status || 'angefragt', start:d.start || '', end:d.end || '', fee, paid:!!d.paid, contact:(d.contact || '').trim(), notes:(d.notes || '').trim(),
       wa:(d.wa || '').trim(), tg:tgUser(d.tg), ig:igUser(d.ig), mail:(d.mail || '').trim() };
     if ('floorId' in d) data.floorId = d.floorId || '';
+    if (d.saveArt) { const aid = await artistMerken(Object.assign({}, data, { artistId:d.artistId || (f.dataset.id && (S.lineup.find(x => x.id === f.dataset.id) || {}).artistId) || '' })); if (aid) data.artistId = aid; }
+    else if (d.artistId) data.artistId = d.artistId;
     const id = f.dataset.id;
     if (id) { const old = S.lineup.find(x => x.id === id) || {}; const keep = Object.assign({}, old); delete keep.id; if (await save(() => db.doc('lineup/' + id).set(Object.assign(keep, { createdAt:old.createdAt || Date.now() }, data)), 'Gespeichert')) closeSheet(); return; }
     data.createdAt = Date.now();
