@@ -2158,7 +2158,8 @@ function viewMarketing(){
 function mkPlan(e){
   const P = mkCol('mkposts').filter(p => p.eventId === e.id).sort((a, b) => String(a.date || '9').localeCompare(String(b.date || '9')));
   const t = today(), open = P.filter(p => !p.done), od = open.filter(p => isDate(p.date) && p.date < t).length;
-  let h = '<section class="panel"><div class="panel-h"><h2>Posting-Plan</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="new-post">' + I.plus + 'Post</button>') + '</div>';
+  const ig = mkInsta();
+  let h = '<section class="panel"><div class="panel-h"><h2>Posting-Plan</h2><div style="display:flex;gap:4px">' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="insta-set">Instagram' + (ig.an ? ' ✓' : '') + '</button><button class="btn btn-ghost" data-mk="new-post">' + I.plus + 'Post</button>') + '</div></div>';
   if (!P.length) return h + '<div style="padding:4px 14px 16px"><p class="muted" style="margin:0 0 12px">Noch keine Posts geplant. Der Standardplan legt fünf Posts an: Ankündigung (4 Wochen vorher), Line-up (3 Wochen), Timetable (1 Woche), Reminder (am Vortag) und Danke (2 Tage danach).</p>' + (S.ro ? '' : '<button class="btn btn-primary" data-mk="std-plan">Standardplan anlegen</button>') + '</div></section>';
   h += '<p class="muted" style="margin:0 14px 10px">' + (P.length - open.length) + ' von ' + P.length + ' erledigt' + (od ? ' · <strong style="color:var(--bad)">' + od + ' überfällig</strong>' : '') + '</p><ul class="rows">';
   h += P.map(p => {
@@ -2166,7 +2167,8 @@ function mkPlan(e){
     const chs = (Array.isArray(p.channels) ? p.channels : []).map(c => '<span class="pill">' + esc(mkLabel(MK_CH, c)) + '</span>').join('');
     return '<li><div class="task' + (p.done ? ' done' : '') + '"><button class="chk" role="checkbox" aria-checked="' + !!p.done + '" aria-label="' + esc(p.title) + ' erledigt" data-mk="toggle-post" data-id="' + esc(p.id) + '"' + (S.ro ? ' disabled' : '') + '>' + I.check + '</button>' +
       '<button class="task-main" data-mk="edit-post" data-id="' + esc(p.id) + '"><span class="row-title">' + esc(p.title || 'Post') + '</span><span class="row-sub"><span' + (late ? ' style="color:var(--bad);font-weight:600"' : '') + '>' + (isDate(p.date) ? fmtD(p.date) + ' · ' + mkRel(p.date) : 'ohne Datum') + '</span>' + chs + '</span>' +
-      (p.notes ? '<span class="row-sub">' + esc(p.notes) + '</span>' : '') + '</button></div></li>';
+      (p.notes ? '<span class="row-sub">' + esc(p.notes) + '</span>' : '') + '</button>' +
+      (ig.an && (p.channels || []).indexOf('instagram') >= 0 ? '<button class="btn btn-sm" data-mk="insta" data-id="' + esc(p.id) + '" style="flex:none">Instagram-Post</button>' : '') + '</div></li>';
   }).join('');
   return h + '</ul></section>';
 }
@@ -2185,7 +2187,7 @@ function mkMedia(e){
   if (!M.length) return h + '<p class="muted" style="margin:0 14px 16px">Noch nichts angelegt. Füge Flyer, Videos, Fotos oder Links hinzu, zum Beispiel einen Google-Drive- oder Canva-Link.</p></section>';
   return h + '<ul class="rows">' + M.map(m => {
     const st = MK_MST[m.status] || MK_MST.idee;
-    return '<li><div class="row" style="cursor:default"><button class="task-main" data-mk="edit-media" data-id="' + esc(m.id) + '"><span class="row-title">' + esc(m.title || mkLabel(MK_MEDIA, m.kind)) + '</span><span class="row-sub"><span>' + esc(mkLabel(MK_MEDIA, m.kind)) + '</span><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (m.notes ? '<span>' + esc(m.notes) + '</span>' : '') + '</span></button>' +
+    return '<li><div class="row" style="cursor:default"><button class="task-main" data-mk="edit-media" data-id="' + esc(m.id) + '"><span class="row-title">' + esc(m.title || mkLabel(MK_MEDIA, m.kind)) + '</span><span class="row-sub"><span>' + esc(mkLabel(MK_MEDIA, m.kind)) + '</span><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (m.bild ? '<span class="pill">Bild</span>' : '') + (m.notes ? '<span>' + esc(m.notes) + '</span>' : '') + '</span></button>' +
       (/^https?:\/\//.test(m.url || '') ? '<a class="btn btn-sm" href="' + esc(m.url) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>';
   }).join('') + '</ul></section>';
 }
@@ -2237,16 +2239,26 @@ function mkMediaForm(m, e){
     '<div class="two">' + field('mk-kind', 'Art', '<select id="mk-kind">' + mkOpt(MK_MEDIA, it.kind) + '</select>') + field('mk-st', 'Status', '<select id="mk-st">' + mkOpt(Object.keys(MK_MST).map(k => [k, MK_MST[k][0]]), it.status) + '</select>') + '</div>' +
     field('mk-title', 'Titel', '<input id="mk-title" maxlength="80" autocomplete="off" placeholder="z. B. Hauptflyer quer" value="' + esc(it.title) + '">') +
     field('mk-url', 'Link', '<input id="mk-url" type="url" inputmode="url" maxlength="500" autocomplete="off" placeholder="https://drive.google.com/…" value="' + esc(it.url || '') + '">') +
+    '<div class="field"><label for="mk-file">Bild (für Instagram)</label><img id="mk-prev" alt="" style="max-width:100%;max-height:240px;border-radius:10px;object-fit:contain;background:var(--sunk)' + (it.bild ? '' : ';display:none') + '"><input id="mk-file" type="file" accept="image/*"><p class="hint" style="margin:0">Nur Bilder mit Status „Fertig“ werden für Instagram-Posts benutzt.</p></div>' +
     field('mk-notes', 'Notiz', '<textarea id="mk-notes" rows="2" maxlength="300" placeholder="z. B. macht Lena bis Freitag">' + esc(it.notes || '') + '</textarea>') + mkEnd(!!m) + '</form>');
+  let bild = null;
+  if (m && m.bild) mkBild(m.id).then(d => { const im = $('#mk-prev'); if (d && im) im.src = d; });
+  $('#mk-file').onchange = async () => {
+    const f = $('#mk-file').files[0]; if (!f) return;
+    try { bild = await mkShrink(f); $('#mk-prev').src = bild; $('#mk-prev').style.display = ''; }
+    catch (e) { bild = null; mkErr('Das Bild konnte nicht gelesen werden.'); }
+  };
   $('#mk-form').onsubmit = async ev => {
     ev.preventDefault();
     let url = $('#mk-url').value.trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
     const kind = $('#mk-kind').value, title = $('#mk-title').value.trim() || mkLabel(MK_MEDIA, kind);
     const data = Object.assign({}, m || { eventId:e.id, createdAt:Date.now() }, { kind, title, url, status:$('#mk-st').value, notes:$('#mk-notes').value.trim() });
     delete data.id;
-    if (await mkSet('mkmedia', m ? m.id : newId('mm'), data, m ? 'Gespeichert.' : 'Medium angelegt.')) closeSheet();
+    const mid = m ? m.id : newId('mm');
+    if (bild) { data.bild = true; if (!await mkSet('mkbilder', mid, { data:bild, eventId:data.eventId })) return; MK_BILD[mid] = bild; }
+    if (await mkSet('mkmedia', mid, data, m ? 'Gespeichert.' : 'Medium angelegt.')) closeSheet();
   };
-  if (m) $('#mk-del').onclick = () => mkConfirmDel('mkmedia', m.id, 'Dieses Medium');
+  if (m) $('#mk-del').onclick = () => { if (!confirm('Dieses Medium löschen?')) return; if (m.bild) mkDel('mkbilder', m.id); mkDel('mkmedia', m.id, 'Gelöscht.').then(ok => { if (ok) closeSheet(); }); };
 }
 function mkChForm(c){
   const it = c || { name:'', kind:'instagram', handle:'', followers:'', notes:'' };
@@ -2280,6 +2292,84 @@ function mkTplForm(k){
   };
   if (own) $('#mk-reset').onclick = async () => { if (await mkDel('mktexte', k, 'Standard wiederhergestellt.')) closeSheet(); };
 }
+const MK_BILD = {};
+const mkInsta = () => { const o = mkCol('mktexte').find(x => x.id === 'insta') || {}; return { an:!!o.an, hashtags:o.hashtags || '' }; };
+async function mkBild(id){
+  if (MK_BILD[id]) return MK_BILD[id];
+  try { const d = await db.collection('mkbilder').doc(id).get(); MK_BILD[id] = d.exists ? d.data().data || '' : ''; } catch (e) { return ''; }
+  return MK_BILD[id];
+}
+function mkLoadImg(src){ return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; }); }
+async function mkShrink(file){
+  const url = URL.createObjectURL(file);
+  try {
+    const im = await mkLoadImg(url), k = Math.min(1, 1440 / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    let q = 0.85, d = c.toDataURL('image/jpeg', q);
+    while (d.length > 900000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+    if (d.length > 900000) { const c2 = document.createElement('canvas'); c2.width = Math.round(c.width * 0.7); c2.height = Math.round(c.height * 0.7); c2.getContext('2d').drawImage(c, 0, 0, c2.width, c2.height); d = c2.toDataURL('image/jpeg', 0.75); }
+    return d;
+  } finally { URL.revokeObjectURL(url); }
+}
+// Instagram-Bild: Flyer auf 1080×1350 (4:5) mit dunklem Rand, damit nichts abgeschnitten wird
+async function mkInstaBlob(src){
+  const im = await mkLoadImg(src), W = 1080, H = 1350;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.fillStyle = '#091C41'; g.fillRect(0, 0, W, H);
+  const k = Math.min(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
+  g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+  return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.92));
+}
+const mkFertig = e => mkCol('mkmedia').filter(m => m.eventId === e.id && m.bild && m.status === 'fertig')
+  .sort((a, b) => (a.kind === 'flyer' ? 0 : 1) - (b.kind === 'flyer' ? 0 : 1) || (b.createdAt || 0) - (a.createdAt || 0));
+function mkCaption(p, e){
+  const t = MK_TYPES.find(x => x[0] === p.typ);
+  const base = t ? mkFill(mkTpl(t[0]), e) : (p.title || '') + '\n\n' + mkFill('{event}\n🗓 {tag}, {datum}\n📍 {location}', e) + (p.notes ? '\n\n' + p.notes : '');
+  const ht = mkInsta().hashtags.trim();
+  return base + (ht ? '\n\n' + ht : '');
+}
+async function mkInstaSheet(p, e){
+  const M = mkFertig(e), cap = mkCaption(p, e);
+  let sel = M[0] ? M[0].id : '';
+  const pick = M.length > 1 ? '<div class="chips" style="margin:0 0 10px">' + M.map(m => '<button type="button" class="chip" data-pick="' + esc(m.id) + '" aria-pressed="' + (m.id === sel) + '">' + esc(m.title || 'Bild') + '</button>').join('') + '</div>' : '';
+  showSheet('<h2 id="sheet-title">Instagram-Post</h2><p class="muted" style="margin:-6px 0 12px">' + esc(p.title || 'Post') + (isDate(p.date) ? ' · ' + fmtD(p.date) : '') + '</p>' +
+    (M.length ? pick + '<img id="ig-img" alt="Vorschau" style="width:100%;aspect-ratio:4/5;object-fit:contain;background:#091C41;border-radius:10px;margin:0 0 12px">'
+      : '<div class="empty" style="margin:0 0 12px;padding:16px"><p style="margin:0 0 10px">Für dieses Event gibt es noch kein Bild mit Status „Fertig“. Lade unter „Flyer & Medien“ einen Flyer hoch und setze ihn auf „Fertig“.</p><button type="button" class="btn btn-sm" id="ig-up">Flyer hochladen</button></div>') +
+    '<div class="field"><label>Caption</label><div id="ig-cap" style="white-space:pre-wrap;background:var(--sunk);border-radius:10px;padding:12px;font-size:14.5px;line-height:1.45">' + esc(cap) + '</div></div>' +
+    '<p class="hint" style="margin:8px 0 0">Instagram übernimmt beim Teilen keinen Text. Die Caption wird deshalb kopiert – in Instagram einfach einfügen.</p>' +
+    '<div class="actions" style="margin-top:12px"><button type="button" class="btn" data-act="close-sheet">Schließen</button><button type="button" class="btn" id="ig-copy">Caption kopieren</button>' + (M.length ? '<button type="button" class="btn btn-primary" id="ig-share">Bild teilen</button>' : '') + '</div>');
+  const show = async () => { const d = await mkBild(sel); const im = $('#ig-img'); if (im) im.src = d || ''; };
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { sel = b.getAttribute('data-pick'); document.querySelectorAll('[data-pick]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); show(); });
+  if (sel) show();
+  $('#ig-copy').onclick = async () => toast(await copyText(cap) ? 'Caption kopiert.' : 'Kopieren hat nicht geklappt.');
+  if ($('#ig-up')) $('#ig-up').onclick = () => mkMediaForm(null, e);
+  if ($('#ig-share')) $('#ig-share').onclick = async () => {
+    await copyText(cap);
+    const d = await mkBild(sel); if (!d) { toast('Bild konnte nicht geladen werden.'); return; }
+    const blob = await mkInstaBlob(d), name = (e.name || 'post').replace(/[^\w-]+/g, '-').toLowerCase() + '-instagram.jpg';
+    const file = new File([blob], name, { type:'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      try { await navigator.share({ files:[file] }); toast('Caption ist kopiert – in Instagram einfügen.'); } catch (x) {}
+    } else {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Bild gespeichert, Caption kopiert.');
+    }
+  };
+}
+function mkInstaSet(){
+  const ig = mkInsta();
+  showSheet('<h2 id="sheet-title">Instagram</h2><form class="f" id="mk-form" novalidate>' +
+    '<label class="check"><input type="checkbox" id="ig-an"' + (ig.an ? ' checked' : '') + '> Instagram-Posts automatisch vorbereiten</label>' +
+    '<p class="hint">Jeder Post im Plan mit dem Kanal Instagram bekommt dann einen fertigen Instagram-Post: euren Flyer im Format 4:5 und die passende Caption. Benutzt werden nur Bilder aus „Flyer & Medien“ mit Status „Fertig“.</p>' +
+    field('ig-ht', 'Hashtags (kommen unter jede Caption)', '<textarea id="ig-ht" rows="3" maxlength="600" placeholder="#psytrance #darmstadt #rave">' + esc(ig.hashtags) + '</textarea>') +
+    '<p class="err" id="mk-err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div></form>');
+  $('#mk-form').onsubmit = async ev => {
+    ev.preventDefault();
+    if (await mkSet('mktexte', 'insta', { an:$('#ig-an').checked, hashtags:$('#ig-ht').value.trim() }, 'Gespeichert.')) closeSheet();
+  };
+}
 async function mkStdPlan(e){
   if (!isDate(e.date)) { toast('Das Event hat noch kein Datum.'); return; }
   const now = Date.now();
@@ -2310,6 +2400,8 @@ document.addEventListener('click', async ev => {
   else if (a === 'new-ch') mkChForm(null);
   else if (a === 'edit-ch') { const c = mkCol('mkchannels').find(x => x.id === id); if (c) mkChForm(c); }
   else if (a === 'edit-tpl') mkTplForm(v);
+  else if (a === 'insta-set') mkInstaSet();
+  else if (a === 'insta') { const p = mkCol('mkposts').find(x => x.id === id); if (p && e) mkInstaSheet(p, e); }
 });
 function viewAssess(){
   const t = today();
