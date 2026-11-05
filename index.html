@@ -791,7 +791,7 @@ const CHECKLIST = [
 ];
 
 /* ---------- Zustand ---------- */
-const COLS = ['events', 'lineup', 'money', 'tasks', 'blockers', 'phases', 'people', 'local', 'meta', 'lprate', 'watch', 'scene', 'floors', 'techsets', 'fsearch'];
+const COLS = ['events', 'lineup', 'money', 'tasks', 'blockers', 'phases', 'people', 'local', 'meta', 'lprate', 'watch', 'scene', 'floors', 'techsets', 'fsearch', 'mkposts', 'mkmedia', 'mkchannels', 'mktexte'];
 const LOC_CATS = ['Club-Miete', 'Technik & Licht'];
 const TECH_PRESETS = [
   ['CDJ Standard', '3× Pioneer CDJ-3000\nPioneer DJM-900NXS2\n2× Booth-Monitor\nMikrofon'],
@@ -2105,10 +2105,212 @@ function viewWatch(){
   if (sugg.length) h += '<section class="panel"><div class="panel-h"><h2>Vorschläge aus der Region</h2><span class="muted small">' + sugg.length + '</span></div><ul class="rows">' + sugg.slice(0, 15).map(sceneRow).join('') + '</ul>' + (sugg.length > 15 ? '<div class="foot"><span>Weitere findest du über die Suche.</span></div>' : '') + '</section>';
   return h;
 }
-function viewMarketing(){
-  return '<section class="vh"><h1>Marketing</h1></section>' +
-    '<div class="empty"><h3>Kommt bald</h3><p>Hier entsteht nach und nach alles rund ums Marketing eurer Events.</p></div>';
+/* ---------- Marketing ---------- */
+const MK_TYPES = [
+  ['ankuendigung', 'Ankündigung', -28, '📣 SAVE THE DATE 📣\n\n{event}\n🗓 {tag}, {datum}\n📍 {location}\n\nMehr Infos folgen bald – markiert eure Crew! 🖤'],
+  ['lineup', 'Line-up', -21, '🔊 LINE-UP 🔊\n\n{event} – {datum} @ {location}\n\n{lineup}\n\nWir freuen uns auf euch! 💫'],
+  ['timetable', 'Timetable', -7, '⏰ TIMETABLE ⏰\n\n{event} – {tag}, {datum}\n📍 {location}\n\n{timetable}\n\nKommt pünktlich! 🙌'],
+  ['reminder', 'Reminder', -1, '‼️ MORGEN ‼️\n\n{event}\n📍 {location} · ab {zeit}\n\n{lineup}\n\nWir sehen uns auf dem Floor! 🖤'],
+  ['danke', 'Danke & Aftermovie', 2, '🙏 DANKE 🙏\n\nWas für eine Nacht bei {event}! Danke an alle, die dabei waren, an unsere Artists und an {location}.\n\nFotos und Aftermovie folgen bald 📸']
+];
+const MK_CH = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['facebook', 'Facebook'], ['whatsapp', 'WhatsApp'], ['telegram', 'Telegram'], ['website', 'Website'], ['portal', 'Partyportal'], ['newsletter', 'Newsletter'], ['sonstiges', 'Sonstiges']];
+const MK_MEDIA = [['flyer', 'Flyer'], ['video', 'Video'], ['foto', 'Fotos'], ['story', 'Story'], ['link', 'Link'], ['sonstiges', 'Sonstiges']];
+const MK_MST = { idee:['Idee', ''], arbeit:['In Arbeit', 'st-planung'], fertig:['Fertig', 'st-ok'] };
+const mkLabel = (list, k) => (list.find(x => x[0] === k) || [k, k || '–'])[1];
+S.mkTab = ['plan', 'texte', 'medien', 'kanaele'].indexOf(LS.get('mkTab')) >= 0 ? LS.get('mkTab') : 'plan';
+S.mkEv = LS.get('mkEv') || '';
+const mkCol = c => S[c] || [];
+function mkEvents(){
+  const t = today();
+  const ev = S.events.filter(e => isDate(e.date) && e.status !== 'abgesagt');
+  const up = ev.filter(e => e.date >= addDays(t, -14)).sort((a, b) => a.date.localeCompare(b.date));
+  return up.length ? up : ev.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
 }
+function mkCur(){ const L = mkEvents(); return L.find(e => e.id === S.mkEv) || L.find(e => e.date >= today()) || L[0] || null; }
+function mkFill(txt, e){
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status === 'zugesagt').sort((a, b) => {
+    const k = s => { const v = String(s || ''); return v && v < '12:00' ? '1' + v : '0' + v; }; return k(a.start).localeCompare(k(b.start)); });
+  const lineup = L.length ? L.map(l => l.name).join('\n') : '(Line-up folgt)';
+  const tt = L.length ? L.map(l => (l.start ? l.start + (l.end ? '–' + l.end : '') + '  ' : '') + l.name).join('\n') : '(Timetable folgt)';
+  const d = isDate(e.date) ? pd(e.date) : null;
+  return String(txt)
+    .replace(/\{event\}/g, e.name || 'Unser Event').replace(/\{datum\}/g, d ? pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() : '')
+    .replace(/\{tag\}/g, d ? WDL[d.getDay()] : '').replace(/\{zeit\}/g, e.start || '').replace(/\{location\}/g, e.venue || 'TBA')
+    .replace(/\{lineup\}/g, lineup).replace(/\{timetable\}/g, tt);
+}
+const mkTpl = k => { const o = mkCol('mktexte').find(x => x.id === k); const d = MK_TYPES.find(x => x[0] === k); return o && o.text ? o.text : (d ? d[3] : ''); };
+function mkRel(ds){
+  const n = Math.round((pd(ds) - pd(today())) / 864e5);
+  return n === 0 ? 'heute' : n === 1 ? 'morgen' : n === -1 ? 'gestern' : n > 0 ? 'in ' + n + ' Tagen' : 'vor ' + (-n) + ' Tagen';
+}
+function viewMarketing(){
+  const tabs = [['plan', 'Posting-Plan'], ['texte', 'Texte'], ['medien', 'Flyer & Medien'], ['kanaele', 'Kanäle']];
+  let h = '<section class="vh"><h1>Marketing</h1></section>' +
+    '<div class="subtabs" role="tablist" style="margin:0 0 14px">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.mkTab === t[0]) + '" data-mk="tab" data-v="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  if (S.mkTab === 'kanaele') return h + mkChannels();
+  const L = mkEvents(), e = mkCur();
+  if (!e) return h + '<div class="empty"><h3>Noch kein Event</h3><p>Lege zuerst unter „Events“ ein Event an. Dann planst du hier Posts, Texte und Flyer dafür.</p></div>';
+  h += '<div class="chips" style="margin:0 0 14px">' + L.map(x => '<button type="button" class="chip" aria-pressed="' + (x.id === e.id) + '" data-mk="ev" data-v="' + esc(x.id) + '">' + esc(x.name || 'Ohne Titel') + '<span class="n">' + fmtDs(x.date) + '</span></button>').join('') + '</div>';
+  if (S.mkTab === 'texte') return h + mkTexts(e);
+  if (S.mkTab === 'medien') return h + mkMedia(e);
+  return h + mkPlan(e);
+}
+function mkPlan(e){
+  const P = mkCol('mkposts').filter(p => p.eventId === e.id).sort((a, b) => String(a.date || '9').localeCompare(String(b.date || '9')));
+  const t = today(), open = P.filter(p => !p.done), od = open.filter(p => isDate(p.date) && p.date < t).length;
+  let h = '<section class="panel"><div class="panel-h"><h2>Posting-Plan</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="new-post">' + I.plus + 'Post</button>') + '</div>';
+  if (!P.length) return h + '<div style="padding:4px 14px 16px"><p class="muted" style="margin:0 0 12px">Noch keine Posts geplant. Der Standardplan legt fünf Posts an: Ankündigung (4 Wochen vorher), Line-up (3 Wochen), Timetable (1 Woche), Reminder (am Vortag) und Danke (2 Tage danach).</p>' + (S.ro ? '' : '<button class="btn btn-primary" data-mk="std-plan">Standardplan anlegen</button>') + '</div></section>';
+  h += '<p class="muted" style="margin:0 14px 10px">' + (P.length - open.length) + ' von ' + P.length + ' erledigt' + (od ? ' · <strong style="color:var(--bad)">' + od + ' überfällig</strong>' : '') + '</p><ul class="rows">';
+  h += P.map(p => {
+    const late = !p.done && isDate(p.date) && p.date < t;
+    const chs = (Array.isArray(p.channels) ? p.channels : []).map(c => '<span class="pill">' + esc(mkLabel(MK_CH, c)) + '</span>').join('');
+    return '<li><div class="task' + (p.done ? ' done' : '') + '"><button class="chk" role="checkbox" aria-checked="' + !!p.done + '" aria-label="' + esc(p.title) + ' erledigt" data-mk="toggle-post" data-id="' + esc(p.id) + '"' + (S.ro ? ' disabled' : '') + '>' + I.check + '</button>' +
+      '<button class="task-main" data-mk="edit-post" data-id="' + esc(p.id) + '"><span class="row-title">' + esc(p.title || 'Post') + '</span><span class="row-sub"><span' + (late ? ' style="color:var(--bad);font-weight:600"' : '') + '>' + (isDate(p.date) ? fmtD(p.date) + ' · ' + mkRel(p.date) : 'ohne Datum') + '</span>' + chs + '</span>' +
+      (p.notes ? '<span class="row-sub">' + esc(p.notes) + '</span>' : '') + '</button></div></li>';
+  }).join('');
+  return h + '</ul></section>';
+}
+function mkTexts(e){
+  let h = '<p class="muted" style="margin:0 0 12px">Die Texte füllen sich automatisch mit Name, Datum, Location und den zugesagten Artists von „' + esc(e.name || 'Event') + '“. Mit „Vorlage bearbeiten“ änderst du die Vorlage für alle Events.</p>';
+  MK_TYPES.forEach(t => {
+    h += '<section class="panel"><div class="panel-h"><h2>' + esc(t[1]) + '</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="edit-tpl" data-v="' + t[0] + '">Vorlage bearbeiten</button>') + '</div>' +
+      '<div style="padding:0 14px 14px"><div style="white-space:pre-wrap;background:var(--sunk);border-radius:10px;padding:12px;font-size:14.5px;line-height:1.45">' + esc(mkFill(mkTpl(t[0]), e)) + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-primary btn-sm" data-mk="copy" data-v="' + t[0] + '">Kopieren</button><button class="btn btn-sm" data-mk="wa" data-v="' + t[0] + '">WhatsApp</button><button class="btn btn-sm" data-mk="tg" data-v="' + t[0] + '">Telegram</button></div></div></section>';
+  });
+  return h;
+}
+function mkMedia(e){
+  const M = mkCol('mkmedia').filter(m => m.eventId === e.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  let h = '<section class="panel"><div class="panel-h"><h2>Flyer & Medien</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="new-media">' + I.plus + 'Medium</button>') + '</div>';
+  if (!M.length) return h + '<p class="muted" style="margin:0 14px 16px">Noch nichts angelegt. Füge Flyer, Videos, Fotos oder Links hinzu, zum Beispiel einen Google-Drive- oder Canva-Link.</p></section>';
+  return h + '<ul class="rows">' + M.map(m => {
+    const st = MK_MST[m.status] || MK_MST.idee;
+    return '<li><div class="row" style="cursor:default"><button class="task-main" data-mk="edit-media" data-id="' + esc(m.id) + '"><span class="row-title">' + esc(m.title || mkLabel(MK_MEDIA, m.kind)) + '</span><span class="row-sub"><span>' + esc(mkLabel(MK_MEDIA, m.kind)) + '</span><span class="pill ' + st[1] + '">' + st[0] + '</span>' + (m.notes ? '<span>' + esc(m.notes) + '</span>' : '') + '</span></button>' +
+      (/^https?:\/\//.test(m.url || '') ? '<a class="btn btn-sm" href="' + esc(m.url) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>';
+  }).join('') + '</ul></section>';
+}
+function mkChannels(){
+  const C = mkCol('mkchannels').slice().sort((a, b) => (Number(b.followers) || 0) - (Number(a.followers) || 0));
+  const total = C.reduce((s, c) => s + (Number(c.followers) || 0), 0);
+  let h = '<section class="panel"><div class="panel-h"><h2>Kanäle</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-mk="new-ch">' + I.plus + 'Kanal</button>') + '</div>';
+  if (!C.length) return h + '<p class="muted" style="margin:0 14px 16px">Trag ein, wo ihr Events bewerbt: Instagram, TikTok, WhatsApp-Gruppen, Telegram, Partyamt, goabase … mit der aktuellen Zahl an Followern oder Mitgliedern.</p></section>';
+  h += '<p class="muted" style="margin:0 14px 10px">Reichweite gesamt: <strong style="color:var(--ink)">' + total.toLocaleString('de-DE') + '</strong></p><ul class="rows">';
+  return h + C.map(c => {
+    const link = /^https?:\/\//.test(c.handle || '') ? c.handle : '';
+    return '<li><div class="row" style="cursor:default"><button class="task-main" data-mk="edit-ch" data-id="' + esc(c.id) + '"><span class="row-title">' + esc(c.name || mkLabel(MK_CH, c.kind)) + '</span><span class="row-sub"><span>' + esc(mkLabel(MK_CH, c.kind)) + '</span>' + (c.handle && !link ? '<span>' + esc(c.handle) + '</span>' : '') + (isDate(c.updated) ? '<span>Stand ' + fmtDs(c.updated) + c.updated.slice(0, 4) + '</span>' : '') + '</span></button>' +
+      '<strong style="font-variant-numeric:tabular-nums">' + (Number(c.followers) || 0).toLocaleString('de-DE') + '</strong>' +
+      (link ? '<a class="btn btn-sm" href="' + esc(link) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>';
+  }).join('') + '</ul></section>';
+}
+const mkSet = (c, id, data, ok) => save(() => db.collection(c).doc(id).set(data), ok);
+const mkDel = (c, id, ok) => save(() => db.collection(c).doc(id).delete(), ok);
+const mkOpt = (list, sel) => list.map(x => '<option value="' + x[0] + '"' + (x[0] === sel ? ' selected' : '') + '>' + esc(x[1]) + '</option>').join('');
+const mkEnd = (del) => '<p class="err" id="mk-err" hidden></p><div class="actions">' + (del ? '<button type="button" class="btn btn-ghost" id="mk-del" style="color:var(--bad)">Löschen</button><span class="spacer"></span>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div>';
+function mkErr(msg){ const p = $('#mk-err'); if (p) { p.textContent = msg; p.hidden = false; } }
+function mkConfirmDel(c, id, what){
+  if (!confirm(what + ' löschen?')) return;
+  mkDel(c, id, 'Gelöscht.').then(ok => { if (ok) closeSheet(); });
+}
+function mkPostForm(p, e){
+  const it = p || { title:'', date:'', channels:['instagram'], notes:'', done:false };
+  const ch = Array.isArray(it.channels) ? it.channels : [];
+  showSheet('<h2 id="sheet-title">' + (p ? 'Post bearbeiten' : 'Neuer Post') + '</h2><form class="f" id="mk-form" novalidate>' +
+    field('mk-title', 'Was wird gepostet?', '<input id="mk-title" maxlength="80" autocomplete="off" placeholder="z. B. Line-up-Reveal" value="' + esc(it.title) + '">') +
+    field('mk-date', 'Datum', '<input id="mk-date" type="date" value="' + esc(it.date || '') + '">') +
+    '<div class="field"><label>Kanäle</label><div class="chips">' + MK_CH.map(c => '<label class="chip" style="gap:6px"><input type="checkbox" name="mkch" value="' + c[0] + '"' + (ch.indexOf(c[0]) >= 0 ? ' checked' : '') + '>' + esc(c[1]) + '</label>').join('') + '</div></div>' +
+    field('mk-notes', 'Notiz', '<textarea id="mk-notes" rows="2" maxlength="300" placeholder="z. B. Reel mit Snippet von Deku">' + esc(it.notes || '') + '</textarea>') +
+    '<label class="check"><input type="checkbox" id="mk-done"' + (it.done ? ' checked' : '') + '> Erledigt</label>' + mkEnd(!!p) + '</form>');
+  $('#mk-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const title = $('#mk-title').value.trim(), date = $('#mk-date').value;
+    if (!title) return mkErr('Gib an, was gepostet wird.');
+    const data = Object.assign({}, p || { eventId:e.id, typ:'eigen', createdAt:Date.now() }, { title, date, notes:$('#mk-notes').value.trim(), done:$('#mk-done').checked,
+      channels:[...document.querySelectorAll('input[name=mkch]:checked')].map(x => x.value) });
+    delete data.id;
+    if (await mkSet('mkposts', p ? p.id : newId('mp'), data, p ? 'Gespeichert.' : 'Post angelegt.')) closeSheet();
+  };
+  if (p) $('#mk-del').onclick = () => mkConfirmDel('mkposts', p.id, 'Diesen Post');
+}
+function mkMediaForm(m, e){
+  const it = m || { title:'', kind:'flyer', url:'', status:'idee', notes:'' };
+  showSheet('<h2 id="sheet-title">' + (m ? 'Medium bearbeiten' : 'Neues Medium') + '</h2><form class="f" id="mk-form" novalidate>' +
+    '<div class="two">' + field('mk-kind', 'Art', '<select id="mk-kind">' + mkOpt(MK_MEDIA, it.kind) + '</select>') + field('mk-st', 'Status', '<select id="mk-st">' + mkOpt(Object.keys(MK_MST).map(k => [k, MK_MST[k][0]]), it.status) + '</select>') + '</div>' +
+    field('mk-title', 'Titel', '<input id="mk-title" maxlength="80" autocomplete="off" placeholder="z. B. Hauptflyer quer" value="' + esc(it.title) + '">') +
+    field('mk-url', 'Link', '<input id="mk-url" type="url" inputmode="url" maxlength="500" autocomplete="off" placeholder="https://drive.google.com/…" value="' + esc(it.url || '') + '">') +
+    field('mk-notes', 'Notiz', '<textarea id="mk-notes" rows="2" maxlength="300" placeholder="z. B. macht Lena bis Freitag">' + esc(it.notes || '') + '</textarea>') + mkEnd(!!m) + '</form>');
+  $('#mk-form').onsubmit = async ev => {
+    ev.preventDefault();
+    let url = $('#mk-url').value.trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    const kind = $('#mk-kind').value, title = $('#mk-title').value.trim() || mkLabel(MK_MEDIA, kind);
+    const data = Object.assign({}, m || { eventId:e.id, createdAt:Date.now() }, { kind, title, url, status:$('#mk-st').value, notes:$('#mk-notes').value.trim() });
+    delete data.id;
+    if (await mkSet('mkmedia', m ? m.id : newId('mm'), data, m ? 'Gespeichert.' : 'Medium angelegt.')) closeSheet();
+  };
+  if (m) $('#mk-del').onclick = () => mkConfirmDel('mkmedia', m.id, 'Dieses Medium');
+}
+function mkChForm(c){
+  const it = c || { name:'', kind:'instagram', handle:'', followers:'', notes:'' };
+  showSheet('<h2 id="sheet-title">' + (c ? 'Kanal bearbeiten' : 'Neuer Kanal') + '</h2><form class="f" id="mk-form" novalidate>' +
+    '<div class="two">' + field('mk-kind', 'Art', '<select id="mk-kind">' + mkOpt(MK_CH, it.kind) + '</select>') + field('mk-fol', 'Follower / Mitglieder', '<input id="mk-fol" type="number" inputmode="numeric" min="0" step="1" value="' + esc(it.followers === '' ? '' : String(Number(it.followers) || 0)) + '">') + '</div>' +
+    field('mk-title', 'Name', '<input id="mk-title" maxlength="60" autocomplete="off" placeholder="z. B. @ravebuero oder WhatsApp-Gruppe Stammgäste" value="' + esc(it.name) + '">') +
+    field('mk-url', 'Link oder Handle', '<input id="mk-url" maxlength="300" autocomplete="off" placeholder="https://instagram.com/…" value="' + esc(it.handle || '') + '">') +
+    field('mk-notes', 'Notiz', '<textarea id="mk-notes" rows="2" maxlength="300" placeholder="z. B. wer Admin ist">' + esc(it.notes || '') + '</textarea>') + mkEnd(!!c) + '</form>');
+  $('#mk-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const kind = $('#mk-kind').value, name = $('#mk-title').value.trim() || mkLabel(MK_CH, kind);
+    const fol = Math.max(0, Math.round(Number($('#mk-fol').value) || 0));
+    const changed = !c || Number(c.followers) !== fol;
+    const data = Object.assign({}, c || { createdAt:Date.now() }, { kind, name, handle:$('#mk-url').value.trim(), followers:fol, notes:$('#mk-notes').value.trim() }, changed ? { updated:today() } : {});
+    delete data.id;
+    if (await mkSet('mkchannels', c ? c.id : newId('mc'), data, c ? 'Gespeichert.' : 'Kanal angelegt.')) closeSheet();
+  };
+  if (c) $('#mk-del').onclick = () => mkConfirmDel('mkchannels', c.id, 'Diesen Kanal');
+}
+function mkTplForm(k){
+  const t = MK_TYPES.find(x => x[0] === k); if (!t) return;
+  const own = mkCol('mktexte').find(x => x.id === k);
+  showSheet('<h2 id="sheet-title">Vorlage: ' + esc(t[1]) + '</h2><form class="f" id="mk-form" novalidate>' +
+    field('mk-tpl', 'Text', '<textarea id="mk-tpl" rows="10" maxlength="3000">' + esc(mkTpl(k)) + '</textarea>') +
+    '<p class="hint">Platzhalter: <span class="ph">{event}</span> <span class="ph">{datum}</span> <span class="ph">{tag}</span> <span class="ph">{zeit}</span> <span class="ph">{location}</span> <span class="ph">{lineup}</span> <span class="ph">{timetable}</span></p>' +
+    '<p class="err" id="mk-err" hidden></p><div class="actions">' + (own ? '<button type="button" class="btn btn-ghost" id="mk-reset">Standard wiederherstellen</button><span class="spacer"></span>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div></form>');
+  $('#mk-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const text = $('#mk-tpl').value.trim(); if (!text) return mkErr('Die Vorlage darf nicht leer sein.');
+    if (await mkSet('mktexte', k, { text }, 'Vorlage gespeichert.')) closeSheet();
+  };
+  if (own) $('#mk-reset').onclick = async () => { if (await mkDel('mktexte', k, 'Standard wiederhergestellt.')) closeSheet(); };
+}
+async function mkStdPlan(e){
+  if (!isDate(e.date)) { toast('Das Event hat noch kein Datum.'); return; }
+  const now = Date.now();
+  await save(async () => {
+    const b = db.batch();
+    MK_TYPES.forEach((t, i) => b.set(db.collection('mkposts').doc(newId('mp')), { eventId:e.id, typ:t[0], title:t[1], date:addDays(e.date, t[2]), channels:['instagram'], notes:'', done:false, createdAt:now + i }));
+    await b.commit();
+  }, 'Standardplan angelegt.');
+}
+document.addEventListener('click', async ev => {
+  const el = ev.target.closest('[data-mk]'); if (!el) return;
+  const a = el.dataset.mk, v = el.dataset.v, id = el.dataset.id, e = mkCur();
+  if (a === 'tab') { S.mkTab = v; LS.set('mkTab', v); render(); return; }
+  if (a === 'ev') { S.mkEv = v; LS.set('mkEv', v); render(); return; }
+  if (a === 'copy' || a === 'wa' || a === 'tg') {
+    if (!e) return; const txt = mkFill(mkTpl(v), e);
+    if (a === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener'); return; }
+    if (a === 'tg') { window.open('https://t.me/share/url?url=' + encodeURIComponent(' ') + '&text=' + encodeURIComponent(txt), '_blank', 'noopener'); return; }
+    toast(await copyText(txt) ? 'Text kopiert.' : 'Kopieren hat nicht geklappt.'); return;
+  }
+  if (S.ro) return;
+  if (a === 'std-plan' && e) mkStdPlan(e);
+  else if (a === 'new-post' && e) mkPostForm(null, e);
+  else if (a === 'edit-post') { const p = mkCol('mkposts').find(x => x.id === id); if (p) mkPostForm(p, e); }
+  else if (a === 'toggle-post') { const p = mkCol('mkposts').find(x => x.id === id); if (p) save(() => db.collection('mkposts').doc(id).update({ done:!p.done })); }
+  else if (a === 'new-media' && e) mkMediaForm(null, e);
+  else if (a === 'edit-media') { const m = mkCol('mkmedia').find(x => x.id === id); if (m) mkMediaForm(m, e); }
+  else if (a === 'new-ch') mkChForm(null);
+  else if (a === 'edit-ch') { const c = mkCol('mkchannels').find(x => x.id === id); if (c) mkChForm(c); }
+  else if (a === 'edit-tpl') mkTplForm(v);
+});
 function viewAssess(){
   const t = today();
   const every = S.blockers.filter(b => isSoft(b) && !isBurn(b) && !isFest(b) && isDate(b.from) && isDate(b.to) && b.to >= t);
