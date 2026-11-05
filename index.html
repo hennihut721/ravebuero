@@ -1023,6 +1023,18 @@ function renderProfil(msg, err){
   $('#pf-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
 }
 window.openProfil = openProfil;
+// Die früheren Vorlagen einmalig als eigene Setups ins Verzeichnis legen (feste IDs, damit nichts doppelt entsteht)
+async function techSaat(){
+  try {
+    const m = await db.collection('meta').doc('techsaat').get();
+    if (m.exists) return;
+    const da = (await db.collection('techsets').get()).docs.map(d => (d.data().name || '').trim().toLowerCase());
+    const b = db.batch();
+    TECH_PRESETS.forEach((p, i) => { if (da.indexOf(p[0].toLowerCase()) < 0) b.set(db.collection('techsets').doc('ts-vorlage-' + (i + 1)), { name:p[0], tech:p[1], createdAt:Date.now() + i }); });
+    b.set(db.collection('meta').doc('techsaat'), { at:Date.now() });
+    await b.commit();
+  } catch (e) { console.error(e); }
+}
 async function altImport(){
   const ib = $('#pf-imp');
   if (!db || !user || !ib) return;
@@ -1058,7 +1070,7 @@ async function init(){
       schreiben: async (ops) => { let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = db.batch(); ops.slice(i, i + 400).forEach(o => { const r = db.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
     };
     const pb = $('#fb-prof'); if (pb) { pb.hidden = false; $('#fb-av').textContent = (u.email || '?').charAt(0).toUpperCase(); }
-    if (!fbStarted) { fbStarted = true; subscribe(); }
+    if (!fbStarted) { fbStarted = true; subscribe(); techSaat(); }
     render();
   });
 }
@@ -1555,7 +1567,7 @@ function venueForm(e){
 }
 function setChoices(){
   const own = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).map(t => [t.id, t.name, t.tech, true]);
-  return own.concat(TECH_PRESETS.filter(p => !own.some(o => (o[1] || '').toLowerCase() === p[0].toLowerCase())).map((p, i) => ['pre' + i, p[0], p[1], false]));
+  return own;
 }
 function floorForm(evId, item){
   const v = item || { name:floorsOf(evId).length ? 'Floor ' + (floorsOf(evId).length + 1) : 'Mainfloor' };
@@ -1575,7 +1587,7 @@ function techsetsSheet(){
   const own = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
   showSheet('<h2 id="sheet-title">Technik-Setups</h2><p class="hint" style="margin:0 0 12px">Gespeicherte Setups könnt ihr bei jedem Floor mit einem Tipp auswählen. Neue Setups speicherst du beim Bearbeiten eines Floors mit „Als Setup speichern“.</p>' +
     (own.length ? '<ul class="rows">' + own.map(t => '<li class="as-row"><div class="as-main" style="cursor:default"><span class="row-title">' + esc(t.name) + '</span><span class="row-sub">' + techLines(t.tech).map(esc).join(' · ') + '</span></div><div class="as-bottom"><span></span><button class="btn btn-ghost btn-sm" data-act="del" data-kind="techset" data-id="' + esc(t.id) + '">Löschen</button></div></li>').join('') + '</ul>'
-      : '<p class="pad">Noch keine eigenen Setups. Bis dahin stehen die Vorlagen CDJ Standard, CDJ + Vinyl, Rotary und Live-Act zur Auswahl.</p>') +
+      : '<p class="pad">Noch keine Setups. Lege sie im Reiter „Verzeichnis“ an.</p>') +
     '<div class="actions"><button class="btn" data-act="close-sheet">Schließen</button></div>');
 }
 function briefPanel(e, L){
@@ -2670,10 +2682,8 @@ function techDirForm(t){
   const x = t || {};
   showSheet('<h2 id="sheet-title">' + (t ? esc(t.name) : 'Neues Technik-Setup') + '</h2><form class="f" id="vz-form" novalidate>' +
     field('ts-name', 'Name', '<input id="ts-name" maxlength="60" autocomplete="off" placeholder="z. B. CDJ Standard" value="' + esc(x.name || '') + '">') +
-    (t ? '' : '<div class="field"><label>Vorlage übernehmen</label><div class="chips">' + TECH_PRESETS.map((p, i) => '<button type="button" class="chip" data-tsp="' + i + '">' + esc(p[0]) + '</button>').join('') + '</div></div>') +
     field('ts-tech', 'Technik (eine Zeile pro Gerät)', '<textarea id="ts-tech" rows="7" maxlength="2000" placeholder="z. B. 3× Pioneer CDJ-3000">' + esc(x.tech || '') + '</textarea>') +
     vzEnd(!!t) + '</form>');
-  document.querySelectorAll('[data-tsp]').forEach(b => b.onclick = () => { const p = TECH_PRESETS[+b.getAttribute('data-tsp')]; if (!$('#ts-name').value.trim()) $('#ts-name').value = p[0]; $('#ts-tech').value = p[1]; });
   vzWire('techsets', t, 'Dieses Setup', () => {
     const name = $('#ts-name').value.trim().slice(0, 60); if (!name) return 'Gib dem Setup einen Namen.';
     const tech = techLines($('#ts-tech').value).join('\n'); if (!tech) return 'Trag mindestens ein Gerät ein.';
