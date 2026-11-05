@@ -702,6 +702,11 @@ const sum = (arr, f) => arr.reduce((s, x) => s + (num(f(x)) || 0), 0);
 const FEST_TRIGGER = 'trig_01DXuMkxMSkYBowCcCRGdnLW', SYNC_TRIGGER = 'trig_01JoG4CwLWkUGiZrwfs2CXuZ';
 let mcpP = null;
 const getMcp = () => Promise.resolve(null);
+const CLAUDE_TRIGGER = 'trig_01SdbBNUR8QSU5q5dHAQQ6D3';
+function claudeStart(modus){
+  const txt = 'RaveBüro: Bitte starte die geplante Aufgabe ' + CLAUDE_TRIGGER + ' („RaveBüro: Abgleich“) jetzt mit fire_trigger und dem Text „Modus: ' + modus + '“.';
+  window.open('https://claude.ai/new?q=' + encodeURIComponent(txt), '_blank', 'noopener');
+}
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const timeKey = t => { if (!t || !/^\d{1,2}:\d{2}/.test(t)) return 99999; const [h, m] = t.split(':').map(Number); return h * 60 + m + (h < 12 ? 1440 : 0); };
 const LS = {
@@ -986,6 +991,11 @@ async function init(){
     const z = await checkMember(u);
     if (z !== 'ok') { loginView(z === 'kein' ? 'Angemeldet als ' + u.email + ', aber noch nicht freigeschaltet. Ein Mitglied muss diese Adresse in der App unter „Mitglieder“ eintragen.' : 'Verbindung fehlgeschlagen: ' + z.slice(7), true); return; }
     user = u; db = firebase.firestore(); S.canWrite = true; S.owner = false; S.ro = false;
+    window.RB = {
+      bereit: () => !!db && !!user,
+      lesen: async (cols) => { const out = {}; for (const c of cols) { const sn = await db.collection(c).get(); out[c] = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } return out; },
+      schreiben: async (ops) => { let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = db.batch(); ops.slice(i, i + 400).forEach(o => { const r = db.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
+    };
     if (!fbStarted) { fbStarted = true; subscribe(); }
     render();
   });
@@ -1866,7 +1876,7 @@ function assessRow(b){
 function viewLocal(h){
   const t = today(), meta = S.meta.find(m => m.id === 'sync');
   const syncTxt = meta && meta.lastRun && fmtStamp(meta.lastRun) ? 'Zuletzt abgeglichen am ' + fmtStamp(meta.lastRun) + '.' + (meta.failed && [].concat(meta.failed).length ? ' Diesmal nicht erreichbar: ' + esc([].concat(meta.failed).join(', ')) + '.' : '') + (meta.note ? ' ' + esc(meta.note) : '') : 'Der erste Abgleich läuft noch.';
-  h += lead('partys', 'Partys der Veranstalter und Locations, die ihr beobachtet. ' + syncTxt, 'Der Abgleich holt sie jeden Montag früh aus Partyamt, goabase und weiteren Quellen. Was ihr auf „Meiden“ setzt, zählt wie ein Sperrtermin. Offene Partys geben im Terminfinder einen Abzug: in Darmstadt den vollen, je weiter weg, desto weniger. Macht ihr irgendwo extern mit, tippt auf „Wir machen mit“, dann plant ihr eure Beteiligung als eigenes Event. Wen ihr beobachtet, legt ihr unter <a href="#veranstalter">Veranstalter</a> fest.');
+  h += lead('partys', 'Partys der Veranstalter und Locations, die ihr beobachtet. ' + syncTxt, 'Mit „Abgleichen“ holt Claude sie über deinen Mac aus Partyamt, goabase und weiteren Quellen (Mac an, Claude-App offen). Was ihr auf „Meiden“ setzt, zählt wie ein Sperrtermin. Offene Partys geben im Terminfinder einen Abzug: in Darmstadt den vollen, je weiter weg, desto weniger. Macht ihr irgendwo extern mit, tippt auf „Wir machen mit“, dann plant ihr eure Beteiligung als eigenes Event. Wen ihr beobachtet, legt ihr unter <a href="#veranstalter">Veranstalter</a> fest.');
   h += kindBar('partys');
   if (waiting('local')) return h + loading();
   const all = S.local.filter(l => isDate(l.date) && l.date >= t);
@@ -1933,7 +1943,7 @@ function fsResults(){
 async function fsFire(id, q){
   const m = await getMcp();
   const fail = msg => db && db.doc('fsearch/' + id).update({ status:'fehler', note:msg }).catch(() => {});
-  if (!m) return fail('Die automatische Websuche wird gerade auf die neue Datenbank umgestellt. Trag Festivals bis dahin von Hand ein.');
+  if (!m) { claudeStart('Festivals'); toast('Claude öffnet sich: Nachricht abschicken, dann sucht Claude in 1–3 Minuten.'); return; }
   try { await m.callTool('Claude Code Remote', 'fire_trigger', { trigger_id:FEST_TRIGGER, text:'Neuer Suchauftrag: fsearch/' + id + ' – Suchbegriff: ' + q }); }
   catch (e) {
     const c = e && e.code;
@@ -2565,10 +2575,10 @@ document.addEventListener('click', ev => {
       if (Object.keys(up).length) save(() => db.doc('blockers/' + b.id).update(up), (b.name || 'Festival') + ' ergänzt'); break; }
     case 'sync-now': {
       if (syncState().running) break;
-      save(() => db.collection('meta').doc('syncreq').set({ at:Date.now(), err:'' }), 'Abgleich gestartet. Neue Partys erscheinen in ein paar Minuten.').then(async ok => {
+      save(() => db.collection('meta').doc('syncreq').set({ at:Date.now(), err:'' }), 'Claude öffnet sich: Nachricht abschicken, dann läuft der Abgleich über deinen Mac.').then(async ok => {
         if (!ok) return;
         const m = await getMcp(), fail = msg => { toast(msg); db.collection('meta').doc('syncreq').set({ at:0, err:msg }).catch(() => {}); };
-        if (!m) return fail('Der automatische Abgleich wird gerade auf die neue Datenbank umgestellt.');
+        if (!m) { claudeStart('Partys'); return; }
         try { await m.callTool('Claude Code Remote', 'fire_trigger', { trigger_id:SYNC_TRIGGER, text:'Manueller Abgleich aus der App: Führe einen kleinen Lauf aus, außer meta/sync hat noch keinen lastRun.' }); }
         catch (e) { const c = e && e.code; fail(c === 'not_in_manifest' || c === 'approval_required' || c === 'consent_required' ? 'Der Abgleich braucht dein Okay für die Verbindung „Claude Code Remote“.' : c === 'tool_error' ? 'Der Abgleich ließ sich nicht starten. Er läuft nur über Henriks Konto.' : 'Der Abgleich ließ sich gerade nicht starten. Versuch es gleich noch einmal.'); }
       });
