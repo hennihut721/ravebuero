@@ -982,10 +982,11 @@ async function checkMember(u){
   } catch (e) { return e && e.code === 'permission-denied' ? 'kein' : 'fehler:' + (e && e.message || e); }
 }
 /* ---------- Profil & Mitglieder ---------- */
-let profEmails = [];
+let profEmails = [], profStand = '';
 async function openProfil(){
   if (!db || !user) return;
   try { const d = await db.collection('config').doc('mitglieder').get(); profEmails = ((d.exists && d.data().emails) || []).slice().sort(); } catch (e) { profEmails = [user.email]; }
+  try { const a = await db.collection('altdaten').doc('aktuell').get(); profStand = a.exists && a.data().stand ? fmtStamp(a.data().stand) : ''; } catch (e) {}
   renderProfil();
 }
 function renderProfil(msg, err){
@@ -998,7 +999,7 @@ function renderProfil(msg, err){
     '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + profEmails.map(m =>
       '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span></span>' +
       (m === me ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
-    '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt alle Daten aus der bisherigen Claude-Version (Stand 05.11.2026). Einträge mit derselben ID werden auf den alten Stand gesetzt, alles andere bleibt.</p>' +
+    '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt alle Daten aus der bisherigen Claude-Version, immer mit dem neuesten Stand (wird jeden Freitagabend aktualisiert)' + (profStand ? ', zuletzt ' + esc(profStand) : '') + '. Einträge mit derselben ID werden auf den alten Stand gesetzt, alles andere bleibt.</p>' +
     '<button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
   showSheet(h);
@@ -1023,10 +1024,10 @@ window.openProfil = openProfil;
 async function altImport(){
   const ib = $('#pf-imp');
   if (!db || !user || !ib) return;
-  if (!confirm('Alle alten Daten aus der Claude-Version (Stand 05.11.2026) importieren?\n\nEinträge mit derselben ID werden auf den alten Stand zurückgesetzt, alles andere bleibt.')) return;
+  if (!confirm('Alle Daten aus der alten Claude-Version (neuester Stand) importieren?\n\nEinträge mit derselben ID werden auf den alten Stand zurückgesetzt, alles andere bleibt.')) return;
   ib.disabled = true; ib.textContent = 'Importiere …';
   try {
-    const ad = await db.collection('altdaten').doc('stand-2026-11-05').get();
+    const ad = await db.collection('altdaten').doc('aktuell').get();
     if (!ad.exists || !ad.data().json) throw new Error('Die alten Daten liegen noch nicht bereit. Öffne einmal die Android-App, dann klappt es hier.');
     const data = JSON.parse(ad.data().json);
     const ops = [];
