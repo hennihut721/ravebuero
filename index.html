@@ -2571,6 +2571,28 @@ document.addEventListener('click', async ev => {
   else if (a === 'insta-set') mkInstaSet();
   else if (a === 'insta') { const p = mkCol('mkposts').find(x => x.id === id); if (p && e) mkInstaSheet(p, e); }
 });
+/* ---------- Allgemeine Suche im Umfeld ---------- */
+function umSuche(q){
+  const t = today(), k = q.toLowerCase(), hit = (...xs) => xs.some(x => String(x || '').toLowerCase().indexOf(k) >= 0);
+  let h = '';
+  // Partys aus allen Quellen (auch nicht beobachtete)
+  const P = S.localAll.filter(l => isDate(l.date) && l.date >= t && hit(l.title, l.venue, l.city, l.match, l.source)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 40);
+  h += '<section class="panel"><div class="panel-h"><h2>Partys in der Region</h2><span class="muted small">' + P.length + (P.length === 40 ? '+' : '') + '</span></div>' +
+    (P.length ? '<ul class="rows">' + P.map(l => { const u = safeUrl(l.url);
+      return '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.title || 'Party') + '</span><span class="row-sub"><span class="num">' + fmtD(l.date) + (l.time ? ' · ' + esc(l.time) : '') + '</span>' + [l.venue, l.city].filter(Boolean).map(x => '<span>' + esc(x) + '</span>').join('') + (l.match ? '<span class="pill">' + esc(l.match) + '</span>' : '') + '</span></span>' + (u ? '<a class="btn btn-sm" href="' + esc(u) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>'; }).join('') + '</ul>'
+      : '<p class="pad">Keine kommende Party gefunden. Partys kommen über den Abgleich am Freitagabend aus euren Quellen. Fehlt ein Veranstalter oder eine Location, leg sie unter <a href="#veranstalter">Veranstalter</a> an.</p>') + '</section>';
+  // Festivals und Burns aus eurer Liste
+  const F = S.blockers.filter(b => (isFest(b) || isBurn(b)) && isDate(b.to) && b.to >= t && hit(b.name, b.place, b.country, b.notes, b.series)).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 40);
+  h += '<section class="panel"><div class="panel-h"><h2>Festivals & Burns</h2><span class="muted small">' + F.length + '</span></div>' + (F.length ? '<ul class="rows">' + F.map(burnRow).join('') + '</ul>' : '<p class="pad">Nichts in eurer Liste.</p>') + '</section>';
+  // Treffer aus früheren Web-Suchen
+  const W = [];
+  S.fsearch.forEach(x => (Array.isArray(x.results) ? x.results : []).forEach(r => { if (r && r.name && hit(r.name, r.place, r.country, r.note) && !W.some(w => w.name === r.name)) W.push(r); }));
+  if (W.length) h += '<section class="panel"><div class="panel-h"><h2>Aus euren Web-Suchen</h2><span class="muted small">' + W.length + '</span></div><ul class="rows">' + W.slice(0, 20).map(r => { const u = safeUrl(r.url), dt = isDate(r.from) && isDate(r.to) ? fmtRange(r.from, r.to) : 'Termin offen';
+    return '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(String(r.name).slice(0, 120)) + '</span><span class="row-sub"><span class="num">' + dt + '</span>' + [r.place, r.country].filter(Boolean).map(x => '<span>' + esc(x) + '</span>').join('') + (fsHave(r) ? '<span class="pill st-ok">Schon drin</span>' : '') + '</span></span>' + (u ? '<a class="btn btn-sm" href="' + esc(u) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>'; }).join('') + '</ul></section>';
+  // Neue Web-Suche nach Festivals
+  if (!S.ro) h += '<section class="panel"><div class="panel-h"><h2>Im Web suchen</h2></div><p class="pad" style="margin-bottom:0">Sucht Festivals aller Art zu „' + esc(q) + '“ – Name, Genre, Land oder Monat. Die Ergebnisse stehen dann unter „Festivals“ und lassen sich mit einem Tipp übernehmen.</p><div style="padding:10px 14px 16px"><button class="btn btn-primary" data-act="um-web">' + I.search + 'Festivals suchen: „' + esc(q.slice(0, 40)) + '“</button></div></section>';
+  return h;
+}
 function viewAssess(){
   const t = today();
   const every = S.blockers.filter(b => isSoft(b) && !isBurn(b) && !isFest(b) && isDate(b.from) && isDate(b.to) && b.to >= t);
@@ -2578,6 +2600,8 @@ function viewAssess(){
   const v = ['sperr', 'fest', 'zeitraeume', 'burns', 'partys'].indexOf(S.asView) >= 0 ? S.asView : 'partys';
   const add = { sperr:['new-blocker', 'Sperrtermin'], fest:['new-fest', 'Festival'], zeitraeume:['new-soft', 'Ferien'], burns:['new-burn', 'Burn'] }[v];
   let h = '<section class="vh"><h1>Umfeld</h1>' + (v === 'partys' ? '<a class="btn" href="#veranstalter">Veranstalter</a>' : S.ro ? '' : '<button class="btn btn-primary" data-act="' + add[0] + '">' + I.plus + add[1] + '</button>') + '</section>';
+  h += '<div class="search" role="search" style="margin:0 0 14px">' + I.search + '<input id="um-q" type="search" maxlength="120" autocomplete="off" placeholder="Partys, Festivals, Burns, Orte suchen …" aria-label="Im Umfeld suchen" value="' + esc(S.umQ || '') + '"></div>';
+  if ((S.umQ || '').trim().length >= 2) return h + umSuche(S.umQ.trim());
   h += '<div class="seg view seg-4" role="group" aria-label="Bereich">' + [['partys', 'Partys'], ['fest', 'Festivals'], ['zeitraeume', 'Ferien'], ['burns', 'Burns'], ['sperr', 'Sperrtermine']].map(x => '<button data-act="as-view" data-v="' + x[0] + '" aria-pressed="' + (v === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
   if (v === 'sperr') return viewBlockers(h);
   if (v === 'fest') return viewFests(h);
@@ -2847,7 +2871,7 @@ document.addEventListener('click', ev => {
   else if (a === 'vz-new-loc') venueDirForm(null);
   else if (a === 'vz-new-tech') techDirForm(null);
 });
-document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } });
+document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } else if (ev.target.id === 'um-q') { S.umQ = ev.target.value; render(); } });
 function artistForm(a){
   const v = a || { role:'DJ' };
   const gigs = a ? artistGigs(a).map(l => ({ l, e:S.events.find(e => e.id === l.eventId) })).filter(x => x.e).sort((x, y) => (y.e.date || '').localeCompare(x.e.date || '')) : [];
@@ -3348,6 +3372,13 @@ document.addEventListener('click', ev => {
     case 'rate': { const x = find('blockers'); if (x && rating(x) !== v) save(() => db.doc('blockers/' + id).update({ rating:v }), v === 'meiden' ? 'Zählt jetzt als Sperrtermin' : RATING[v].label); break; }
     case 'del': arm(el, () => doDelete(el.dataset.kind, id)); break;
     case 'invite-ok': LS.set('invite-ok', '1'); render(); break;
+    case 'um-web': {
+      const q = (S.umQ || '').trim().slice(0, 120); if (q.length < 2) break;
+      if (S.fsearch.some(x => (x.status === 'offen' || x.status === 'läuft') && x.q === q)) { toast('Diese Suche läuft schon.'); break; }
+      const id = newId('fs');
+      save(() => db.collection('fsearch').doc(id).set({ q, status:'offen', at:Date.now() }), 'Suche gestartet').then(ok => { if (ok) { S.umQ = ''; S.asView = 'fest'; LS.set('asView', 'fest'); render(); fsFire(id, q); } });
+      break;
+    }
     case 'close-sheet': closeSheet(); break;
   }
 });
