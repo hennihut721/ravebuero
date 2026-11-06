@@ -704,7 +704,7 @@ const sum = (arr, f) => arr.reduce((s, x) => s + (num(f(x)) || 0), 0);
 const FEST_TRIGGER = 'trig_01DXuMkxMSkYBowCcCRGdnLW', SYNC_TRIGGER = 'trig_01JoG4CwLWkUGiZrwfs2CXuZ';
 let mcpP = null;
 const getMcp = () => Promise.resolve(null);
-const CLAUDE_TRIGGER = 'trig_01SdbBNUR8QSU5q5dHAQQ6D3';
+const CLAUDE_TRIGGER = 'trig_01SdbBNUR8QSU5q5dHAQQ6D3', ABGLEICH_MAIL = 'henrik.ortkamp@gmail.com';
 function claudeStart(modus){
   const txt = 'RaveBüro: Bitte starte die geplante Aufgabe ' + CLAUDE_TRIGGER + ' („RaveBüro: Abgleich“) jetzt mit fire_trigger und dem Text „Modus: ' + modus + '“.';
   window.open('https://claude.ai/new?q=' + encodeURIComponent(txt), '_blank', 'noopener');
@@ -1264,7 +1264,7 @@ function viewEvents(){
   const dated = S.events.filter(e => isDate(e.date));
   const nUp = dated.filter(e => e.date >= t).length, nPast = dated.length - nUp;
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
-  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
+  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + (meineMail() === ABGLEICH_MAIL ? '<button class="btn" data-act="sync-jetzt" title="Partys & Festivals jetzt abgleichen">' + I.sync + 'Abgleich</button>' : '') + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
   if (S.owner && !LS.get('invite-ok')) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
   if (up && !waiting('events')) h += dashboard(nextEvent());
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
@@ -3487,6 +3487,13 @@ document.addEventListener('click', ev => {
     case 'fs-merge': { const x = S.fsearch.find(q => q.id === id), r = x && Array.isArray(x.results) ? x.results[int(v)] : null, b = r && fsMatch(r); if (!b) break;
       const up = {}; if (!b.url && safeUrl(r.url)) up.url = safeUrl(r.url).slice(0, 300); if (!b.place && r.place) up.place = String(r.place).slice(0, 120); if (!b.country && r.country) up.country = String(r.country).slice(0, 60); if (!int(b.km) && int(r.km) > 0) up.km = int(r.km);
       if (Object.keys(up).length) save(() => db.doc('blockers/' + b.id).update(up), (b.name || 'Festival') + ' ergänzt'); break; }
+    case 'sync-jetzt': {
+      // Startet den Abgleich sofort: Claude öffnet sich mit fertiger Nachricht, die die geplante Aufgabe jetzt ausführt
+      const txt = 'RaveBüro: Bitte führe die geplante Aufgabe ' + CLAUDE_TRIGGER + ' („RaveBüro: Abgleich (Partys & Festivals)“) jetzt sofort mit fire_trigger aus, mit dem Text „Manueller Abgleich aus der App“. Mein Mac und die Claude-App sind an.';
+      window.open('https://claude.ai/new?q=' + encodeURIComponent(txt), '_blank', 'noopener');
+      toast('Claude öffnet sich – Nachricht abschicken, dann läuft der Abgleich in ein paar Minuten.');
+      break;
+    }
     case 'sync-now': {
       if (syncState().running) break;
       save(() => db.collection('meta').doc('syncreq').set({ at:Date.now(), err:'' }), 'Claude öffnet sich: Nachricht abschicken, dann läuft der Abgleich über deinen Mac.').then(async ok => {
