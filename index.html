@@ -2586,7 +2586,7 @@ function ferienPanel(){
     (projekt && projekt.ferienStand ? '<p class="hint" style="margin:10px 0 0">Zuletzt aktualisiert: ' + esc(fmtStamp(new Date(projekt.ferienStand).toISOString())) + '</p>' : '') + '</div></section>';
 }
 async function schulTermine(code){
-  const bis = (new Date().getFullYear() + 3) + '-12-31';
+  const bis = addDays(today(), 1090); // der Dienst erlaubt höchstens 1095 Tage
   const r = await fetch('https://openholidaysapi.org/SchoolHolidays?countryIsoCode=DE&languageIsoCode=DE&validFrom=' + today() + '&validTo=' + bis + '&subdivisionCode=DE-' + code);
   if (!r.ok) throw new Error('Ferien-Dienst antwortet nicht (' + r.status + ')');
   const j = await r.json();
