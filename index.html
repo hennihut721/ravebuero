@@ -1093,6 +1093,8 @@ function renderProfil(msg, err){
     '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + M.map(m =>
       '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span>' + (m === projekt.owner ? '<span class="row-sub">hat das Projekt erstellt</span>' : '') + '</span>' +
       (m === me || m === projekt.owner ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
+    (me === ABGLEICH_MAIL ? '<h3 style="margin:0 0 4px">Sofort-Abgleich</h3><p class="hint" style="margin:0 0 8px">Damit der Knopf „Abgleich“ in der Android-App den Abgleich direkt startet, ohne dass sich Claude öffnet: Unter <a href="https://claude.ai/code/routines" target="_blank" rel="noopener">claude.ai/code/routines</a> die Aufgabe „RaveBüro: Abgleich“ öffnen → „Add another trigger“ → „API“ → „Generate token“. Adresse und Schlüssel hier einfügen. Nur du kannst sie lesen.</p>' +
+      '<form id="pf-key" novalidate style="display:grid;gap:8px;margin:0 0 18px"><input class="inp" id="pf-key-url" type="url" placeholder="https://api.anthropic.com/v1/claude_code/routines/…/fire" aria-label="Adresse des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><input class="inp" id="pf-key-tok" type="password" placeholder="sk-ant-oat01-…" aria-label="Schlüssel des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><div style="display:flex;gap:8px;align-items:center"><button class="btn" type="submit">Speichern</button><span class="hint" id="pf-key-st"></span></div></form>' : '') +
     (projekt.id === 'ravebuero' ? '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p><button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' : '') +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
   showSheet(h);
@@ -1133,6 +1135,16 @@ function renderProfil(msg, err){
     catch (e) { renderProfil('Verlassen fehlgeschlagen: ' + (e && e.message || e), true); }
   };
   if ($('#pf-imp')) $('#pf-imp').onclick = altImport;
+  if ($('#pf-key')) {
+    fs.collection('privat').doc('abgleich').get().then(d => { const x = d.exists ? d.data() : {}; if ($('#pf-key-url')) $('#pf-key-url').value = x.url || ''; if ($('#pf-key-st')) $('#pf-key-st').textContent = x.token ? 'Schlüssel ist gespeichert.' : 'Noch kein Schlüssel.'; }).catch(() => {});
+    $('#pf-key').onsubmit = async ev => {
+      ev.preventDefault();
+      const url = $('#pf-key-url').value.trim(), tok = $('#pf-key-tok').value.trim();
+      if (!/^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/trig_[A-Za-z0-9]+\/fire$/.test(url)) { $('#pf-key-st').textContent = 'Die Adresse sieht nicht richtig aus.'; return; }
+      const data = { url, at:Date.now() }; if (tok) { if (!/^sk-ant-oat01-/.test(tok)) { $('#pf-key-st').textContent = 'Der Schlüssel muss mit sk-ant-oat01- anfangen.'; return; } data.token = tok; }
+      try { await fs.collection('privat').doc('abgleich').set(data, { merge:true }); $('#pf-key-tok').value = ''; $('#pf-key-st').textContent = 'Gespeichert.'; } catch (e) { $('#pf-key-st').textContent = 'Speichern fehlgeschlagen.'; }
+    };
+  }
   $('#pf-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
 }
 window.openProfil = openProfil;
