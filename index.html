@@ -1179,6 +1179,9 @@ async function init(){
       bereit: () => !!fs && !!user,
       projekte: async () => { try { const sn = await fs.collection('syncliste').get(); return sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { return (await meineProjekte()).filter(p => p.abgleich !== false).map(p => ({ id:p.id, name:p.name })); } },
       waehle: (pid) => { RB._db = projektDb(pid); return pid; },
+      // Semesterferien je Bundesland (allgemein, für alle Projekte)
+      ferienWunsch: async () => { const d = await fs.collection('ferienwissen').doc('_wunsch').get(); const L = d.exists ? (d.data().laender || []) : []; const out = {}; for (const c of L) { const x = await fs.collection('ferienwissen').doc(c).get(); out[c] = x.exists ? x.data() : null; } return out; },
+      ferienSchreiben: async (code, semester, quellen) => { await fs.collection('ferienwissen').doc(code).set({ semester, quellen:quellen || '', at:Date.now() }); return true; },
       lesen: async (cols) => { const d = RB._db || db; const out = {}; for (const c of cols) { const sn = await d.collection(c).get(); out[c] = sn.docs.map(x => Object.assign({ id:x.id }, x.data())); } return out; },
       schreiben: async (ops) => { const d = RB._db || db; let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = fs.batch(); ops.slice(i, i + 400).forEach(o => { const r = d.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
     };
