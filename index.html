@@ -2607,25 +2607,40 @@ const ferienId = (pre, code, from, name) => (pre + '-' + code + '-' + from + '-'
 async function ferienSync(still){
   if (!db || !projekt || ferienLaeuft) return;
   const sch = fLaender('schulLaender'), sem = fLaender('semLaender');
-  if (!sch.length && !sem.length) return;
+  if (!sch.length && !sem.length && projekt.ferienAltWeg) return;
   ferienLaeuft = true; if (!still) render();
   let neu = 0, fehler = '';
   try {
     const da = S.blockers;
-    const dup = (type, from, to, land) => da.some(b => b.type === type && b.from === from && b.to === to && String(b.name || '').indexOf(land) >= 0);
+    // Nur automatisch eingetragene Ferien zählen als „schon da“ – die früher von Hand angelegten werden unten einmalig ersetzt
+    const dup = (type, from, to, land) => da.some(b => b.auto && b.type === type && b.from === from && b.to === to && String(b.name || '').indexOf(land) >= 0);
+    const neuL = [];
     const b = fs.batch(); let n = 0;
     for (const c of sch) {
       let L; try { L = await schulTermine(c); } catch (e) { fehler = e.message; continue; }
       L.forEach(x => { const id = ferienId('sf', c, x.from, x.name); if (da.some(q => q.id === id) || dup('schulferien', x.from, x.to, landName(c))) return;
-        b.set(db.collection('blockers').doc(id), { type:'schulferien', name:x.name, from:x.from, to:x.to, soft:true, rating:'offen', notes:'', land:c, auto:true }); n++; });
+        b.set(db.collection('blockers').doc(id), { type:'schulferien', name:x.name, from:x.from, to:x.to, soft:true, rating:'offen', notes:'', land:c, auto:true }); neuL.push({ id, type:'schulferien', from:x.from, to:x.to }); n++; });
     }
     if (sem.length) {
       await fs.collection('ferienwissen').doc('_wunsch').set({ laender:firebase.firestore.FieldValue.arrayUnion(...sem) }, { merge:true }).catch(() => {});
       for (const c of sem) (await semTermine(c)).forEach(x => { const nm = (x.name || 'Semesterferien') + ' ' + landName(c), id = ferienId('sem', c, x.from, nm); if (da.some(q => q.id === id) || dup('semesterferien', x.from, x.to, landName(c))) return;
-        b.set(db.collection('blockers').doc(id), { type:'semesterferien', name:nm, from:x.from, to:x.to, soft:true, rating:'offen', notes:x.hochschulen || '', land:c, auto:true }); n++; });
+        b.set(db.collection('blockers').doc(id), { type:'semesterferien', name:nm, from:x.from, to:x.to, soft:true, rating:'offen', notes:x.hochschulen || '', land:c, auto:true }); neuL.push({ id, type:'semesterferien', from:x.from, to:x.to }); n++; });
     }
     if (n) await b.commit();
     neu = n;
+    // Einmalig: die früher von Hand eingestellten Schul- und Semesterferien entfernen (Bewertungen gehen auf die neuen Einträge über)
+    if (!projekt.ferienAltWeg && !fehler) {
+      const alt = da.filter(x => (x.type === 'schulferien' || x.type === 'semesterferien') && !x.auto);
+      const autos = da.filter(x => x.auto).concat(neuL);
+      const b2 = fs.batch();
+      alt.forEach(x => {
+        const tw = autos.find(a => a.type === x.type && a.from === x.from && a.to === x.to);
+        if (tw) { const u = {}; if (x.rating && x.rating !== 'offen') u.rating = x.rating; if (x.off) u.off = true; if (x.count === false) u.count = false; if (Object.keys(u).length) b2.update(db.collection('blockers').doc(tw.id), u); }
+        b2.delete(db.collection('blockers').doc(x.id));
+      });
+      b2.update(fs.collection('projects').doc(projekt.id), { ferienAltWeg:true });
+      await b2.commit(); projekt.ferienAltWeg = true;
+    }
     await fs.collection('projects').doc(projekt.id).update({ ferienStand:Date.now() }).catch(() => {});
   } catch (e) { fehler = e && e.message || String(e); }
   ferienLaeuft = false; render();
@@ -2665,7 +2680,7 @@ function ferienStart(pid){
       upd[k] = L; projekt[k] = L;
     });
     if (Object.keys(upd).length) await fs.collection('projects').doc(pid).update(upd).catch(() => {});
-    if (!projekt.ferienStand || Date.now() - projekt.ferienStand > 7 * 864e5 || fLaender('semLaender').length) ferienSync(true);
+    if (!projekt.ferienAltWeg || !projekt.ferienStand || Date.now() - projekt.ferienStand > 7 * 864e5 || fLaender('semLaender').length) ferienSync(true);
   }, 1000);
 }
 /* ---------- Allgemeine Suche im Umfeld ---------- */
