@@ -2669,6 +2669,50 @@ function ferienStart(pid){
   }, 1000);
 }
 /* ---------- Allgemeine Suche im Umfeld ---------- */
+// Sofort-Suche im Netz (ohne Abgleich): OpenStreetMap für Clubs/Locations, Wikipedia für Festivals und Veranstalter
+S.umNet = { q:'', laedt:false, osm:[], wiki:[], fehler:'' };
+let umTimer = 0;
+const OSM_ART = { nightclub:'Club', bar:'Bar', pub:'Kneipe', biergarten:'Biergarten', events_venue:'Veranstaltungsort', arts_centre:'Kulturzentrum', community_centre:'Gemeinschaftszentrum', music_venue:'Musik-Location', theatre:'Theater', cafe:'Café', restaurant:'Restaurant', stadium:'Stadion', park:'Park', festival_grounds:'Festivalgelände' };
+function umNetzLaden(q){
+  clearTimeout(umTimer);
+  if (q.length < 3) return;
+  umTimer = setTimeout(async () => {
+    if ((S.umQ || '').trim() !== q) return;
+    S.umNet = { q, laedt:true, osm:[], wiki:[], fehler:'' }; scheduleRender();
+    const [osm, wiki] = await Promise.all([
+      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&countrycodes=de,at,ch,nl,be,lu,fr,cz,pl,dk&accept-language=de&q=' + encodeURIComponent(q)).then(r => r.ok ? r.json() : []).catch(() => null),
+      fetch('https://de.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=6&srsearch=' + encodeURIComponent(q + ' (Festival OR Party OR Club OR Veranstalter OR Musik)')).then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    if ((S.umQ || '').trim() !== q) return;
+    const A = Array.isArray(osm) ? osm.filter(x => x && x.name).map(x => {
+      const a = x.address || {}, t = x.extratags || {};
+      return { name:x.name, art:OSM_ART[x.type] || OSM_ART[t.amenity] || (x.addresstype === 'amenity' || x.category === 'amenity' || x.category === 'leisure' ? 'Location' : ''), city:a.city || a.town || a.village || a.municipality || '', addr:[[a.road, a.house_number].filter(Boolean).join(' '), [a.postcode, a.city || a.town || a.village].filter(Boolean).join(' ')].filter(Boolean).join(', '), url:safeUrl(t.website || t['contact:website'] || ''), osm:'https://www.openstreetmap.org/' + x.osm_type + '/' + x.osm_id };
+    }).filter(x => x.art) : [];
+    const W = wiki && wiki.query && Array.isArray(wiki.query.search) ? wiki.query.search.map(w => ({ title:w.title, snippet:String(w.snippet || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 160), url:'https://de.wikipedia.org/wiki/' + encodeURIComponent(w.title.replace(/ /g, '_')) })) : [];
+    const worte = normTxt(q).split(' ').filter(w => w.length >= 3);
+    const W2 = W.filter(w => worte.some(x => normTxt(w.title).indexOf(x) >= 0));
+    S.umNet = { q, laedt:false, osm:A, wiki:W2, fehler:osm === null && wiki === null ? 'Keine Verbindung zum Netz.' : '' };
+    scheduleRender();
+  }, 700);
+}
+const beobachtet = n => S.watch.some(w => (w.name || '').trim().toLowerCase() === String(n || '').trim().toLowerCase());
+function umNetz(q){
+  const N = S.umNet;
+  let h = '<section class="panel"><div class="panel-h"><h2>Direkt im Netz</h2>' + (N.laedt ? '<span class="muted small">sucht …</span>' : '') + '</div>';
+  if (q.length < 3) return h + '<p class="pad">Ab drei Buchstaben wird auch im Netz gesucht.</p></section>';
+  if (N.q !== q || N.laedt) return h + '<div class="loading" style="padding:14px 16px"><span class="spin"></span>Sucht Locations und Festivals …</div></section>';
+  if (N.fehler) return h + '<p class="pad warn-t">' + esc(N.fehler) + '</p></section>';
+  if (!N.osm.length && !N.wiki.length) return h + '<p class="pad">Nichts gefunden. Probier einen anderen Namen oder lass unten gründlich suchen.</p></section>';
+  if (N.osm.length) h += '<p class="muted small" style="margin:0 14px 4px">Locations (OpenStreetMap)</p><ul class="rows">' + N.osm.map((x, i) =>
+    '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(x.name) + '</span><span class="row-sub"><span class="pill">' + esc(x.art) + '</span>' + (x.addr ? '<span>' + esc(x.addr) + '</span>' : '') + '</span></span>' +
+    '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' + (x.url ? '<a class="btn btn-sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Website</a>' : '<a class="btn btn-sm" href="' + esc(x.osm) + '" target="_blank" rel="noopener">Karte</a>') +
+    (S.ro ? '' : beobachtet(x.name) ? '<span class="pill st-ok">Beobachtet</span>' : '<button class="btn btn-sm btn-primary" data-act="um-watch" data-k="osm" data-v="' + i + '">Beobachten</button>') + '</span></div></li>').join('') + '</ul>';
+  if (N.wiki.length) h += '<p class="muted small" style="margin:10px 14px 4px">Festivals & Veranstalter (Wikipedia)</p><ul class="rows">' + N.wiki.map((x, i) =>
+    '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(x.title) + '</span><span class="row-sub"><span>' + esc(x.snippet) + '</span></span></span>' +
+    '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn btn-sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Lesen</a>' +
+    (S.ro ? '' : beobachtet(x.title) ? '<span class="pill st-ok">Beobachtet</span>' : '<button class="btn btn-sm" data-act="um-watch" data-k="wiki" data-v="' + i + '">Beobachten</button>') + '</span></div></li>').join('') + '</ul>';
+  return h + '<p class="hint" style="margin:8px 14px 14px">„Beobachten“ setzt den Eintrag auf eure Veranstalter-Liste – der Abgleich holt dann seine Partys.</p></section>';
+}
 function umSuche(q){
   const t = today(), k = q.toLowerCase(), hit = (...xs) => xs.some(x => String(x || '').toLowerCase().indexOf(k) >= 0);
   let h = '';
@@ -2686,8 +2730,10 @@ function umSuche(q){
   S.fsearch.forEach(x => (Array.isArray(x.results) ? x.results : []).forEach(r => { if (r && r.name && hit(r.name, r.place, r.country, r.note) && !W.some(w => w.name === r.name)) W.push(r); }));
   if (W.length) h += '<section class="panel"><div class="panel-h"><h2>Aus euren Web-Suchen</h2><span class="muted small">' + W.length + '</span></div><ul class="rows">' + W.slice(0, 20).map(r => { const u = safeUrl(r.url), dt = isDate(r.from) && isDate(r.to) ? fmtRange(r.from, r.to) : 'Termin offen';
     return '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(String(r.name).slice(0, 120)) + '</span><span class="row-sub"><span class="num">' + dt + '</span>' + [r.place, r.country].filter(Boolean).map(x => '<span>' + esc(x) + '</span>').join('') + (fsHave(r) ? '<span class="pill st-ok">Schon drin</span>' : '') + '</span></span>' + (u ? '<a class="btn btn-sm" href="' + esc(u) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>'; }).join('') + '</ul></section>';
-  // Neue Web-Suche nach Festivals
-  if (!S.ro) h += '<section class="panel"><div class="panel-h"><h2>Im Web suchen</h2></div><p class="pad" style="margin-bottom:0">Sucht Festivals aller Art zu „' + esc(q) + '“ – Name, Genre, Land oder Monat. Die Ergebnisse stehen dann unter „Festivals“ und lassen sich mit einem Tipp übernehmen.</p><div style="padding:10px 14px 16px"><button class="btn btn-primary" data-act="um-web">' + I.search + 'Festivals suchen: „' + esc(q.slice(0, 40)) + '“</button></div></section>';
+  // Sofort im Netz: Locations (OpenStreetMap) und Festivals/Veranstalter (Wikipedia)
+  h += umNetz(q);
+  // Gründliche Web-Suche nach Festivals über den Abgleich
+  if (!S.ro) h += '<section class="panel"><div class="panel-h"><h2>Gründlich suchen lassen</h2></div><p class="pad" style="margin-bottom:0">Für Festivals aller Art zu „' + esc(q) + '“ mit Terminen und Entfernung. Läuft beim Abgleich am Freitagabend, die Treffer lassen sich dann unter „Festivals“ übernehmen.</p><div style="padding:10px 14px 16px"><button class="btn" data-act="um-web">' + I.search + 'Festivals suchen: „' + esc(q.slice(0, 40)) + '“</button></div></section>';
   return h;
 }
 function viewAssess(){
@@ -2969,7 +3015,7 @@ document.addEventListener('click', ev => {
   else if (a === 'vz-new-loc') venueDirForm(null);
   else if (a === 'vz-new-tech') techDirForm(null);
 });
-document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } else if (ev.target.id === 'um-q') { S.umQ = ev.target.value; render(); } });
+document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } else if (ev.target.id === 'um-q') { S.umQ = ev.target.value; umNetzLaden(S.umQ.trim()); render(); } });
 function artistForm(a){
   const v = a || { role:'DJ' };
   const gigs = a ? artistGigs(a).map(l => ({ l, e:S.events.find(e => e.id === l.eventId) })).filter(x => x.e).sort((x, y) => (y.e.date || '').localeCompare(x.e.date || '')) : [];
@@ -3471,6 +3517,14 @@ document.addEventListener('click', ev => {
     case 'del': arm(el, () => doDelete(el.dataset.kind, id)); break;
     case 'invite-ok': LS.set('invite-ok', '1'); render(); break;
     case 'fl-toggle': ferienToggle(el.dataset.k, v); break;
+    case 'um-watch': {
+      const x = (el.dataset.k === 'osm' ? S.umNet.osm : S.umNet.wiki)[+v]; if (!x) break;
+      const osm = el.dataset.k === 'osm', name = String(osm ? x.name : x.title.replace(/\s*\(.*\)$/, '')).slice(0, 80);
+      if (beobachtet(name)) break;
+      el.disabled = true;
+      save(() => db.collection('watch').doc(newId('w')).set({ name, kind:osm ? 'location' : 'veranstalter', city:osm ? x.city : '', url:osm ? x.url : x.url, terms:'', notes:osm ? [x.art, x.addr].filter(Boolean).join(', ') : x.snippet, def:'offen', status:'neu', checkedAt:'', sources:'', createdAt:Date.now() }), name + ' wird beobachtet. Der nächste Abgleich sucht nach Terminen.');
+      break;
+    }
     case 'fl-sync': ferienSync(); break;
     case 'um-web': {
       const q = (S.umQ || '').trim().slice(0, 120); if (q.length < 2) break;
