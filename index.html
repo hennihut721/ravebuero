@@ -1067,9 +1067,9 @@ function oeffneProjekt(p){
   document.title = (p.name || 'RaveBüro') + ' – RaveBüro';
   UNSUB.push(fs.collection('projects').doc(p.id).onSnapshot(d => {
     if (!d.exists || ((d.data() || {}).members || []).indexOf(meineMail()) < 0) { LS.set('projekt', ''); projektWahl('Du bist nicht mehr Mitglied in „' + (p.name || 'Projekt') + '“.', true); return; }
-    projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail();
+    projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail(); scheduleRender();
   }, () => { LS.set('projekt', ''); projektWahl('Kein Zugriff mehr auf „' + (p.name || 'Projekt') + '“.', true); }));
-  subscribe(); techSaat();
+  subscribe(); techSaat(); ferienStart(p.id);
   render();
 }
 /* ---------- Profil, Mitglieder & Projekt ---------- */
@@ -2571,6 +2571,100 @@ document.addEventListener('click', async ev => {
   else if (a === 'insta-set') mkInstaSet();
   else if (a === 'insta') { const p = mkCol('mkposts').find(x => x.id === id); if (p && e) mkInstaSheet(p, e); }
 });
+/* ---------- Ferien je Bundesland ---------- */
+const LAENDER = [['BW', 'Baden-Württemberg'], ['BY', 'Bayern'], ['BE', 'Berlin'], ['BB', 'Brandenburg'], ['HB', 'Bremen'], ['HH', 'Hamburg'], ['HE', 'Hessen'], ['MV', 'Mecklenburg-Vorpommern'], ['NI', 'Niedersachsen'], ['NW', 'Nordrhein-Westfalen'], ['RP', 'Rheinland-Pfalz'], ['SL', 'Saarland'], ['SN', 'Sachsen'], ['ST', 'Sachsen-Anhalt'], ['SH', 'Schleswig-Holstein'], ['TH', 'Thüringen']];
+const landName = c => (LAENDER.find(l => l[0] === c) || [c, c])[1];
+const fLaender = k => (projekt && Array.isArray(projekt[k]) ? projekt[k] : []).filter(c => LAENDER.some(l => l[0] === c));
+let ferienLaeuft = false;
+function ferienPanel(){
+  const sch = fLaender('schulLaender'), sem = fLaender('semLaender');
+  const chips = (k, sel) => '<div class="chips" style="margin:0 0 4px">' + LAENDER.map(l => '<button class="chip" data-act="fl-toggle" data-k="' + k + '" data-v="' + l[0] + '" aria-pressed="' + (sel.indexOf(l[0]) >= 0) + '"' + (S.ro || ferienLaeuft ? ' disabled' : '') + ' title="' + esc(l[1]) + '">' + esc(l[1]) + '</button>').join('') + '</div>';
+  return '<section class="panel"><div class="panel-h"><h2>Bundesländer</h2>' + (ferienLaeuft ? '<span class="muted small">Lädt …</span>' : (!S.ro && (sch.length || sem.length) ? '<button class="btn btn-ghost btn-sm" data-act="fl-sync">Aktualisieren</button>' : '')) + '</div>' +
+    '<div style="padding:0 14px 14px">' +
+    '<details' + (S.flOpen === 'schul' || !sch.length ? ' open' : '') + ' data-fl="schul"><summary style="cursor:pointer;padding:4px 0"><strong>Schulferien:</strong> ' + (sch.length ? sch.map(landName).map(esc).join(', ') : 'keine gewählt') + '</summary><p class="hint" style="margin:6px 0 8px">Amtliche Termine – werden automatisch eingetragen, neue Jahre ergänzt.</p>' + chips('schulLaender', sch) + '</details>' +
+    '<details' + (S.flOpen === 'sem' ? ' open' : '') + ' data-fl="sem" style="margin-top:8px"><summary style="cursor:pointer;padding:4px 0"><strong>Semesterferien:</strong> ' + (sem.length ? sem.map(landName).map(esc).join(', ') : 'keine gewählt') + '</summary><p class="hint" style="margin:6px 0 8px">Vorlesungsfreie Zeit der Hochschulen im Land – wird beim Abgleich am Freitagabend recherchiert und dann eingetragen.</p>' + chips('semLaender', sem) + '</details>' +
+    (projekt && projekt.ferienStand ? '<p class="hint" style="margin:10px 0 0">Zuletzt aktualisiert: ' + esc(fmtStamp(new Date(projekt.ferienStand).toISOString())) + '</p>' : '') + '</div></section>';
+}
+async function schulTermine(code){
+  const bis = (new Date().getFullYear() + 3) + '-12-31';
+  const r = await fetch('https://openholidaysapi.org/SchoolHolidays?countryIsoCode=DE&languageIsoCode=DE&validFrom=' + today() + '&validTo=' + bis + '&subdivisionCode=DE-' + code);
+  if (!r.ok) throw new Error('Ferien-Dienst antwortet nicht (' + r.status + ')');
+  const j = await r.json();
+  return (Array.isArray(j) ? j : []).filter(x => isDate(x.startDate) && isDate(x.endDate)).map(x => ({
+    from:x.startDate, to:x.endDate,
+    name:(((x.name || []).find(n => n.language === 'DE') || (x.name || [])[0] || {}).text || 'Schulferien') + ' ' + landName(code) +
+      ((x.subdivisions || []).length && x.subdivisions.every(s => s.code && s.code.split('-').length > 2) ? ' (' + x.subdivisions.map(s => s.shortName).join(', ') + ')' : '')
+  }));
+}
+async function semTermine(code){
+  try { const d = await fs.collection('ferienwissen').doc(code).get(); return d.exists && Array.isArray(d.data().semester) ? d.data().semester.filter(x => x && isDate(x.from) && isDate(x.to) && x.to >= today()) : []; } catch (e) { return []; }
+}
+const ferienId = (pre, code, from, name) => (pre + '-' + code + '-' + from + '-' + normTxt(name).replace(/\s+/g, '-')).toLowerCase().slice(0, 140);
+// Trägt fehlende Ferien der gewählten Länder ein (bestehende Einträge und Bewertungen bleiben unverändert)
+async function ferienSync(still){
+  if (!db || !projekt || ferienLaeuft) return;
+  const sch = fLaender('schulLaender'), sem = fLaender('semLaender');
+  if (!sch.length && !sem.length) return;
+  ferienLaeuft = true; if (!still) render();
+  let neu = 0, fehler = '';
+  try {
+    const da = S.blockers;
+    const dup = (type, from, to, land) => da.some(b => b.type === type && b.from === from && b.to === to && String(b.name || '').indexOf(land) >= 0);
+    const b = fs.batch(); let n = 0;
+    for (const c of sch) {
+      let L; try { L = await schulTermine(c); } catch (e) { fehler = e.message; continue; }
+      L.forEach(x => { const id = ferienId('sf', c, x.from, x.name); if (da.some(q => q.id === id) || dup('schulferien', x.from, x.to, landName(c))) return;
+        b.set(db.collection('blockers').doc(id), { type:'schulferien', name:x.name, from:x.from, to:x.to, soft:true, rating:'offen', notes:'', land:c, auto:true }); n++; });
+    }
+    if (sem.length) {
+      await fs.collection('ferienwissen').doc('_wunsch').set({ laender:firebase.firestore.FieldValue.arrayUnion(...sem) }, { merge:true }).catch(() => {});
+      for (const c of sem) (await semTermine(c)).forEach(x => { const nm = (x.name || 'Semesterferien') + ' ' + landName(c), id = ferienId('sem', c, x.from, nm); if (da.some(q => q.id === id) || dup('semesterferien', x.from, x.to, landName(c))) return;
+        b.set(db.collection('blockers').doc(id), { type:'semesterferien', name:nm, from:x.from, to:x.to, soft:true, rating:'offen', notes:x.hochschulen || '', land:c, auto:true }); n++; });
+    }
+    if (n) await b.commit();
+    neu = n;
+    await fs.collection('projects').doc(projekt.id).update({ ferienStand:Date.now() }).catch(() => {});
+  } catch (e) { fehler = e && e.message || String(e); }
+  ferienLaeuft = false; render();
+  if (!still || neu || fehler) toast(fehler ? 'Ferien: ' + fehler : neu ? neu + (neu === 1 ? ' Ferientermin' : ' Ferientermine') + ' eingetragen.' : 'Ferien sind aktuell.');
+}
+document.addEventListener('toggle', ev => { const d = ev.target; if (d && d.dataset && d.dataset.fl) S.flOpen = d.open ? d.dataset.fl : (S.flOpen === d.dataset.fl ? '' : S.flOpen); }, true);
+async function ferienToggle(k, code){
+  if (!projekt || S.ro) return;
+  S.flOpen = k === 'schulLaender' ? 'schul' : 'sem';
+  const sel = fLaender(k), an = sel.indexOf(code) < 0;
+  const typ = k === 'schulLaender' ? 'schulferien' : 'semesterferien', land = landName(code);
+  if (!an) {
+    const weg = S.blockers.filter(b => b.type === typ && (b.land === code || (!b.land && String(b.name || '').indexOf(land) >= 0)));
+    if (weg.length && !confirm((typ === 'schulferien' ? 'Schulferien ' : 'Semesterferien ') + land + ' abwählen? ' + weg.length + (weg.length === 1 ? ' Eintrag wird' : ' Einträge werden') + ' entfernt.')) return;
+    const b = fs.batch(); weg.forEach(x => b.delete(db.collection('blockers').doc(x.id))); b.update(fs.collection('projects').doc(projekt.id), { [k]:firebase.firestore.FieldValue.arrayRemove(code) });
+    await save(() => b.commit(), land + ' abgewählt');
+    projekt[k] = sel.filter(c => c !== code); render(); return;
+  }
+  if (!await save(() => fs.collection('projects').doc(projekt.id).update({ [k]:firebase.firestore.FieldValue.arrayUnion(code) }))) return;
+  projekt[k] = sel.concat(code);
+  if (k === 'semLaender') toast('Semesterferien ' + land + ' werden beim nächsten Abgleich recherchiert.');
+  ferienSync(k === 'semLaender');
+}
+
+// Beim Öffnen eines Projekts: Länder aus vorhandenen Ferien ableiten (einmalig) und neue Termine ergänzen (höchstens wöchentlich)
+function ferienStart(pid){
+  let n = 0;
+  const t = setInterval(async () => {
+    if (!projekt || projekt.id !== pid || ++n > 30) { clearInterval(t); return; }
+    if (!S.fresh.blockers) return;
+    clearInterval(t);
+    if (S.ro) return;
+    const upd = {};
+    [['schulLaender', 'schulferien'], ['semLaender', 'semesterferien']].forEach(([k, typ]) => {
+      if (Array.isArray(projekt[k])) return;
+      const L = LAENDER.filter(l => S.blockers.some(b => b.type === typ && String(b.name || '').indexOf(l[1]) >= 0)).map(l => l[0]);
+      upd[k] = L; projekt[k] = L;
+    });
+    if (Object.keys(upd).length) await fs.collection('projects').doc(pid).update(upd).catch(() => {});
+    if (!projekt.ferienStand || Date.now() - projekt.ferienStand > 7 * 864e5) ferienSync(true);
+  }, 1000);
+}
 /* ---------- Allgemeine Suche im Umfeld ---------- */
 function umSuche(q){
   const t = today(), k = q.toLowerCase(), hit = (...xs) => xs.some(x => String(x || '').toLowerCase().indexOf(k) >= 0);
@@ -2609,6 +2703,7 @@ function viewAssess(){
   if (v === 'burns') return viewBurns(h);
   h += lead('ferien', 'Ferien, bei denen ihr selbst abwägt, ob sich ein Event lohnt.', 'Sind sie an, stehen sie im Kalender. Bei der Terminfindung ist „Offen“ neutral, „Lohnt sich“ gibt einen Bonus und „Meiden“ sperrt den Zeitraum. Schaltet ihr Ferien aus, verschwinden sie aus dem Kalender und spielen keine Rolle mehr.');
   h += kindBar('ferien');
+  if (db && projekt) h += ferienPanel();
   if (waiting('blockers')) return h + loading();
   if (!every.length) return h + '<div class="empty"><h3>Noch keine Ferien</h3><p>Leg Ferien an, die ihr gemeinsam abwägen wollt, zum Beispiel Schul- oder Semesterferien.</p>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-soft">' + I.plus + 'Ferien anlegen</button>') + '</div>';
   const n = k => every.filter(b => k === 'alle' || rating(b) === k).length;
@@ -3372,6 +3467,8 @@ document.addEventListener('click', ev => {
     case 'rate': { const x = find('blockers'); if (x && rating(x) !== v) save(() => db.doc('blockers/' + id).update({ rating:v }), v === 'meiden' ? 'Zählt jetzt als Sperrtermin' : RATING[v].label); break; }
     case 'del': arm(el, () => doDelete(el.dataset.kind, id)); break;
     case 'invite-ok': LS.set('invite-ok', '1'); render(); break;
+    case 'fl-toggle': ferienToggle(el.dataset.k, v); break;
+    case 'fl-sync': ferienSync(); break;
     case 'um-web': {
       const q = (S.umQ || '').trim().slice(0, 120); if (q.length < 2) break;
       if (S.fsearch.some(x => (x.status === 'offen' || x.status === 'läuft') && x.q === q)) { toast('Diese Suche läuft schon.'); break; }
