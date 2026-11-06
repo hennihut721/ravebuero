@@ -1202,7 +1202,8 @@ function route(){
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.indexOf('ev-') === 0) return { view:'event', id:h.slice(3) };
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
-  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'veranstalter') return { view:h };
+  if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
+  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden') return { view:h };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:'events' };
 }
@@ -1227,7 +1228,6 @@ function render(){
   else if (r.view === 'finden') h += viewFinder();
   else if (r.view === 'monat') h += viewMonth(r.y, r.m);
   else if (r.view === 'umfeld') h += viewAssess();
-  else if (r.view === 'veranstalter') h += viewWatch();
   else if (r.view === 'marketing') h += viewMarketing();
   else if (r.view === 'verzeichnis') h += viewVerzeichnis();
   else h += viewEvents();
@@ -2240,12 +2240,10 @@ function sceneRow(x){
     '<div class="as-bottom"><div class="lp-act">' + (S.ro ? '' : '<button class="btn btn-sm" data-act="add-scene" data-id="' + esc(x.id) + '">' + I.plus + 'Beobachten</button>') + (u ? '<a class="btn btn-ghost btn-sm" href="' + esc(u) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div></div></li>';
 }
 function viewWatch(){
-  let h = '<a class="back" href="#umfeld" data-act="to-partys">' + I.left + 'Partys</a>';
-  h += '<section class="vh"><h1>Veranstalter</h1>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-watch">' + I.plus + 'Hinzufügen</button>') + '</section>';
-  h += lead('watch', 'Wen ihr hier beobachtet, dessen Partys sucht der Abgleich jeden Montag.', 'Gefundene Termine landen unter „Partys“ und im Kalender. Wen ihr entfernt, dessen Partys verschwinden wieder.');
-  h += '<div class="search">' + I.search + '<input id="w-q" type="search" placeholder="Veranstalter oder Location suchen" value="' + esc(S.wq) + '" autocomplete="off" aria-label="Veranstalter oder Location suchen"></div>';
+  // Teil des Verzeichnisses (Reiter „Veranstalter“); Suche über das Suchfeld des Verzeichnisses
+  let h = lead('watch', 'Wen ihr hier beobachtet, dessen Partys sucht der Abgleich jeden Freitagabend.', 'Gefundene Termine landen unter Umfeld → „Partys“ und im Kalender. Wen ihr entfernt, dessen Partys verschwinden wieder.');
   if (waiting('watch')) return h + loading();
-  const raw = S.wq.trim(), q = raw.toLowerCase();
+  const raw = (S.vzQ || '').trim(), q = raw.toLowerCase();
   const hit = x => !q || [x.name, x.city, x.terms, x.info, x.notes].join(' ').toLowerCase().indexOf(q) >= 0;
   const KO = { location:0, veranstalter:1, allgemein:2 };
   const watched = S.watch.filter(hit).sort((a, b) => (KO[a.kind] || 0) - (KO[b.kind] || 0) || (a.name || '').localeCompare(b.name || '', 'de'));
@@ -2685,20 +2683,23 @@ function ferienStart(pid){
 }
 /* ---------- Allgemeine Suche im Umfeld ---------- */
 // Sofort-Suche im Netz (ohne Abgleich): OpenStreetMap für Clubs/Locations, Wikipedia für Festivals und Veranstalter
-S.umNet = { q:'', laedt:false, osm:[], wiki:[], fehler:'' };
+S.umNet = { q:'', mode:'', laedt:false, osm:[], wiki:[], fehler:'' };
 let umTimer = 0;
 const OSM_ART = { nightclub:'Club', bar:'Bar', pub:'Kneipe', biergarten:'Biergarten', events_venue:'Veranstaltungsort', arts_centre:'Kulturzentrum', community_centre:'Gemeinschaftszentrum', music_venue:'Musik-Location', theatre:'Theater', cafe:'Café', restaurant:'Restaurant', stadium:'Stadion', park:'Park', festival_grounds:'Festivalgelände' };
-function umNetzLaden(q){
+function umNetzLaden(q, mode){
+  mode = mode || '';
   clearTimeout(umTimer);
   if (q.length < 3) return;
+  const aktuell = () => (mode ? (S.vzQ || '') : (S.umQ || '')).trim() === q;
   umTimer = setTimeout(async () => {
-    if ((S.umQ || '').trim() !== q) return;
-    S.umNet = { q, laedt:true, osm:[], wiki:[], fehler:'' }; scheduleRender();
+    if (!aktuell()) return;
+    S.umNet = { q, mode, laedt:true, osm:[], wiki:[], fehler:'' }; scheduleRender();
+    const zusatz = mode === 'dj' ? ' (DJ OR Musiker OR Produzent OR Band)' : ' (Festival OR Party OR Club OR Veranstalter OR Musik)';
     const [osm, wiki] = await Promise.all([
-      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&countrycodes=de,at,ch,nl,be,lu,fr,cz,pl,dk&accept-language=de&q=' + encodeURIComponent(q)).then(r => r.ok ? r.json() : []).catch(() => null),
-      fetch('https://de.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=6&srsearch=' + encodeURIComponent(q + ' (Festival OR Party OR Club OR Veranstalter OR Musik)')).then(r => r.ok ? r.json() : null).catch(() => null)
+      mode === 'dj' ? Promise.resolve([]) : fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&limit=8&countrycodes=de,at,ch,nl,be,lu,fr,cz,pl,dk&accept-language=de&q=' + encodeURIComponent(q)).then(r => r.ok ? r.json() : []).catch(() => null),
+      mode === 'loc' ? Promise.resolve(null) : fetch('https://de.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=6&srsearch=' + encodeURIComponent(q + zusatz)).then(r => r.ok ? r.json() : null).catch(() => null)
     ]);
-    if ((S.umQ || '').trim() !== q) return;
+    if (!aktuell()) return;
     const A = Array.isArray(osm) ? osm.filter(x => x && x.name).map(x => {
       const a = x.address || {}, t = x.extratags || {};
       return { name:x.name, art:OSM_ART[x.type] || OSM_ART[t.amenity] || (x.addresstype === 'amenity' || x.category === 'amenity' || x.category === 'leisure' ? 'Location' : ''), city:a.city || a.town || a.village || a.municipality || '', addr:[[a.road, a.house_number].filter(Boolean).join(' '), [a.postcode, a.city || a.town || a.village].filter(Boolean).join(' ')].filter(Boolean).join(', '), url:safeUrl(t.website || t['contact:website'] || ''), osm:'https://www.openstreetmap.org/' + x.osm_type + '/' + x.osm_id };
@@ -2706,27 +2707,33 @@ function umNetzLaden(q){
     const W = wiki && wiki.query && Array.isArray(wiki.query.search) ? wiki.query.search.map(w => ({ title:w.title, snippet:String(w.snippet || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').slice(0, 160), url:'https://de.wikipedia.org/wiki/' + encodeURIComponent(w.title.replace(/ /g, '_')) })) : [];
     const worte = normTxt(q).split(' ').filter(w => w.length >= 3);
     const W2 = W.filter(w => worte.some(x => normTxt(w.title).indexOf(x) >= 0));
-    S.umNet = { q, laedt:false, osm:A, wiki:W2, fehler:osm === null && wiki === null ? 'Keine Verbindung zum Netz.' : '' };
+    S.umNet = { q, mode, laedt:false, osm:A, wiki:W2, fehler:osm === null && wiki === null && mode !== 'loc' ? 'Keine Verbindung zum Netz.' : '' };
     scheduleRender();
   }, 700);
 }
 const beobachtet = n => S.watch.some(w => (w.name || '').trim().toLowerCase() === String(n || '').trim().toLowerCase());
-function umNetz(q){
+function umNetz(q, mode){
+  mode = mode || '';
   const N = S.umNet;
+  const vorhanden = (art, n) => art === 'loc' ? (S.venues || []).some(v => (v.name || '').trim().toLowerCase() === String(n).trim().toLowerCase()) : art === 'dj' ? (S.artists || []).some(v => (v.name || '').trim().toLowerCase() === String(n).trim().toLowerCase()) : beobachtet(n);
+  const knopf = (k, i, n, prim) => S.ro ? '' : vorhanden(mode === 'loc' || mode === 'dj' ? mode : 'w', n) ? '<span class="pill st-ok">' + (mode === 'loc' || mode === 'dj' ? 'Gespeichert' : 'Beobachtet') + '</span>'
+    : '<button class="btn btn-sm' + (prim ? ' btn-primary' : '') + '" data-act="um-watch" data-k="' + k + '" data-m="' + mode + '" data-v="' + i + '">' + (mode === 'loc' || mode === 'dj' ? 'Speichern' : 'Beobachten') + '</button>';
   let h = '<section class="panel"><div class="panel-h"><h2>Direkt im Netz</h2>' + (N.laedt ? '<span class="muted small">sucht …</span>' : '') + '</div>';
   if (q.length < 3) return h + '<p class="pad">Ab drei Buchstaben wird auch im Netz gesucht.</p></section>';
-  if (N.q !== q || N.laedt) return h + '<div class="loading" style="padding:14px 16px"><span class="spin"></span>Sucht Locations und Festivals …</div></section>';
+  if (N.q !== q || N.mode !== mode || N.laedt) return h + '<div class="loading" style="padding:14px 16px"><span class="spin"></span>' + (mode === 'dj' ? 'Sucht DJs und Acts …' : mode === 'loc' ? 'Sucht Locations …' : 'Sucht Locations und Festivals …') + '</div></section>';
   if (N.fehler) return h + '<p class="pad warn-t">' + esc(N.fehler) + '</p></section>';
-  if (!N.osm.length && !N.wiki.length) return h + '<p class="pad">Nichts gefunden. Probier einen anderen Namen oder lass unten gründlich suchen.</p></section>';
+  if (!N.osm.length && !N.wiki.length) return h + '<p class="pad">Nichts gefunden. Probier einen anderen Namen' + (mode ? '.' : ' oder lass unten gründlich suchen.') + '</p></section>';
   if (N.osm.length) h += '<p class="muted small" style="margin:0 14px 4px">Locations (OpenStreetMap)</p><ul class="rows">' + N.osm.map((x, i) =>
     '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(x.name) + '</span><span class="row-sub"><span class="pill">' + esc(x.art) + '</span>' + (x.addr ? '<span>' + esc(x.addr) + '</span>' : '') + '</span></span>' +
     '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' + (x.url ? '<a class="btn btn-sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Website</a>' : '<a class="btn btn-sm" href="' + esc(x.osm) + '" target="_blank" rel="noopener">Karte</a>') +
-    (S.ro ? '' : beobachtet(x.name) ? '<span class="pill st-ok">Beobachtet</span>' : '<button class="btn btn-sm btn-primary" data-act="um-watch" data-k="osm" data-v="' + i + '">Beobachten</button>') + '</span></div></li>').join('') + '</ul>';
-  if (N.wiki.length) h += '<p class="muted small" style="margin:10px 14px 4px">Festivals & Veranstalter (Wikipedia)</p><ul class="rows">' + N.wiki.map((x, i) =>
+    knopf('osm', i, x.name, true) + '</span></div></li>').join('') + '</ul>';
+  if (N.wiki.length) h += '<p class="muted small" style="margin:10px 14px 4px">' + (mode === 'dj' ? 'DJs & Acts (Wikipedia)' : 'Festivals & Veranstalter (Wikipedia)') + '</p><ul class="rows">' + N.wiki.map((x, i) =>
     '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(x.title) + '</span><span class="row-sub"><span>' + esc(x.snippet) + '</span></span></span>' +
     '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn btn-sm" href="' + esc(x.url) + '" target="_blank" rel="noopener">Lesen</a>' +
-    (S.ro ? '' : beobachtet(x.title) ? '<span class="pill st-ok">Beobachtet</span>' : '<button class="btn btn-sm" data-act="um-watch" data-k="wiki" data-v="' + i + '">Beobachten</button>') + '</span></div></li>').join('') + '</ul>';
-  return h + '<p class="hint" style="margin:8px 14px 14px">„Beobachten“ setzt den Eintrag auf eure Veranstalter-Liste – der Abgleich holt dann seine Partys.</p></section>';
+    knopf('wiki', i, x.title.replace(/\s*\(.*\)$/, ''), mode === 'dj') + '</span></div></li>').join('') + '</ul>';
+  if (mode === 'loc') return h + '<p class="hint" style="margin:8px 14px 14px">„Speichern“ legt die Location mit Adresse im Verzeichnis an.</p></section>';
+  if (mode === 'dj') return h + '<p class="hint" style="margin:8px 14px 14px">„Speichern“ legt den Act im DJ-Verzeichnis an – Kontakt und Gage ergänzt du danach.</p></section>';
+  return h + '<p class="hint" style="margin:8px 14px 14px">„Beobachten“ setzt den Eintrag im Verzeichnis auf die Veranstalter-Liste – der Abgleich holt dann seine Partys.</p></section>';
 }
 function umSuche(q){
   const t = today(), k = q.toLowerCase(), hit = (...xs) => xs.some(x => String(x || '').toLowerCase().indexOf(k) >= 0);
@@ -2736,7 +2743,7 @@ function umSuche(q){
   h += '<section class="panel"><div class="panel-h"><h2>Partys in der Region</h2><span class="muted small">' + P.length + (P.length === 40 ? '+' : '') + '</span></div>' +
     (P.length ? '<ul class="rows">' + P.map(l => { const u = safeUrl(l.url);
       return '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.title || 'Party') + '</span><span class="row-sub"><span class="num">' + fmtD(l.date) + (l.time ? ' · ' + esc(l.time) : '') + '</span>' + [l.venue, l.city].filter(Boolean).map(x => '<span>' + esc(x) + '</span>').join('') + (l.match ? '<span class="pill">' + esc(l.match) + '</span>' : '') + '</span></span>' + (u ? '<a class="btn btn-sm" href="' + esc(u) + '" target="_blank" rel="noopener">Öffnen</a>' : '') + '</div></li>'; }).join('') + '</ul>'
-      : '<p class="pad">Keine kommende Party gefunden. Partys kommen über den Abgleich am Freitagabend aus euren Quellen. Fehlt ein Veranstalter oder eine Location, leg sie unter <a href="#veranstalter">Veranstalter</a> an.</p>') + '</section>';
+      : '<p class="pad">Keine kommende Party gefunden. Partys kommen über den Abgleich am Freitagabend aus euren Quellen. Fehlt ein Veranstalter oder eine Location, leg sie im <a href="#veranstalter">Verzeichnis unter „Veranstalter“</a> an.</p>') + '</section>';
   // Festivals und Burns aus eurer Liste
   const F = S.blockers.filter(b => (isFest(b) || isBurn(b)) && isDate(b.to) && b.to >= t && hit(b.name, b.place, b.country, b.notes, b.series)).sort((a, b) => a.from.localeCompare(b.from)).slice(0, 40);
   h += '<section class="panel"><div class="panel-h"><h2>Festivals & Burns</h2><span class="muted small">' + F.length + '</span></div>' + (F.length ? '<ul class="rows">' + F.map(burnRow).join('') + '</ul>' : '<p class="pad">Nichts in eurer Liste.</p>') + '</section>';
@@ -2757,7 +2764,7 @@ function viewAssess(){
   if (!RATING[S.asFilter] && S.asFilter !== 'alle') S.asFilter = 'alle';
   const v = ['sperr', 'fest', 'zeitraeume', 'burns', 'partys'].indexOf(S.asView) >= 0 ? S.asView : 'partys';
   const add = { sperr:['new-blocker', 'Sperrtermin'], fest:['new-fest', 'Festival'], zeitraeume:['new-soft', 'Ferien'], burns:['new-burn', 'Burn'] }[v];
-  let h = '<section class="vh"><h1>Umfeld</h1>' + (v === 'partys' ? '<a class="btn" href="#veranstalter">Veranstalter</a>' : S.ro ? '' : '<button class="btn btn-primary" data-act="' + add[0] + '">' + I.plus + add[1] + '</button>') + '</section>';
+  let h = '<section class="vh"><h1>Umfeld</h1>' + (v === 'partys' || S.ro ? '' : '<button class="btn btn-primary" data-act="' + add[0] + '">' + I.plus + add[1] + '</button>') + '</section>';
   h += '<div class="search" role="search" style="margin:0 0 14px">' + I.search + '<input id="um-q" type="search" maxlength="120" autocomplete="off" placeholder="Partys, Festivals, Burns, Orte suchen …" aria-label="Im Umfeld suchen" value="' + esc(S.umQ || '') + '"></div>';
   if ((S.umQ || '').trim().length >= 2) return h + umSuche(S.umQ.trim());
   h += '<div class="seg view seg-4" role="group" aria-label="Bereich">' + [['partys', 'Partys'], ['fest', 'Festivals'], ['zeitraeume', 'Ferien'], ['burns', 'Burns'], ['sperr', 'Sperrtermine']].map(x => '<button data-act="as-view" data-v="' + x[0] + '" aria-pressed="' + (v === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
@@ -2943,22 +2950,24 @@ async function artistMerken(d){
   try { await db.collection('artists').doc(id).set(data, { merge:true }); } catch (e) { console.error(e); return a ? a.id : ''; }
   return id;
 }
-S.vzTab = ['dj', 'loc', 'tech'].indexOf(LS.get('vzTab')) >= 0 ? LS.get('vzTab') : 'dj';
+S.vzTab = ['dj', 'loc', 'veranst', 'tech'].indexOf(LS.get('vzTab')) >= 0 ? LS.get('vzTab') : 'dj';
 S.vzQ = '';
 const vzHit = (txt) => !S.vzQ || String(txt).toLowerCase().indexOf(S.vzQ.toLowerCase()) >= 0;
 function viewVerzeichnis(){
-  const tabs = [['dj', 'DJs & Acts', (S.artists || []).length], ['loc', 'Locations', (S.venues || []).length], ['tech', 'Technik-Setups', S.techsets.length]];
-  const add = { dj:['DJ', 'vz-new-dj'], loc:['Location', 'vz-new-loc'], tech:['Setup', 'vz-new-tech'] }[S.vzTab];
+  const tabs = [['dj', 'DJs & Acts', (S.artists || []).length], ['loc', 'Locations', (S.venues || []).length], ['veranst', 'Veranstalter', S.watch.length], ['tech', 'Technik-Setups', S.techsets.length]];
+  const add = { dj:['DJ', 'vz-new-dj'], loc:['Location', 'vz-new-loc'], veranst:['Hinzufügen', 'vz-new-watch'], tech:['Setup', 'vz-new-tech'] }[S.vzTab] || ['DJ', 'vz-new-dj'];
   let h = '<section class="vh"><h1>Verzeichnis</h1>' + (S.ro ? '' : '<button class="btn btn-primary" data-vz="' + add[1] + '">' + I.plus + add[0] + '</button>') + '</section>' +
     '<div class="subtabs" role="tablist" style="margin:0 0 14px">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.vzTab === t[0]) + '" data-vz="tab" data-v="' + t[0] + '">' + t[1] + (t[2] ? ' <span class="muted">' + t[2] + '</span>' : '') + '</button>').join('') + '</div>' +
-    '<input class="inp" id="vz-q" placeholder="Suchen …" aria-label="Im Verzeichnis suchen" autocomplete="off" value="' + esc(S.vzQ) + '" style="font-family:var(--f-body);margin:0 0 14px">';
+    '<input class="inp" id="vz-q" placeholder="' + (S.vzTab === 'tech' ? 'Suchen …' : 'Suchen – auch direkt im Netz …') + '" aria-label="Im Verzeichnis suchen" autocomplete="off" value="' + esc(S.vzQ) + '" style="font-family:var(--f-body);margin:0 0 14px">';
+  const netz = () => S.vzTab !== 'tech' && (S.vzQ || '').trim().length >= 2 ? umNetz((S.vzQ || '').trim(), S.vzTab) : '';
+  if (S.vzTab === 'veranst') return h + viewWatch() + netz();
   if (S.vzTab === 'loc') {
     const L = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(v => vzHit(v.name + ' ' + (v.city || '') + ' ' + (v.addr || '')));
-    if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nichts gefunden' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>';
+    if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>' + netz();
     return h + '<section class="panel"><ul class="rows">' + L.map(v => {
       const n = S.events.filter(e => (e.venue || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()).length;
       return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>';
-    }).join('') + '</ul></section>';
+    }).join('') + '</ul></section>' + netz();
   }
   if (S.vzTab === 'tech') {
     const T = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(t => vzHit(t.name + ' ' + (t.tech || '')));
@@ -2966,11 +2975,11 @@ function viewVerzeichnis(){
     return h + '<section class="panel"><ul class="rows">' + T.map(t => '<li><button type="button" class="row" data-vz="tech" data-id="' + esc(t.id) + '"><span class="row-main"><span class="row-title">' + esc(t.name) + '</span><span class="row-sub">' + techLines(t.tech).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>';
   }
   const A = artistsSorted().filter(a => vzHit(a.name + ' ' + (a.contact || '') + ' ' + (a.ig || '') + ' ' + (a.notes || '')));
-  if (!A.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nichts gefunden' : 'Noch keine DJs') + '</h3><p>DJs und Acts landen automatisch hier, wenn du sie ins Line-up einträgst. Beim nächsten Event wählst du sie einfach aus, Kontakt und Gage werden übernommen.</p></div>';
+  if (!A.length) return h + netz() + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine DJs') + '</h3><p>DJs und Acts landen automatisch hier, wenn du sie ins Line-up einträgst. Beim nächsten Event wählst du sie einfach aus, Kontakt und Gage werden übernommen.</p></div>';
   return h + '<section class="panel"><ul class="rows">' + A.map(a => {
     const g = artistGigs(a).length;
     return '<li><button type="button" class="row" data-vz="dj" data-id="' + esc(a.id) + '"><span class="av">' + esc(initial(a.name)) + '</span><span class="row-main"><span class="row-title">' + esc(a.name) + '</span><span class="row-sub">' + [a.role, num(a.fee) ? eur(a.fee) : '', a.ig ? '@' + a.ig : '', g ? g + (g === 1 ? ' Auftritt' : ' Auftritte') : ''].filter(Boolean).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>';
-  }).join('') + '</ul></section>';
+  }).join('') + '</ul></section>' + netz();
 }
 function venueDirForm(v){
   const x = v || {};
@@ -3029,8 +3038,9 @@ document.addEventListener('click', ev => {
   else if (a === 'vz-new-dj') artistForm(null);
   else if (a === 'vz-new-loc') venueDirForm(null);
   else if (a === 'vz-new-tech') techDirForm(null);
+  else if (a === 'vz-new-watch') watchForm(null, (S.vzQ || '').trim());
 });
-document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; render(); } else if (ev.target.id === 'um-q') { S.umQ = ev.target.value; umNetzLaden(S.umQ.trim()); render(); } });
+document.addEventListener('input', ev => { if (ev.target.id === 'vz-q') { S.vzQ = ev.target.value; if (S.vzTab !== 'tech') umNetzLaden(S.vzQ.trim(), S.vzTab); render(); } else if (ev.target.id === 'um-q') { S.umQ = ev.target.value; umNetzLaden(S.umQ.trim()); render(); } });
 function artistForm(a){
   const v = a || { role:'DJ' };
   const gigs = a ? artistGigs(a).map(l => ({ l, e:S.events.find(e => e.id === l.eventId) })).filter(x => x.e).sort((x, y) => (y.e.date || '').localeCompare(x.e.date || '')) : [];
@@ -3534,7 +3544,9 @@ document.addEventListener('click', ev => {
     case 'fl-toggle': ferienToggle(el.dataset.k, v); break;
     case 'um-watch': {
       const x = (el.dataset.k === 'osm' ? S.umNet.osm : S.umNet.wiki)[+v]; if (!x) break;
-      const osm = el.dataset.k === 'osm', name = String(osm ? x.name : x.title.replace(/\s*\(.*\)$/, '')).slice(0, 80);
+      const osm = el.dataset.k === 'osm', name = String(osm ? x.name : x.title.replace(/\s*\(.*\)$/, '')).slice(0, 80), m = el.dataset.m || '';
+      if (m === 'loc') { el.disabled = true; save(() => db.collection('venues').doc(newId('vn')).set({ name, city:x.city || '', addr:x.addr || '', capacity:0, rent:0, contact:'', techsetId:'', notes:[x.art, x.url].filter(Boolean).join(' · '), createdAt:Date.now(), updatedAt:Date.now() }), name + ' ist im Verzeichnis'); break; }
+      if (m === 'dj') { el.disabled = true; save(() => db.collection('artists').doc(newId('ar')).set({ name, role:'DJ', fee:0, wa:'', tg:'', ig:'', mail:'', contact:'', notes:[x.snippet, x.url].filter(Boolean).join(' · '), createdAt:Date.now(), updatedAt:Date.now() }), name + ' ist im Verzeichnis'); break; }
       if (beobachtet(name)) break;
       el.disabled = true;
       save(() => db.collection('watch').doc(newId('w')).set({ name, kind:osm ? 'location' : 'veranstalter', city:osm ? x.city : '', url:osm ? x.url : x.url, terms:'', notes:osm ? [x.art, x.addr].filter(Boolean).join(', ') : x.snippet, def:'offen', status:'neu', checkedAt:'', sources:'', createdAt:Date.now() }), name + ' wird beobachtet. Der nächste Abgleich sucht nach Terminen.');
