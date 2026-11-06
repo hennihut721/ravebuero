@@ -933,10 +933,11 @@ function deriveLocal(){
 }
 function subscribe(){
   const timer = setTimeout(() => {
+    if (!db) return;
     if (!COLS.every(c => S.fresh[c]) && S.conn === 'connecting') { S.conn = COLS.some(c => S.got[c]) ? 'stale' : 'slow'; scheduleRender(); }
   }, 10000);
   COLS.forEach(c => {
-    try { db.collection(c).onSnapshot(snap => {
+    try { UNSUB.push(db.collection(c).onSnapshot(snap => {
       S[c === 'local' ? 'localAll' : c] = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
       if (c === 'local' || c === 'watch' || c === 'events') deriveLocal();
       if (c === 'people' && S.afterPeople === 'team') { S.afterPeople = null; openTeam(); }
@@ -949,7 +950,7 @@ function subscribe(){
       S.got[c] = true;
       S.conn = err && (err.code === 'revoked' || err.code === 'permission-denied') ? 'revoked' : 'error';
       scheduleRender();
-    }); } catch (e) { console.error(e); S.conn = 'error'; }
+    })); } catch (e) { console.error(e); S.conn = 'error'; }
   });
 }
 const FB_CONFIG = {
@@ -963,7 +964,7 @@ const FB_CONFIG = {
 let fbStarted = false;
 function loginView(msg, err){
   const v = $('#view');
-  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Melde dich mit dem Google-Konto an, das im Kollektiv freigeschaltet ist.</p>' +
+  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Melde dich mit Google an. Danach trittst du einem Projekt bei, zu dem du eingeladen wurdest, oder erstellst ein eigenes.</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="fb-login">Mit Google anmelden</button>' + (firebase.auth().currentUser ? '<button class="btn" id="fb-logout">Abmelden</button>' : '') + '</div></div>';
   const b = $('#fb-login'); if (b) b.onclick = () => {
@@ -973,53 +974,164 @@ function loginView(msg, err){
   const o = $('#fb-logout'); if (o) o.onclick = () => firebase.auth().signOut();
   $('#conn').className = 'conn bad'; $('#conn-t').textContent = 'Nicht angemeldet';
 }
-async function checkMember(u){
-  const mail = String(u.email || '').trim().toLowerCase();
-  const ref = firebase.firestore().doc('config/mitglieder');
-  try {
-    const snap = await ref.get();
-    if (!snap.exists) { await ref.set({ emails:[mail] }); return 'ok'; }
-    const list = ((snap.data() || {}).emails || []).map(x => String(x).toLowerCase());
-    return list.indexOf(mail) >= 0 ? 'ok' : 'kein';
-  } catch (e) { return e && e.code === 'permission-denied' ? 'kein' : 'fehler:' + (e && e.message || e); }
+/* ---------- Projekte ---------- */
+// Jedes Projekt hat seine Daten unter projects/{id}/{sammlung}. `db` zeigt immer auf das gewählte Projekt.
+let fs = null, projekt = null, UNSUB = [];
+const meineMail = () => String((user && user.email) || '').trim().toLowerCase();
+function projektDb(pid){
+  const ref = fs.collection('projects').doc(pid);
+  return {
+    collection: c => ref.collection(c),
+    doc: p => { const i = p.indexOf('/'); return ref.collection(p.slice(0, i)).doc(p.slice(i + 1)); },
+    batch: () => fs.batch()
+  };
 }
-/* ---------- Profil & Mitglieder ---------- */
-let profEmails = [], profStand = '';
+// Einmaliger Umzug der bisherigen Daten (vor den Projekten) in das Projekt „RaveBüro“
+const ALT_COLS = ['events', 'lineup', 'money', 'tasks', 'blockers', 'phases', 'people', 'local', 'meta', 'lprate', 'watch', 'scene', 'floors', 'techsets', 'fsearch', 'mkposts', 'mkmedia', 'mkchannels', 'mktexte', 'mkbilder', 'artists', 'venues', 'altdaten'];
+async function umzug(){
+  const mail = meineMail();
+  let alt;
+  try { alt = await fs.doc('config/mitglieder').get(); } catch (e) { return; }
+  const liste = alt.exists ? ((alt.data() || {}).emails || []).map(x => String(x).toLowerCase()) : [];
+  if (liste.indexOf(mail) < 0) return;
+  const pref = fs.collection('projects').doc('ravebuero');
+  let p; try { p = await pref.get(); } catch (e) { return; }
+  if (p.exists && p.data().migriert) return;
+  $('#conn-t').textContent = 'Ziehe Daten ins Projekt um …';
+  if (!p.exists) await pref.set({ name:'RaveBüro', owner:mail, members:liste, createdAt:Date.now(), abgleich:true });
+  for (const c of ALT_COLS) {
+    let snap; try { snap = await fs.collection(c).get(); } catch (e) { continue; }
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const b = fs.batch();
+      snap.docs.slice(i, i + 400).forEach(d => b.set(pref.collection(c).doc(d.id), d.data()));
+      await b.commit();
+    }
+  }
+  await fs.collection('syncliste').doc('ravebuero').set({ name:'RaveBüro', at:Date.now() });
+  await pref.update({ migriert:true });
+}
+async function meineProjekte(){
+  const sn = await fs.collection('projects').where('members', 'array-contains', meineMail()).get();
+  return sn.docs.map(d => Object.assign({ id:d.id }, d.data())).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
+}
+const gesehen = () => { try { return JSON.parse(LS.get('projGesehen') || '[]'); } catch (e) { return []; } };
+async function projektWahl(msg, err){
+  stopProjekt();
+  $('#fb-prof').hidden = true; document.querySelector('.tabbar').hidden = true;
+  $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Projekte …';
+  let L = [];
+  try { L = await meineProjekte(); } catch (e) { msg = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); err = true; }
+  const seen = gesehen(), me = meineMail();
+  const v = $('#view');
+  v.innerHTML = '<section class="vh"><h1>Projekte</h1></section>' +
+    '<p class="muted" style="margin:0 0 16px">Angemeldet als <strong>' + esc(me) + '</strong>. Jedes Projekt hat seine eigenen Events, Kosten, Line-ups und Mitglieder.</p>' +
+    (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
+    (L.length ? '<section class="panel"><div class="panel-h"><h2>Deine Projekte</h2></div><ul class="rows">' + L.map(p => {
+      const neu = p.owner !== me && seen.indexOf(p.id) < 0;
+      return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
+    }).join('') + '</ul></section>'
+      : '<div class="empty"><h3>Noch kein Projekt</h3><p>Wurdest du eingeladen? Dann bitte die Person, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und lade danach diese Seite neu. Oder leg unten dein eigenes Projekt an.</p></div>') +
+    '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>' +
+    '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pj-reload">Neu laden</button><button class="btn btn-ghost" id="pj-out">Abmelden</button></div>';
+  $('#conn').className = 'conn'; $('#conn-t').textContent = 'Projekt wählen';
+  v.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => oeffneProjekt(L.find(p => p.id === b.getAttribute('data-pj'))));
+  $('#pj-reload').onclick = () => projektWahl();
+  $('#pj-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
+  $('#pj-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const name = $('#pj-name').value.trim();
+    if (!name) { projektWahl('Gib dem Projekt einen Namen.', true); return; }
+    try {
+      const ref = fs.collection('projects').doc();
+      const data = { name, owner:me, members:[me], createdAt:Date.now(), abgleich:true };
+      await ref.set(data);
+      await fs.collection('syncliste').doc(ref.id).set({ name, at:Date.now() });
+      oeffneProjekt(Object.assign({ id:ref.id }, data));
+    } catch (e) { projektWahl('Erstellen fehlgeschlagen: ' + (e && e.message || e), true); }
+  };
+}
+function stopProjekt(){
+  UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
+  COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
+  projekt = null; db = null;
+}
+function oeffneProjekt(p){
+  if (!p) return;
+  stopProjekt();
+  projekt = p; db = projektDb(p.id);
+  LS.set('projekt', p.id);
+  const seen = gesehen(); if (seen.indexOf(p.id) < 0) { seen.push(p.id); LS.set('projGesehen', JSON.stringify(seen.slice(-50))); }
+  S.canWrite = true; S.owner = p.owner === meineMail(); S.ro = false;
+  document.querySelector('.tabbar').hidden = false;
+  const pb = $('#fb-prof'); if (pb) { pb.hidden = false; $('#fb-av').textContent = initial(p.name || 'P'); }
+  document.title = (p.name || 'RaveBüro') + ' – RaveBüro';
+  UNSUB.push(fs.collection('projects').doc(p.id).onSnapshot(d => {
+    if (!d.exists || ((d.data() || {}).members || []).indexOf(meineMail()) < 0) { LS.set('projekt', ''); projektWahl('Du bist nicht mehr Mitglied in „' + (p.name || 'Projekt') + '“.', true); return; }
+    projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail();
+  }, () => { LS.set('projekt', ''); projektWahl('Kein Zugriff mehr auf „' + (p.name || 'Projekt') + '“.', true); }));
+  subscribe(); techSaat();
+  render();
+}
+/* ---------- Profil, Mitglieder & Projekt ---------- */
 async function openProfil(){
-  if (!db || !user) return;
-  try { const d = await db.collection('config').doc('mitglieder').get(); profEmails = ((d.exists && d.data().emails) || []).slice().sort(); } catch (e) { profEmails = [user.email]; }
-  try { const a = await db.collection('altdaten').doc('aktuell').get(); profStand = a.exists && a.data().stand ? fmtStamp(a.data().stand) : ''; } catch (e) {}
+  if (!db || !user || !projekt) return;
   renderProfil();
 }
 function renderProfil(msg, err){
-  const me = (user.email || '').toLowerCase();
+  const me = meineMail(), M = (projekt.members || []).slice().sort();
+  const pref = fs.collection('projects').doc(projekt.id);
   let h = '<h2 id="sheet-title">Profil</h2>' +
     '<div style="display:flex;align-items:center;gap:12px;margin:0 0 18px"><span class="av" style="width:40px;height:40px;font-size:17px;line-height:40px">' + esc(me.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(user.displayName || me) + '</span><span class="row-sub">' + esc(me) + '</span></span></div>' +
-    '<h3 style="margin:0 0 4px">Mitglieder</h3><p class="hint" style="margin:0 0 12px">Wer hier steht, kann sich mit genau diesem Google-Konto anmelden und alles sehen und bearbeiten – in der Web-Version und in der Android-App.</p>' +
-    '<form id="pf-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail des neuen Mitglieds" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Hinzufügen</button></form>' +
+    '<h3 style="margin:0 0 4px">Projekt</h3>' +
+    '<form id="pf-pname" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-pn" maxlength="60" aria-label="Name des Projekts" autocomplete="off" value="' + esc(projekt.name || '') + '" style="flex:1;font-family:var(--f-body)"><button class="btn" type="submit">Umbenennen</button></form>' +
+    '<label class="check" style="margin:0 0 6px"><input type="checkbox" id="pf-sync"' + (projekt.abgleich !== false ? ' checked' : '') + '> Partys & Festivals jeden Freitagabend automatisch abgleichen</label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px"><button type="button" class="btn" id="pf-wechsel">Projekt wechseln oder neues erstellen</button>' + (projekt.owner !== me ? '<button type="button" class="btn btn-ghost" id="pf-leave" style="color:var(--bad)">Projekt verlassen</button>' : '') + '</div>' +
+    '<h3 style="margin:0 0 4px">Mitglieder</h3><p class="hint" style="margin:0 0 12px">Trag hier die Google-Adresse ein, um jemanden einzuladen. Die Person meldet sich mit diesem Google-Konto an und findet „' + esc(projekt.name || 'das Projekt') + '“ dann unter ihren Projekten – in der Web-Version und in der Android-App.</p>' +
+    '<form id="pf-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail des neuen Mitglieds" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Einladen</button></form>' +
     (msg ? '<p class="' + (err ? 'err' : 'hint') + '" style="margin:0 0 8px">' + esc(msg) + '</p>' : '') +
-    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + profEmails.map(m =>
-      '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span></span>' +
-      (m === me ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
-    '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version' + (profStand ? ' (Stand ' + esc(profStand) + ')' : '') + '. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p>' +
-    '<button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' +
+    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + M.map(m =>
+      '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span>' + (m === projekt.owner ? '<span class="row-sub">hat das Projekt erstellt</span>' : '') + '</span>' +
+      (m === me || m === projekt.owner ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
+    (projekt.id === 'ravebuero' ? '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p><button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' : '') +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
   showSheet(h);
+  const FV = firebase.firestore.FieldValue;
   $('#pf-form').onsubmit = async ev => {
     ev.preventDefault();
     const m = $('#pf-mail').value.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(m)) { renderProfil('Bitte eine gültige E-Mail-Adresse eingeben.', true); return; }
-    if (profEmails.includes(m)) { renderProfil(m + ' ist schon Mitglied.', true); return; }
-    try { await db.collection('config').doc('mitglieder').update({ emails: firebase.firestore.FieldValue.arrayUnion(m) }); profEmails = profEmails.concat(m).sort(); renderProfil(m + ' kann sich jetzt mit diesem Google-Konto anmelden.'); }
-    catch (e) { renderProfil('Hinzufügen fehlgeschlagen: ' + (e && e.message || e), true); }
+    if (M.indexOf(m) >= 0) { renderProfil(m + ' ist schon Mitglied.', true); return; }
+    try { await pref.update({ members:FV.arrayUnion(m) }); projekt.members = M.concat(m); renderProfil(m + ' ist eingeladen und findet das Projekt nach der Anmeldung mit diesem Google-Konto.'); }
+    catch (e) { renderProfil('Einladen fehlgeschlagen: ' + (e && e.message || e), true); }
   };
   document.querySelectorAll('[data-pf-del]').forEach(b => b.onclick = async () => {
     const m = b.getAttribute('data-pf-del');
-    if (!confirm(m + ' aus dem Kollektiv entfernen? Die Person kann die App dann nicht mehr nutzen.')) return;
-    try { await db.collection('config').doc('mitglieder').update({ emails: firebase.firestore.FieldValue.arrayRemove(m) }); profEmails = profEmails.filter(x => x !== m); renderProfil(m + ' wurde entfernt.'); }
+    if (!confirm(m + ' aus „' + (projekt.name || 'dem Projekt') + '“ entfernen? Die Person kann das Projekt dann nicht mehr öffnen.')) return;
+    try { await pref.update({ members:FV.arrayRemove(m) }); projekt.members = M.filter(x => x !== m); renderProfil(m + ' wurde entfernt.'); }
     catch (e) { renderProfil('Entfernen fehlgeschlagen: ' + (e && e.message || e), true); }
   });
-  $('#pf-imp').onclick = altImport;
+  $('#pf-pname').onsubmit = async ev => {
+    ev.preventDefault();
+    const n = $('#pf-pn').value.trim(); if (!n) { renderProfil('Der Name darf nicht leer sein.', true); return; }
+    try { await pref.update({ name:n }); await fs.collection('syncliste').doc(projekt.id).set({ name:n, at:Date.now() }, { merge:true }).catch(() => {}); projekt.name = n; document.title = n + ' – RaveBüro'; $('#fb-av').textContent = initial(n); renderProfil('Umbenannt.'); }
+    catch (e) { renderProfil('Umbenennen fehlgeschlagen: ' + (e && e.message || e), true); }
+  };
+  $('#pf-sync').onchange = async () => {
+    const an = $('#pf-sync').checked;
+    try {
+      await pref.update({ abgleich:an });
+      const sl = fs.collection('syncliste').doc(projekt.id);
+      if (an) await sl.set({ name:projekt.name || '', at:Date.now() }); else await sl.delete();
+      projekt.abgleich = an; toast(an ? 'Abgleich eingeschaltet.' : 'Abgleich ausgeschaltet.');
+    } catch (e) { toast('Speichern fehlgeschlagen.'); }
+  };
+  $('#pf-wechsel').onclick = () => { closeSheet(); LS.set('projekt', ''); projektWahl(); };
+  if ($('#pf-leave')) $('#pf-leave').onclick = async () => {
+    if (!confirm('„' + (projekt.name || 'Projekt') + '“ verlassen? Du kannst nur wieder rein, wenn dich jemand einlädt.')) return;
+    try { await pref.update({ members:FV.arrayRemove(me) }); closeSheet(); LS.set('projekt', ''); projektWahl('Du hast das Projekt verlassen.'); }
+    catch (e) { renderProfil('Verlassen fehlgeschlagen: ' + (e && e.message || e), true); }
+  };
+  if ($('#pf-imp')) $('#pf-imp').onclick = altImport;
   $('#pf-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
 }
 window.openProfil = openProfil;
@@ -1060,18 +1172,21 @@ async function init(){
   try { firebase.firestore().enablePersistence({ synchronizeTabs:true }).catch(() => {}); } catch (e) {}
   firebase.auth().onAuthStateChanged(async u => {
     if (!u) { loginView(); return; }
-    $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Prüfe Zugang …';
-    const z = await checkMember(u);
-    if (z !== 'ok') { loginView(z === 'kein' ? 'Angemeldet als ' + u.email + ', aber noch nicht freigeschaltet. Ein Mitglied muss diese Adresse in der App unter „Mitglieder“ eintragen.' : 'Verbindung fehlgeschlagen: ' + z.slice(7), true); return; }
-    user = u; db = firebase.firestore(); S.canWrite = true; S.owner = false; S.ro = false;
+    $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Anmelden …';
+    user = u; fs = firebase.firestore();
     window.RB = {
-      bereit: () => !!db && !!user,
-      lesen: async (cols) => { const out = {}; for (const c of cols) { const sn = await db.collection(c).get(); out[c] = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } return out; },
-      schreiben: async (ops) => { let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = db.batch(); ops.slice(i, i + 400).forEach(o => { const r = db.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
+      // Für den automatischen Abgleich: Projekte, die den Freitags-Abgleich wollen
+      bereit: () => !!fs && !!user,
+      projekte: async () => { try { const sn = await fs.collection('syncliste').get(); return sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { return (await meineProjekte()).filter(p => p.abgleich !== false).map(p => ({ id:p.id, name:p.name })); } },
+      waehle: (pid) => { RB._db = projektDb(pid); return pid; },
+      lesen: async (cols) => { const d = RB._db || db; const out = {}; for (const c of cols) { const sn = await d.collection(c).get(); out[c] = sn.docs.map(x => Object.assign({ id:x.id }, x.data())); } return out; },
+      schreiben: async (ops) => { const d = RB._db || db; let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = fs.batch(); ops.slice(i, i + 400).forEach(o => { const r = d.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
     };
-    const pb = $('#fb-prof'); if (pb) { pb.hidden = false; $('#fb-av').textContent = (u.email || '?').charAt(0).toUpperCase(); }
-    if (!fbStarted) { fbStarted = true; subscribe(); techSaat(); }
-    render();
+    try { await umzug(); } catch (e) { console.error('Umzug', e); }
+    let L = [];
+    try { L = await meineProjekte(); } catch (e) { projektWahl('Projekte konnten nicht geladen werden: ' + (e && e.message || e), true); return; }
+    const letztes = L.find(p => p.id === LS.get('projekt'));
+    if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
   });
 }
 
@@ -1090,6 +1205,7 @@ function route(){
 }
 const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['Keine Verbindung','bad'], stale:['Evtl. veraltet','wait'], error:['Verbindung weg','bad'], revoked:['Kein Zugriff','bad'], nodb:['Offline','bad'] };
 function render(){
+  if (window.firebase && !projekt) return; // Anmeldung oder Projektauswahl wird angezeigt
   const a = document.activeElement, view = $('#view');
   let keep = null;
   if (a && a.id && view.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) keep = { id:a.id, v:a.value, s:a.selectionStart, e:a.selectionEnd };
@@ -1145,7 +1261,7 @@ function viewEvents(){
   const nUp = dated.filter(e => e.date >= t).length, nPast = dated.length - nUp;
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
-  if (S.owner && !LS.get('invite-ok')) h += '<div class="banner"><strong>Kollektiv einladen:</strong> Teile diese App in Claude per E-Mail und gib den anderen die Rolle <em>Bearbeiter</em>. Teile sie nicht über einen öffentlichen Link, sonst können die anderen nur lesen. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
+  if (S.owner && !LS.get('invite-ok')) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
   if (up && !waiting('events')) h += dashboard(nextEvent());
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
   if (waiting('events')) return h + loading();
