@@ -2665,7 +2665,7 @@ function ferienStart(pid){
       upd[k] = L; projekt[k] = L;
     });
     if (Object.keys(upd).length) await fs.collection('projects').doc(pid).update(upd).catch(() => {});
-    if (!projekt.ferienStand || Date.now() - projekt.ferienStand > 7 * 864e5) ferienSync(true);
+    if (!projekt.ferienStand || Date.now() - projekt.ferienStand > 7 * 864e5 || fLaender('semLaender').length) ferienSync(true);
   }, 1000);
 }
 /* ---------- Allgemeine Suche im Umfeld ---------- */
