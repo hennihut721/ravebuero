@@ -940,6 +940,7 @@ function subscribe(){
     try { UNSUB.push(db.collection(c).onSnapshot(snap => {
       S[c === 'local' ? 'localAll' : c] = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
       if (c === 'local' || c === 'watch' || c === 'events') deriveLocal();
+      if (c === 'watch' && S.fresh.watch && projekt) { clearTimeout(S.locT); S.locT = setTimeout(() => projekt && locSync(projekt.id), 1500); }
       if (c === 'people' && S.afterPeople === 'team') { S.afterPeople = null; openTeam(); }
       S.got[c] = true;
       if (!snap.metadata.fromCache) S.fresh[c] = true;
@@ -1069,7 +1070,7 @@ function oeffneProjekt(p){
     if (!d.exists || ((d.data() || {}).members || []).indexOf(meineMail()) < 0) { LS.set('projekt', ''); projektWahl('Du bist nicht mehr Mitglied in „' + (p.name || 'Projekt') + '“.', true); return; }
     projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail(); scheduleRender();
   }, () => { LS.set('projekt', ''); projektWahl('Kein Zugriff mehr auf „' + (p.name || 'Projekt') + '“.', true); }));
-  subscribe(); techSaat(); ferienStart(p.id);
+  subscribe(); techSaat(); ferienStart(p.id); locSync(p.id);
   render();
 }
 /* ---------- Profil, Mitglieder & Projekt ---------- */
@@ -2246,9 +2247,9 @@ function viewWatch(){
   const raw = (S.vzQ || '').trim(), q = raw.toLowerCase();
   const hit = x => !q || [x.name, x.city, x.terms, x.info, x.notes].join(' ').toLowerCase().indexOf(q) >= 0;
   const KO = { location:0, veranstalter:1, allgemein:2 };
-  const watched = S.watch.filter(hit).sort((a, b) => (KO[a.kind] || 0) - (KO[b.kind] || 0) || (a.name || '').localeCompare(b.name || '', 'de'));
+  const watched = S.watch.filter(w => w.kind !== 'location').filter(hit).sort((a, b) => (KO[a.kind] || 0) - (KO[b.kind] || 0) || (a.name || '').localeCompare(b.name || '', 'de'));
   const known = n => S.watch.some(w => (w.name || '').toLowerCase() === String(n || '').toLowerCase());
-  const sugg = S.scene.filter(x => x.name && !known(x.name) && hit(x)).sort((a, b) => (int(b.upcoming) || 0) - (int(a.upcoming) || 0) || a.name.localeCompare(b.name, 'de'));
+  const sugg = S.scene.filter(x => x.name && x.kind !== 'location' && !known(x.name) && hit(x)).sort((a, b) => (int(b.upcoming) || 0) - (int(a.upcoming) || 0) || a.name.localeCompare(b.name, 'de'));
   if (q) {
     if (watched.length) h += '<section class="panel"><div class="panel-h"><h2>Beobachtet</h2></div><ul class="rows">' + watched.map(watchRow).join('') + '</ul></section>';
     if (sugg.length) h += '<section class="panel"><div class="panel-h"><h2>Vorschläge</h2></div><ul class="rows">' + sugg.slice(0, 30).map(sceneRow).join('') + '</ul></section>';
@@ -2664,6 +2665,21 @@ async function ferienToggle(k, code){
 }
 
 // Beim Öffnen eines Projekts: Länder aus vorhandenen Ferien ableiten (einmalig) und neue Termine ergänzen (höchstens wöchentlich)
+// Beobachtete Locations (Veranstalter-Liste) auch als Locations im Verzeichnis führen
+function locSync(pid){
+  let n = 0;
+  const t = setInterval(async () => {
+    if (!projekt || projekt.id !== pid || ++n > 30) { clearInterval(t); return; }
+    if (!S.fresh.watch || !S.fresh.venues) return;
+    clearInterval(t);
+    if (S.ro) return;
+    const fehlt = S.watch.filter(w => w.kind === 'location' && w.name && !(S.venues || []).some(v => (v.name || '').trim().toLowerCase() === w.name.trim().toLowerCase()));
+    if (!fehlt.length) return;
+    const b = fs.batch();
+    fehlt.forEach(w => b.set(db.collection('venues').doc('vn-' + w.id), { name:w.name, city:w.city || '', addr:'', capacity:0, rent:0, contact:'', techsetId:'', notes:w.notes || '', url:safeUrl(w.url), createdAt:Date.now(), updatedAt:Date.now() }));
+    await b.commit().catch(e => console.error(e));
+  }, 1000);
+}
 function ferienStart(pid){
   let n = 0;
   const t = setInterval(async () => {
@@ -2954,7 +2970,7 @@ S.vzTab = ['dj', 'loc', 'veranst', 'tech'].indexOf(LS.get('vzTab')) >= 0 ? LS.ge
 S.vzQ = '';
 const vzHit = (txt) => !S.vzQ || String(txt).toLowerCase().indexOf(S.vzQ.toLowerCase()) >= 0;
 function viewVerzeichnis(){
-  const tabs = [['dj', 'DJs & Acts', (S.artists || []).length], ['loc', 'Locations', (S.venues || []).length], ['veranst', 'Veranstalter', S.watch.length], ['tech', 'Technik-Setups', S.techsets.length]];
+  const tabs = [['dj', 'DJs & Acts', (S.artists || []).length], ['loc', 'Locations', (S.venues || []).length], ['veranst', 'Veranstalter', S.watch.filter(w => w.kind !== 'location').length], ['tech', 'Technik-Setups', S.techsets.length]];
   const add = { dj:['DJ', 'vz-new-dj'], loc:['Location', 'vz-new-loc'], veranst:['Hinzufügen', 'vz-new-watch'], tech:['Setup', 'vz-new-tech'] }[S.vzTab] || ['DJ', 'vz-new-dj'];
   let h = '<section class="vh"><h1>Verzeichnis</h1>' + (S.ro ? '' : '<button class="btn btn-primary" data-vz="' + add[1] + '">' + I.plus + add[0] + '</button>') + '</section>' +
     '<div class="subtabs" role="tablist" style="margin:0 0 14px">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.vzTab === t[0]) + '" data-vz="tab" data-v="' + t[0] + '">' + t[1] + (t[2] ? ' <span class="muted">' + t[2] + '</span>' : '') + '</button>').join('') + '</div>' +
@@ -2963,11 +2979,14 @@ function viewVerzeichnis(){
   if (S.vzTab === 'veranst') return h + viewWatch() + netz();
   if (S.vzTab === 'loc') {
     const L = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(v => vzHit(v.name + ' ' + (v.city || '') + ' ' + (v.addr || '')));
-    if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>' + netz();
+    const vorschl = S.scene.filter(x => x.name && x.kind === 'location' && !beobachtet(x.name) && !(S.venues || []).some(v => (v.name || '').toLowerCase() === x.name.toLowerCase()) && vzHit(x.name + ' ' + (x.city || '') + ' ' + (x.info || '')))
+      .sort((a, b) => (int(b.upcoming) || 0) - (int(a.upcoming) || 0) || a.name.localeCompare(b.name, 'de'));
+    const vorschlH = vorschl.length ? '<section class="panel"><div class="panel-h"><h2>Vorschläge aus der Region</h2><span class="muted small">' + vorschl.length + '</span></div><ul class="rows">' + vorschl.slice(0, 15).map(sceneRow).join('') + '</ul></section>' : '';
+    if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>' + vorschlH + netz();
     return h + '<section class="panel"><ul class="rows">' + L.map(v => {
       const n = S.events.filter(e => (e.venue || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()).length;
-      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + '</span></span>' + I.right + '</button></li>';
-    }).join('') + '</ul></section>' + netz();
+      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + (beobachtet(v.name) ? ' <span class="pill st-ok">Partys beobachtet</span>' : '') + '</span></span>' + I.right + '</button></li>';
+    }).join('') + '</ul></section>' + vorschlH + netz();
   }
   if (S.vzTab === 'tech') {
     const T = S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).filter(t => vzHit(t.name + ' ' + (t.tech || '')));
@@ -2990,6 +3009,8 @@ function venueDirForm(v){
     field('vl-contact', 'Ansprechpartner', '<input id="vl-contact" maxlength="160" autocomplete="off" placeholder="Name, Telefon, E-Mail" value="' + esc(x.contact || '') + '">') +
     field('vl-tech', 'Technik vor Ort', '<select id="vl-tech"><option value="">– keine Angabe –</option>' + S.techsets.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')).map(t => '<option value="' + esc(t.id) + '"' + (t.id === x.techsetId ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('') + '</select>') +
     field('vl-notes', 'Notizen', '<textarea id="vl-notes" rows="3" maxlength="2000" placeholder="Zugang, Aufbauzeiten, Parken, Deal …">' + esc(x.notes || '') + '</textarea>') +
+    field('vl-url', 'Website', '<input id="vl-url" type="url" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://…" value="' + esc(x.url || (watchVon(x.name) || {}).url || '') + '">') +
+    '<label class="check"><input type="checkbox" id="vl-watch"' + (v ? (beobachtet(x.name) ? ' checked' : '') : '') + '> Partys dieser Location beobachten – der Abgleich holt ihre Termine</label>' +
     vzEnd(!!v) + '</form>');
   vzWire('venues', v, 'Diese Location', () => {
     const name = $('#vl-name').value.trim(); if (!name) return 'Gib einen Namen ein.';
@@ -2997,8 +3018,15 @@ function venueDirForm(v){
     if (isNaN(cap) || cap < 0) return 'Gib die Kapazität als ganze Zahl an, z. B. 300.';
     if (isNaN(rent) || rent < 0) return 'Gib die Miete als Zahl an, z. B. 400.';
     if ((S.venues || []).some(o => o.id !== (v && v.id) && (o.name || '').trim().toLowerCase() === name.toLowerCase())) return name + ' steht schon im Verzeichnis.';
-    return { name, city:$('#vl-city').value.trim(), addr:$('#vl-addr').value.trim(), capacity:cap, rent, contact:$('#vl-contact').value.trim(), techsetId:$('#vl-tech').value, notes:$('#vl-notes').value.trim() };
-  }, 'vn');
+    let url = $('#vl-url').value.trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    return { name, city:$('#vl-city').value.trim(), addr:$('#vl-addr').value.trim(), capacity:cap, rent, contact:$('#vl-contact').value.trim(), techsetId:$('#vl-tech').value, notes:$('#vl-notes').value.trim(), url };
+  }, 'vn', async d => {
+    // Beobachten-Haken mit der Veranstalter-Liste abgleichen (die braucht der Abgleich)
+    const alt = watchVon(v ? v.name : d.name) || watchVon(d.name), an = $('#vl-watch').checked;
+    if (an && !alt) await db.collection('watch').doc(newId('w')).set({ name:d.name.slice(0, 80), kind:'location', city:d.city, url:d.url, terms:'', notes:'', def:'offen', status:'neu', checkedAt:'', sources:'', createdAt:Date.now() }).catch(() => {});
+    else if (an && alt && alt.name !== d.name) await db.doc('watch/' + alt.id).update({ name:d.name.slice(0, 80) }).catch(() => {});
+    else if (!an && alt) await db.doc('watch/' + alt.id).delete().catch(() => {});
+  });
 }
 function techDirForm(t){
   const x = t || {};
@@ -3014,17 +3042,19 @@ function techDirForm(t){
   }, 'ts');
 }
 const vzEnd = del => '<p class="err" id="vz-err" hidden></p><div class="actions">' + (del && !S.ro ? '<button type="button" class="btn btn-ghost" id="vz-del" style="color:var(--bad)">Löschen</button><span class="spacer"></span>' : '') + '<button type="button" class="btn" data-act="close-sheet">' + (S.ro ? 'Schließen' : 'Abbrechen') + '</button>' + (S.ro ? '' : '<button type="submit" class="btn btn-primary">Speichern</button>') + '</div>';
-function vzWire(col, item, what, read, prefix){
+const watchVon = n => S.watch.find(w => (w.name || '').trim().toLowerCase() === String(n || '').trim().toLowerCase());
+function vzWire(col, item, what, read, prefix, nachher){
   const err = m => { const e = $('#vz-err'); e.textContent = m; e.hidden = false; };
   $('#vz-form').onsubmit = async ev => {
     ev.preventDefault();
     const d = read(); if (typeof d === 'string') return err(d);
     d.updatedAt = Date.now(); if (!item) d.createdAt = Date.now();
-    if (await save(() => db.collection(col).doc(item ? item.id : newId(prefix)).set(d, { merge:true }), item ? 'Gespeichert' : d.name + ' ist im Verzeichnis')) closeSheet();
+    if (await save(async () => { await db.collection(col).doc(item ? item.id : newId(prefix)).set(d, { merge:true }); if (nachher) await nachher(d); }, item ? 'Gespeichert' : d.name + ' ist im Verzeichnis')) closeSheet();
   };
   if ($('#vz-del')) $('#vz-del').onclick = async () => {
-    if (!confirm(what + ' aus dem Verzeichnis löschen? Bestehende Events bleiben unverändert.')) return;
-    if (await save(() => db.collection(col).doc(item.id).delete(), 'Gelöscht')) closeSheet();
+    const w = col === 'venues' ? watchVon(item.name) : null;
+    if (!confirm(what + ' aus dem Verzeichnis löschen? Bestehende Events bleiben unverändert.' + (w ? ' Ihre Partys werden dann auch nicht mehr beobachtet.' : ''))) return;
+    if (await save(async () => { await db.collection(col).doc(item.id).delete(); if (w) await db.doc('watch/' + w.id).delete(); }, 'Gelöscht')) closeSheet();
   };
 }
 document.addEventListener('click', ev => {
