@@ -1413,6 +1413,36 @@ function aktHoeren(){
   S.akt = S.akt || [];
   try { UNSUB.push(db.collection('aktivitaet').orderBy('at', 'desc').limit(60).onSnapshot(sn => { S.akt = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); scheduleRender(); }, () => {})); } catch (e) {}
 }
+/* ===== Verlauf: alle Einträge, filterbar nach Event und Person ===== */
+const VL = { liste:null, lim:300, ev:'', wer:'', unsub:null, pid:'' };
+function vlHoeren(){
+  if (VL.unsub && VL.pid === projekt.id) return;
+  if (VL.unsub) { try { VL.unsub(); } catch (e) {} }
+  VL.pid = projekt.id; VL.liste = null;
+  try { VL.unsub = db.collection('aktivitaet').orderBy('at', 'desc').limit(VL.lim).onSnapshot(sn => { VL.liste = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); scheduleRender(); }, () => { VL.liste = []; scheduleRender(); }); UNSUB.push(() => { try { VL.unsub && VL.unsub(); } catch (e) {} VL.unsub = null; }); } catch (e) { VL.liste = []; }
+}
+function viewVerlauf(){
+  vlHoeren();
+  let h = '<section class="vh"><h1>Verlauf</h1><p class="muted" style="margin:4px 0 0">Wer im Kollektiv was gemacht hat – die letzten ' + VL.lim + ' Einträge.</p></section>';
+  if (!VL.liste) return h + loading();
+  const A = VL.liste, evIds = [...new Set(A.map(a => a.eventId).filter(Boolean))], wers = [...new Set(A.map(a => a.wer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+  const evOpt = evIds.map(id => [id, S.events.find(e => e.id === id)]).sort((a, b) => ((b[1] || {}).date || '').localeCompare((a[1] || {}).date || ''));
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px"><select class="inp" id="vl-ev" aria-label="Nach Event filtern" style="flex:1;min-width:150px;font-family:var(--f-body)"><option value="">Alle Events</option>' +
+    evOpt.map(([id, e]) => '<option value="' + esc(id) + '"' + (VL.ev === id ? ' selected' : '') + '>' + esc(e ? (e.name || 'Event') + ' · ' + fmtDs(e.date) : 'Gelöschtes Event') + '</option>').join('') + '</select>' +
+    '<select class="inp" id="vl-wer" aria-label="Nach Person filtern" style="flex:1;min-width:150px;font-family:var(--f-body)"><option value="">Alle Personen</option>' + wers.map(w => '<option' + (VL.wer === w ? ' selected' : '') + '>' + esc(w) + '</option>').join('') + '</select></div>';
+  const L = A.filter(a => (!VL.ev || a.eventId === VL.ev) && (!VL.wer || a.wer === VL.wer));
+  if (!L.length) return h + '<div class="empty"><h3>Nichts gefunden</h3><p>' + (A.length ? 'Für diese Auswahl gibt es keine Einträge.' : 'Noch nichts passiert. Sobald jemand ein Act bestätigt, Flyer fertig macht oder Aufgaben erledigt, steht es hier.') + '</p></div>';
+  const tage = {}; L.forEach(a => { const d = isoVon(a.at); (tage[d] = tage[d] || []).push(a); });
+  const t = today();
+  Object.keys(tage).sort().reverse().forEach(d => {
+    h += '<section class="panel"><div class="panel-h"><h2>' + (d === t ? 'Heute' : d === addDays(t, -1) ? 'Gestern' : fmtD(d)) + '</h2><span class="muted small">' + tage[d].length + '</span></div><ul class="wl akt" style="padding:0 14px 10px">' +
+      tage[d].map(a => { const e = a.eventId && S.events.find(x => x.id === a.eventId); return '<li><a href="' + (e ? '#ev-' + esc(a.eventId) : '#verlauf') + '" style="display:flex;gap:10px;align-items:flex-start;min-width:0;flex:1"><span class="av" style="flex:none">' + esc(initial(a.wer)) + '</span><span style="min-width:0"><span class="m" style="white-space:normal"><strong>' + esc(a.wer) + '</strong> ' + esc(a.text) + '</span><span class="muted small" style="display:block">' + uhr(a.at) + ' Uhr</span></span></a></li>'; }).join('') + '</ul></section>';
+  });
+  if (A.length >= VL.lim) h += '<div style="text-align:center;margin:8px 0 20px"><button class="btn" data-act="vl-mehr">Ältere laden</button></div>';
+  return h;
+}
+document.addEventListener('change', ev => { if (ev.target.id === 'vl-ev') { VL.ev = ev.target.value; render(); } else if (ev.target.id === 'vl-wer') { VL.wer = ev.target.value; render(); } });
+document.addEventListener('click', ev => { if (ev.target.closest('[data-act="vl-mehr"]')) { VL.lim += 300; if (VL.unsub) { try { VL.unsub(); } catch (e) {} VL.unsub = null; } render(); } });
 function aktListe(n){
   const A = (S.akt || []).slice(0, n);
   if (!A.length) return empty('Noch nichts passiert. Sobald jemand ein Act bestätigt, Flyer fertig macht oder Aufgaben erledigt, steht es hier.');
@@ -2196,7 +2226,7 @@ function openEinstellungen(){
   const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
+    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
     '<h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
     '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
@@ -2290,7 +2320,7 @@ function route(){
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
   if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
   if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele' ||
-    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend'].indexOf(h) >= 0) return { view:h };
+    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend', 'verlauf'].indexOf(h) >= 0) return { view:h };
   if (h.indexOf('abend-') === 0) return { view:'abend', id:h.slice(6) };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:h === '' ? startHash().slice(1) : 'events' };
@@ -2299,6 +2329,11 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08f', titel:'Neu: Verlauf', punkte:[
+    'Eigene Seite „Verlauf“ mit allem, was im Kollektiv passiert ist – nach Tagen sortiert',
+    'Filter nach Event und Person',
+    'Zu finden über Zahnrad → Bereiche → Verlauf oder „Alle anzeigen“ an der Kachel „Was ist passiert“'
+  ] },
   { v:'2026-11-08e', titel:'Neu: Ticketliste löschen', punkte:[
     'Eine importierte Eventim-Ticketliste kannst du jetzt wieder löschen (Abend-Modus → Einlass & Kasse → Zahlen → „Liste löschen“)'
   ] },
@@ -2356,6 +2391,7 @@ function render(){
   else if (r.view === 'mk-kanaele') h += '<section class="vh"><h1>Kanäle</h1></section>' + mkChannels();
   else if (r.view === 'verzeichnis') h += viewVerzeichnis();
   else if (r.view === 'abend') h += viewAbend(r.id);
+  else if (r.view === 'verlauf') h += viewVerlauf();
   else if (r.view === 'booking') h += viewBkHeute();
   else if (r.view === 'bk-anfragen') h += viewBkAnfragen();
   else if (r.view === 'bk-djs' || r.view === 'bk-locs') { const t = r.view === 'bk-djs' ? 'dj' : 'loc'; if (S.vzTab !== t) { S.vzTab = t; LS.set('vzTab', t); } h += viewVerzeichnis(); }
@@ -2458,7 +2494,7 @@ function widget(k, nx, size){
   if (k === 'meine') return wMeine(N);
   if (k === 'ablauf') return wAblauf(N);
   if (k === 'nachhaken') return wNachhaken(N);
-  if (k === 'aktivitaet') return wCard('Was ist passiert', null, aktListe(N));
+  if (k === 'aktivitaet') return wCard('Was ist passiert', ['#verlauf', 'Alle anzeigen'], aktListe(N));
   if (k === 'next') return nx ? dashNext(nx, size) : wCard('Nächstes Event', ['#finden', 'Termin finden'], empty('Kein kommendes Event geplant.'));
   if (k === 'upcoming') return wCard('Kommende Events', null, U.length ? '<ul class="wl">' + U.slice(0, N).map(e => '<li><a href="#ev-' + esc(e.id) + '" style="display:flex;gap:10px;align-items:center;min-width:0;flex:1"><span class="d">' + dShort(e.date) + '</span><span class="m">' + esc(e.name || 'Ohne Titel') + '<small>' + esc([e.venue, timeStr(e)].filter(Boolean).join(' · ') || 'Ort und Zeit offen') + '</small></span></a><span class="r">' + statusPill(e.status) + '</span></li>').join('') + '</ul>' : empty('Noch keine kommenden Events.'));
   if (k === 'money') {
