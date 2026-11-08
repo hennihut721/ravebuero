@@ -1831,6 +1831,7 @@ function ekBlock(fid, x, mitglied, e){
       h += '<div class="ab-gl" style="margin-top:10px"><h3 class="ab-k" style="margin:0 0 8px">Ticketliste aus EVENTIM.Light</h3>' +
         (z.nT ? '<p style="margin:0 0 8px"><strong>' + z.nT + ' Tickets</strong> · ' + eur(z.vvkSumme) + (x.ticketsStand ? ' · Stand ' + wann(x.ticketsStand) : '') + '</p>' : '<p class="muted" style="margin:0 0 8px">Noch keine Liste. In EVENTIM.Light beim Event „Download Einlassdaten“ wählen und die Excel-Datei hier importieren. Dann prüft der Scanner jedes Ticket.</p>') +
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary" style="cursor:pointer">' + (z.nT ? 'Neue Liste importieren' : 'Eventim-Liste importieren') + '<input type="file" accept=".xlsx,.xls,.csv" data-ek="import" data-id="' + esc(e.id) + '" hidden></label>' +
+        (z.nT ? '<button type="button" class="btn btn-sm" data-ek="liste-weg" data-id="' + esc(e.id) + '" style="color:#ff6b6b">Liste löschen</button>' : '') +
         '<a class="btn btn-sm" href="' + esc(safeUrl(e.shopUrl) || 'https://www.eventim-light.de/') + '" target="_blank" rel="noopener">EVENTIM.Light öffnen</a><button type="button" class="btn btn-sm" data-ek="shop" data-id="' + esc(e.id) + '">Shop-Link</button>' +
         '<button type="button" class="btn btn-sm" data-ek="arten" data-id="' + esc(e.id) + '">Kassenarten</button><button type="button" class="btn btn-sm" data-ek="abr" data-id="' + esc(e.id) + '">In Abrechnung übernehmen</button></div></div>';
     }
@@ -1962,6 +1963,11 @@ document.addEventListener('click', ev => {
   else if (a === 'verkauf') ekVerkauf(k.fid, k.x, Number(v));
   else if (a === 'storno') { if (confirm('Diesen Verkauf stornieren?')) fs.collection('einlass').doc(k.fid).collection('kasse').doc(el.dataset.id).delete().then(() => toast('Storniert.')).catch(() => toast('Hat nicht geklappt.')); }
   else if (a === 'arten' && k.e) ekArtenForm(k.e);
+  else if (a === 'liste-weg' && k.e) {
+    if (!confirm('Importierte Ticketliste löschen? Bereits gescannte Tickets bleiben gezählt. Ohne Liste prüft der Scanner nicht mehr, ob ein Ticket gültig ist.')) return;
+    const FV = firebase.firestore.FieldValue;
+    save(() => fs.collection('einlass').doc(k.fid).update({ tickets:FV.delete(), ticketsStand:FV.delete() }), 'Ticketliste gelöscht').then(ok => { if (ok) logA('hat die Eventim-Ticketliste gelöscht (' + (k.e.name || 'Event') + ')', k.e.id); });
+  }
   else if (a === 'shop' && k.e) ekShopForm(k.e);
   else if (a === 'abr' && k.e) {
     const z = ekZahlen(k.x, k.e.capacity), ist = Object.assign({}, k.e.ist || {}, { ak:z.bar + z.karte, gaeste:z.drinGes });
@@ -2293,6 +2299,9 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08e', titel:'Neu: Ticketliste löschen', punkte:[
+    'Eine importierte Eventim-Ticketliste kannst du jetzt wieder löschen (Abend-Modus → Einlass & Kasse → Zahlen → „Liste löschen“)'
+  ] },
   { v:'2026-11-08d', titel:'Neu: Einlass & Kasse', punkte:[
     'Abend-Modus → „Einlass & Kasse“: Live-Zahlen, wie viele drin sind, Kapazität und Ankunftskurve',
     'Ticket-Scanner mit der Handykamera – zeigt grün „gültig“ oder rot „schon drin“ bzw. „ungültig“',
