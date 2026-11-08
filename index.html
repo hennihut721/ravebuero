@@ -65,8 +65,20 @@
 :root[data-ansicht="light"] .lead, :root[data-ansicht="light"] .lead-more, :root[data-ansicht="light"] .banner, :root[data-ansicht="light"] .tab[data-tab="marketing"]{display:none !important}
 :root[data-ansicht="light"] .tabbar-in{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Ansicht „Marketing“: nur der Marketing-Reiter, alles andere über die Einstellungen */
-:root[data-ansicht="marketing"] .lead, :root[data-ansicht="marketing"] .lead-more, :root[data-ansicht="marketing"] .banner, :root[data-ansicht="marketing"] .tab:not([data-tab="marketing"]){display:none !important}
-:root[data-ansicht="marketing"] .tabbar-in{grid-template-columns:1fr}
+:root[data-ansicht="marketing"] .lead, :root[data-ansicht="marketing"] .lead-more, :root[data-ansicht="marketing"] .banner, :root[data-ansicht="marketing"] .tab:not(.mk-only){display:none !important}
+:root[data-ansicht="marketing"] .tabbar-in{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tab.mk-only{display:none}
+:root[data-ansicht="marketing"] .tab.mk-only{display:flex}
+.mkc{padding:12px 14px;border-top:1px solid var(--line)}
+.mkc:first-of-type{border-top:0}
+.mkc-h{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+.mkc-h a{font:700 16px var(--f-body);color:var(--ink);text-decoration:none}
+.mkbar{height:8px;border-radius:999px;background:var(--sunk);overflow:hidden;margin:8px 0 10px}
+.mkbar span{display:block;height:100%;background:var(--pink);border-radius:999px}
+.mkchk{display:flex;flex-wrap:wrap;gap:6px}
+.mkchk button{border:0;cursor:pointer}
+.wk{font:700 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:18px 2px 8px;display:flex;justify-content:space-between}
+.wk-ev{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--pink-soft, var(--sunk));color:var(--ink);font-weight:700;text-decoration:none}
 /* Farbthemen (Einstellungen) */
 :root[data-farbe="lila"]{--pink:#7A3FD6; --pink-ink:#FFFFFF; --pink-soft:#EDE3FB;}
 @media (prefers-color-scheme: dark){:root[data-farbe="lila"]:not([data-theme="light"]){--pink:#B48CFF; --pink-ink:#160A2A; --pink-soft:#2B1F4A;}}
@@ -671,6 +683,10 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
   <a class="tab" href="#events" data-tab="events"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M15 7.5v1.5M15 11.25v1.5M15 15v1.5"/></svg><span>Events</span></a>
   <a class="tab" href="#kalender" data-tab="kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Kalender</span></a>
   <a class="tab" href="#marketing" data-tab="marketing"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Marketing</span></a>
+  <a class="tab mk-only" href="#marketing" data-tab="mk-heute"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg><span>Heute</span></a>
+  <a class="tab mk-only" href="#mk-kalender" data-tab="mk-kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h6"/></svg><span>Content</span></a>
+  <a class="tab mk-only" href="#mk-inhalte" data-tab="mk-inhalte"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span>Inhalte</span></a>
+  <a class="tab mk-only" href="#mk-kanaele" data-tab="mk-kanaele"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Kanäle</span></a>
 </div></nav>
 
 <div id="sheet" class="sheet-wrap" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></div></div>
@@ -1183,7 +1199,7 @@ function openEinstellungen(){
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
     '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (istMk() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li>' + (istLight() ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
     '<h3 style="margin:0 0 8px">Ansicht</h3><div class="seg" role="radiogroup" style="margin:0 0 6px">' + [['pro', 'Pro'], ['light', 'Light'], ['marketing', 'Marketing']].map(a => '<button type="button" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + ((LS.get('ansicht') || 'pro') === a[0]) + '" aria-pressed="' + ((LS.get('ansicht') || 'pro') === a[0]) + '">' + a[1] + '</button>').join('') + '</div>' +
-    '<p class="hint" style="margin:0 0 18px">' + (istMk() ? 'Marketing: nur das, was du fürs Marketing brauchst – anstehende Posts, Texte, Flyer und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
+    '<p class="hint" style="margin:0 0 18px">' + (istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
     '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
     FARBEN.map(f => '<button type="button" class="chip" data-farbe-w="' + f[0] + '" aria-pressed="' + (farbe === f[0]) + '" style="justify-content:flex-start;gap:8px;padding:10px 12px"><span style="width:18px;height:18px;border-radius:50%;background:' + (dunkel ? f[3] : f[2]) + ';flex:none"></span>' + f[1] + '</button>').join('') + '</div>' +
     '<h3 style="margin:0 0 8px">Hell oder dunkel</h3><div class="seg" role="radiogroup" style="margin:0 0 18px">' +
@@ -1192,7 +1208,7 @@ function openEinstellungen(){
     '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
   document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
   document.querySelectorAll('[data-ansicht-w]').forEach(b => b.onclick = () => { const a = b.dataset.ansichtW; LS.set('ansicht', a); if (a === 'pro') document.documentElement.removeAttribute('data-ansicht'); else document.documentElement.setAttribute('data-ansicht', a);
-    if (a === 'marketing' && location.hash !== '#marketing') location.hash = '#marketing'; else if (a !== 'marketing' && location.hash === '#marketing') location.hash = '#events'; render(); openEinstellungen(); });
+    if (a === 'marketing' && location.hash !== '#marketing') location.hash = '#marketing'; else if (a !== 'marketing' && /^#(mk-|marketing$)/.test(location.hash)) location.hash = a === 'light' ? '#events' : '#marketing'; render(); openEinstellungen(); });
   document.querySelectorAll('[data-modus-w]').forEach(b => b.onclick = () => { LS.set('modus', b.dataset.modusW); themaSetzen(b.dataset.modusW, LS.get('farbe') || 'pink'); openEinstellungen(); });
 }
 window.openEinstellungen = openEinstellungen;
@@ -1265,7 +1281,7 @@ function route(){
   if (h.indexOf('ev-') === 0) return { view:'event', id:h.slice(3) };
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
   if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
-  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden') return { view:h };
+  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele') return { view:h };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:h === '' && LS.get('ansicht') === 'marketing' ? 'marketing' : 'events' };
 }
@@ -1276,7 +1292,7 @@ function render(){
   let keep = null;
   if (a && a.id && view.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) keep = { id:a.id, v:a.value, s:a.selectionStart, e:a.selectionEnd };
   const r = route();
-  const tab = r.view === 'event' ? 'events' : (r.view === 'finden' || r.view === 'monat') ? 'kalender' : r.view === 'veranstalter' ? 'umfeld' : r.view;
+  const tab = r.view === 'event' ? 'events' : (r.view === 'finden' || r.view === 'monat') ? 'kalender' : r.view === 'veranstalter' ? 'umfeld' : r.view === 'marketing' && istMk() ? 'mk-heute' : r.view;
   document.body.classList.toggle('wide', r.view === 'events');
   topH();
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tab) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
@@ -1290,7 +1306,10 @@ function render(){
   else if (r.view === 'finden') h += viewFinder();
   else if (r.view === 'monat') h += viewMonth(r.y, r.m);
   else if (r.view === 'umfeld') h += viewAssess();
-  else if (r.view === 'marketing') h += viewMarketing();
+  else if (r.view === 'marketing') h += istMk() ? viewMkHeute() : viewMarketing();
+  else if (r.view === 'mk-kalender') h += viewMkKalender();
+  else if (r.view === 'mk-inhalte') h += viewMarketing(true);
+  else if (r.view === 'mk-kanaele') h += '<section class="vh"><h1>Kanäle</h1></section>' + mkChannels();
   else if (r.view === 'verzeichnis') h += viewVerzeichnis();
   else h += viewEvents();
   view.innerHTML = h;
@@ -2363,13 +2382,79 @@ function mkRel(ds){
   const n = Math.round((pd(ds) - pd(today())) / 864e5);
   return n === 0 ? 'heute' : n === 1 ? 'morgen' : n === -1 ? 'gestern' : n > 0 ? 'in ' + n + ' Tagen' : 'vor ' + (-n) + ' Tagen';
 }
-// Ansicht „Marketing“: alle anstehenden Posts über alle Events auf einen Blick
-function mkAnstehend(){
-  const t = today(), bis = addDays(t, 14), ig = mkInsta();
+// ===== Ansicht „Marketing“: eigene Reiter Heute · Content · Inhalte · Kanäle
+// Was fürs Bewerben eines Events erledigt sein sollte
+function mkCheck(e){
+  const t = today(), P = mkCol('mkposts').filter(p => p.eventId === e.id), M = mkCol('mkmedia').filter(m => m.eventId === e.id);
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt'), Z = L.filter(l => l.status === 'zugesagt');
+  const mat = Z.filter(l => actBrief(l, e).missing.length === 0).length;
+  const ank = P.some(p => p.done && (p.typ === 'ankuendigung' || /ankünd/i.test(p.title || '')));
+  return [
+    ['plan', 'Posting-Plan', P.length > 0, P.length ? P.filter(p => p.done).length + '/' + P.length + ' Posts' : 'fehlt'],
+    ['flyer', 'Flyer fertig', M.some(m => m.kind === 'flyer' && m.status === 'fertig'), M.some(m => m.kind === 'flyer') ? 'in Arbeit' : 'fehlt'],
+    ['lineup', 'Line-up steht', Z.length > 0 && Z.length === L.length, Z.length + '/' + L.length + ' zugesagt'],
+    ['material', 'Act-Material', Z.length > 0 && mat === Z.length, Z.length ? mat + '/' + Z.length + ' komplett' : 'noch keine Acts'],
+    ['ank', 'Angekündigt', ank, ank ? 'raus' : 'noch nicht'],
+  ];
+}
+function viewMkHeute(){
+  const t = today(), wk = addDays(t, 7), P = mkCol('mkposts').filter(p => !p.done && isDate(p.date));
+  const od = P.filter(p => p.date < t).length, woche = P.filter(p => p.date >= t && p.date <= wk).length;
+  const arbeit = mkCol('mkmedia').filter(m => m.status !== 'fertig').length;
+  const E = S.events.filter(e => isDate(e.date) && e.status !== 'abgesagt' && e.date >= t && e.date <= addDays(t, 84)).sort((a, b) => a.date.localeCompare(b.date));
+  const nx = E[0];
+  let h = '<section class="vh"><h1>Heute</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section>' +
+    '<div class="kpis">' + kpi('Überfällig', od, 'Posts', od ? 'neg' : '') + kpi('Diese Woche', woche, 'Posts fällig') + kpi('In Arbeit', arbeit, 'Flyer & Medien') + kpi('Nächstes Event', nx ? dayDiff(t, nx.date) + ' T' : '–', nx ? esc(nx.name || 'Event') : 'keins geplant') + '</div>' +
+    mkAnstehend(7);
+  h += '<section class="panel"><div class="panel-h"><h2>Event-Check</h2><span class="muted small">nächste 12 Wochen</span></div>';
+  if (!E.length) h += '<p class="pad">Keine Events in den nächsten zwölf Wochen.</p>';
+  E.forEach(e => {
+    const C = mkCheck(e), ok = C.filter(c => c[2]).length;
+    h += '<div class="mkc"><div class="mkc-h"><a href="#ev-' + esc(e.id) + '">' + esc(e.name || 'Event') + '</a><span class="muted small">' + fmtD(e.date) + ' · in ' + dayDiff(t, e.date) + ' Tagen</span></div>' +
+      '<div class="mkbar" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="' + ok + '"><span style="width:' + (ok * 20) + '%"></span></div>' +
+      '<div class="mkchk">' + C.map(c => '<button type="button" class="pill ' + (c[2] ? 'st-ok' : 'st-warn') + '" data-mk="fix" data-v="' + c[0] + '" data-id="' + esc(e.id) + '" title="' + esc(c[3]) + '">' + (c[2] ? '✓ ' : '') + c[1] + (c[2] ? '' : ' · ' + esc(c[3])) + '</button>').join('') + '</div></div>';
+  });
+  return h + '</section>';
+}
+function viewMkKalender(){
+  const t = today(), d0 = addDays(t, -((pd(t).getDay() + 6) % 7)), wochen = 8, ende = addDays(d0, wochen * 7 - 1), ig = mkInsta();
+  const P = mkCol('mkposts').filter(p => isDate(p.date) && p.date <= ende && (p.date >= d0 || !p.done)).sort((a, b) => a.date.localeCompare(b.date));
+  const E = S.events.filter(e => isDate(e.date) && e.status !== 'abgesagt' && e.date >= d0 && e.date <= ende);
+  const evN = id => (S.events.find(e => e.id === id) || {}).name || 'Event';
+  const zeile = p => {
+    const late = !p.done && p.date < t;
+    const accs = (Array.isArray(p.accounts) ? p.accounts : []).map(id => mkCol('mkchannels').find(c => c.id === id)).filter(Boolean);
+    const chs = accs.length ? accs.map(c => '<span class="pill">' + esc(mkAccName(c)) + '</span>').join('') : (Array.isArray(p.channels) ? p.channels : []).map(c => '<span class="pill">' + esc(mkLabel(MK_CH, c)) + '</span>').join('');
+    return '<li><div class="task' + (p.done ? ' done' : '') + '"><button class="chk" role="checkbox" aria-checked="' + !!p.done + '" aria-label="' + esc(p.title) + ' erledigt" data-mk="toggle-post" data-id="' + esc(p.id) + '"' + (S.ro ? ' disabled' : '') + '>' + I.check + '</button>' +
+      '<button class="task-main" data-mk="edit-post2" data-id="' + esc(p.id) + '"><span class="row-title">' + esc(p.title || 'Post') + ' · ' + esc(evN(p.eventId)) + '</span><span class="row-sub"><span' + (late ? ' style="color:var(--bad);font-weight:600"' : '') + '>' + fmtD(p.date) + '</span>' + chs + '</span></button>' +
+      (ig.an && !p.done && (p.channels || []).indexOf('instagram') >= 0 ? '<button class="btn btn-sm" data-mk="insta2" data-id="' + esc(p.id) + '" style="flex:none">Instagram</button>' : '') + '</div></li>';
+  };
+  let h = '<section class="vh"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%"><h1 style="margin:0">Content</h1>' + (S.ro ? '' : '<button class="btn btn-primary" data-mk="post-wahl">' + I.plus + 'Post</button>') + '</div><p class="muted" style="margin:4px 0 0">Alle Posts aller Events, Woche für Woche.</p></section>';
+  const alt = P.filter(p => !p.done && p.date < d0);
+  if (alt.length) h += '<div class="wk"><span style="color:var(--bad)">Überfällig</span><span>' + alt.length + '</span></div><section class="panel"><ul class="rows">' + alt.map(zeile).join('') + '</ul></section>';
+  for (let w = 0; w < wochen; w++) {
+    const a = addDays(d0, w * 7), b = addDays(a, 6);
+    const WP = P.filter(p => p.date >= a && p.date <= b), WE = E.filter(e => e.date >= a && e.date <= b);
+    const kw = (() => { const d = pd(a); d.setDate(d.getDate() + 3); const j = new Date(d.getFullYear(), 0, 4); return 1 + Math.round(((d - j) / 864e5 - 3 + (j.getDay() + 6) % 7) / 7); })();
+    h += '<div class="wk"><span>' + (w === 0 ? 'Diese Woche' : w === 1 ? 'Nächste Woche' : 'KW ' + kw) + ' · ' + fmtDs(a) + '–' + fmtDs(b) + '</span><span>' + (WP.length ? WP.length + ' Post' + (WP.length > 1 ? 's' : '') : '') + '</span></div>';
+    if (!WP.length && !WE.length) { h += '<p class="muted small" style="margin:0 2px">Nichts geplant.</p>'; continue; }
+    h += '<section class="panel">' + WE.map(e => '<a class="wk-ev" href="#ev-' + esc(e.id) + '">🎉 ' + esc(e.name || 'Event') + '<span class="muted small" style="font-weight:600">' + fmtD(e.date) + '</span></a>').join('') + (WP.length ? '<ul class="rows">' + WP.map(zeile).join('') + '</ul>' : '') + '</section>';
+  }
+  return h;
+}
+function mkPostWahl(){
+  const L = mkEvents();
+  if (!L.length) { toast('Lege zuerst unter „Events“ ein Event an.'); return; }
+  showSheet('<h2 id="sheet-title">Post für welches Event?</h2><ul class="rows">' + L.map(e => '<li><button class="row" data-mk="post-fuer" data-v="' + esc(e.id) + '"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + '</span></button></li>').join('') + '</ul><div class="actions"><button class="btn" data-act="close-sheet">Abbrechen</button></div>');
+}
+// Alle anstehenden Posts über alle Events auf einen Blick
+function mkAnstehend(tage){
+  tage = tage || 14;
+  const t = today(), bis = addDays(t, tage), ig = mkInsta();
   const P = mkCol('mkposts').filter(p => !p.done && isDate(p.date) && p.date <= bis).sort((a, b) => a.date.localeCompare(b.date));
   const ev = id => S.events.find(e => e.id === id) || {};
   const od = P.filter(p => p.date < t).length;
-  let h = '<section class="panel"><div class="panel-h"><h2>Anstehende Posts</h2><span class="muted small">' + (od ? '<strong style="color:var(--bad)">' + od + ' überfällig</strong> · ' : '') + 'nächste 14 Tage</span></div>';
+  let h = '<section class="panel"><div class="panel-h"><h2>Anstehende Posts</h2><span class="muted small">' + (od ? '<strong style="color:var(--bad)">' + od + ' überfällig</strong> · ' : '') + 'nächste ' + (tage === 7 ? '7 Tage' : tage + ' Tage') + '</span></div>';
   if (!P.length) return h + '<p class="pad">Nichts fällig. Wähl unten ein Event, um seinen Posting-Plan anzulegen oder zu bearbeiten.</p></section>';
   return h + '<ul class="rows">' + P.map(p => {
     const late = p.date < t, e = ev(p.eventId);
@@ -2380,9 +2465,10 @@ function mkAnstehend(){
       (ig.an && (p.channels || []).indexOf('instagram') >= 0 && e.id ? '<button class="btn btn-sm" data-mk="insta2" data-id="' + esc(p.id) + '" style="flex:none">Instagram-Post</button>' : '') + '</div></li>';
   }).join('') + '</ul></section>';
 }
-function viewMarketing(){
-  const tabs = [['plan', 'Posting-Plan'], ['texte', 'Texte'], ['medien', 'Flyer & Medien'], ['kanaele', 'Kanäle']];
-  let h = '<section class="vh"><h1>Marketing</h1></section>' + (istMk() && S.mkTab === 'plan' ? mkAnstehend() : '') +
+function viewMarketing(inhalte){
+  const tabs = inhalte ? [['plan', 'Posting-Plan'], ['texte', 'Texte'], ['medien', 'Flyer & Medien']] : [['plan', 'Posting-Plan'], ['texte', 'Texte'], ['medien', 'Flyer & Medien'], ['kanaele', 'Kanäle']];
+  if (inhalte && S.mkTab === 'kanaele') S.mkTab = 'plan';
+  let h = '<section class="vh"><h1>' + (inhalte ? 'Inhalte' : 'Marketing') + '</h1></section>' +
     '<div class="subtabs" role="tablist" style="margin:0 0 14px">' + tabs.map(t => '<button type="button" role="tab" aria-selected="' + (S.mkTab === t[0]) + '" data-mk="tab" data-v="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
   if (S.mkTab === 'kanaele') return h + mkChannels();
   const L = mkEvents(), e = mkCur();
@@ -2634,7 +2720,13 @@ document.addEventListener('click', async ev => {
   const el = ev.target.closest('[data-mk]'); if (!el) return;
   const a = el.dataset.mk, v = el.dataset.v, id = el.dataset.id, e = mkCur();
   if (a === 'tab') { S.mkTab = v; LS.set('mkTab', v); render(); return; }
-  if (a === 'ev') { S.mkEv = v; LS.set('mkEv', v); render(); return; }
+  if (a === 'ev') { S.mkEv = v; LS.set('mkEv', v); if (istMk() && location.hash !== '#mk-inhalte') location.hash = '#mk-inhalte'; else render(); return; }
+  if (a === 'fix') {
+    S.mkEv = id; LS.set('mkEv', id);
+    if (v === 'lineup' || v === 'material') { location.hash = '#ev-' + id; return; }
+    S.mkTab = v === 'flyer' ? 'medien' : 'plan'; LS.set('mkTab', S.mkTab);
+    if (location.hash !== '#mk-inhalte') location.hash = '#mk-inhalte'; else render(); return;
+  }
   if (a === 'copy' || a === 'wa' || a === 'tg') {
     if (!e) return; const txt = mkFill(mkTpl(v), e);
     if (a === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener'); return; }
@@ -2653,6 +2745,9 @@ document.addEventListener('click', async ev => {
   else if (a === 'edit-tpl') mkTplForm(v);
   else if (a === 'insta-set') mkInstaSet();
   else if (a === 'insta') { const p = mkCol('mkposts').find(x => x.id === id); if (p && e) mkInstaSheet(p, e); }
+  else if (a === 'post-wahl') mkPostWahl();
+  else if (a === 'post-fuer') { const ev2 = S.events.find(x => x.id === v); if (ev2) mkPostForm(null, ev2); }
+  else if (a === 'edit-post2') { const p = mkCol('mkposts').find(x => x.id === id), ev2 = p && S.events.find(x => x.id === p.eventId); if (p && ev2) mkPostForm(p, ev2); }
   else if (a === 'insta2') { const p = mkCol('mkposts').find(x => x.id === id), ev = p && S.events.find(x => x.id === p.eventId); if (p && ev) mkInstaSheet(p, ev); }
 });
 /* ---------- Ferien je Bundesland ---------- */
