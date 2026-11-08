@@ -607,6 +607,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 .agenda-day li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px}
 .preset{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}
 
+.pv-floor{margin:0 0 10px}.pv-floor-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 14px 2px;padding:6px 10px;border-radius:8px;background:var(--sunk);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -1402,7 +1403,7 @@ function partnerRender(fid, fehler){
       h += '<section class="panel"><div class="panel-h"><h2>' + esc(e.name || 'Event') + '</h2>' + (e.status === 'bestaetigt' ? '<span class="pill st-ok">Bestätigt</span>' : '<span class="pill st-planung">In Planung</span>') + '</div>' +
         '<p style="margin:0 14px 12px"><strong>' + fmtD(e.date) + '</strong>' + (e.start ? ' · ' + esc(e.start) + (e.end ? '–' + esc(e.end) : '') + ' Uhr' : '') + ' · in ' + Math.max(0, dayDiff(t, e.date)) + ' Tagen</p>';
       if (fel.flyer && e.flyer) h += '<div class="pv-fl" hidden style="padding:0 14px 12px"><img id="pv-fl-' + esc(e.id) + '" alt="Flyer ' + esc(e.name) + '" style="width:100%;border-radius:10px;background:var(--sunk)"><a class="btn btn-sm" id="pv-dl-' + esc(e.id) + '" download="Flyer ' + esc(e.name) + '.jpg" style="margin-top:8px">Flyer speichern</a></div>';
-      if (fel.lineup) h += '<h3 style="margin:4px 14px 6px">Line-up</h3>' + ((e.lineup || []).length ? '<ul class="rows">' + e.lineup.map(l => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.name) + '</span><span class="row-sub">' + [l.start ? l.start + (l.end ? '–' + l.end : '') : 'Zeit folgt', l.floor].filter(Boolean).map(esc).join(' · ') + '</span></span></div></li>').join('') + '</ul>' : '<p class="muted" style="margin:0 14px 12px">Folgt bald.</p>');
+      if (fel.lineup) h += '<h3 style="margin:4px 14px 6px">Line-up</h3>' + ((e.lineup || []).length ? pvLineup(e) : '<p class="muted" style="margin:0 14px 12px">Folgt bald.</p>');
       if (fel.technik && (e.technik || []).length) h += '<h3 style="margin:14px 14px 6px">Technik</h3>' + e.technik.map(f => '<p style="margin:0 14px 10px"><strong>' + esc(f.name) + '</strong><br>' + ((f.tech || []).length ? f.tech.map(esc).join('<br>') : '<span class="muted">keine Angaben</span>') + '</p>').join('');
       if (fel.gaeste) { const G = e.gaeste || [], n = G.reduce((s, g) => s + g.n, 0); h += '<h3 style="margin:14px 14px 6px">Gästeliste' + (n ? ' · ' + n + ' Plätze' : '') + '</h3>' + (G.length ? G.map(g => '<p style="margin:0 14px 10px"><strong>' + esc(g.dj) + '</strong> · ' + g.n + ' Plätze' + (g.namen.length ? '<br>' + g.namen.map(esc).join(', ') : '') + '</p>').join('') : '<p class="muted" style="margin:0 14px 12px">Noch keine Einträge.</p>'); }
       // Rückmeldung an die Veranstalter
@@ -1559,6 +1560,15 @@ function bkPanel(e){
 /* ===== (11) Rückmeldungen der Location-Betreiber ===== */
 // Prüfsumme mit sortierten Schlüsseln – damit Web und Android denselben Wert bilden
 const kanon = v => Array.isArray(v) ? '[' + v.map(kanon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + kanon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v);
+/* Line-up in der Betreiber-Ansicht: nach Floors unterteilt (Reihenfolge wie bei der Technik, sonst wie im Line-up) */
+const pvFloors = e => { const F = []; (e.technik || []).forEach(f => { if (f.name && F.indexOf(f.name) < 0) F.push(f.name); }); (e.lineup || []).forEach(l => { if (l.floor && F.indexOf(l.floor) < 0) F.push(l.floor); }); return F; };
+function pvLineup(e){
+  const L = e.lineup || [], F = pvFloors(e).filter(n => L.some(l => l.floor === n)), ohne = L.filter(l => !l.floor);
+  const zeile = l => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.name) + '</span><span class="row-sub">' + esc(l.start ? l.start + (l.end ? '–' + l.end : '') : 'Zeit folgt') + '</span></span></div></li>';
+  if (!F.length) return '<ul class="rows">' + L.map(zeile).join('') + '</ul>';
+  const G = F.map(n => [n, L.filter(l => l.floor === n)]); if (ohne.length) G.push(['Floor folgt', ohne]);
+  return G.map(g => '<div class="pv-floor"><div class="pv-floor-h"><span>' + esc(g[0]) + '</span><span class="muted small">' + g[1].length + (g[1].length === 1 ? ' Act' : ' Acts') + '</span></div><ul class="rows">' + g[1].map(zeile).join('') + '</ul></div>').join('');
+}
 const roSig = ev => fgHash(kanon({ lineup:ev.lineup || [], technik:ev.technik || [] }));
 function rmStand(e){
   const x = (S.rm || {})[e.id];
@@ -2367,6 +2377,10 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08i', titel:'Line-up nach Floors', punkte:[
+    'In der Betreiber-Ansicht ist das Line-up jetzt nach Floors unterteilt – jeder Floor mit seinen DJs und Zeiten',
+    'Acts ohne Floor stehen unter „Floor folgt“'
+  ]},
   { v:'2026-11-08h', titel:'Bereiche direkt erreichbar', punkte:[
     'Oben in den Reitern gibt es jetzt direkte Knöpfe zu den Bereichen – z. B. bei Events: Verzeichnis und Verlauf, im Kalender: Umfeld und Verzeichnis',
     'In den Ansichten Marketing, Booking und Finanzen kommst du so direkt zu Events und Kalender'
