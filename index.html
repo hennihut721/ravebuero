@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>try{var _m=localStorage.getItem('va:modus'),_f=localStorage.getItem('va:farbe');if(_m==='hell'||_m==='dunkel')document.documentElement.setAttribute('data-theme',_m==='hell'?'light':'dark');if(_f&&_f!=='pink')document.documentElement.setAttribute('data-farbe',_f);var _a=localStorage.getItem('va:ansicht');if(_a==='light'||_a==='marketing')document.documentElement.setAttribute('data-ansicht',_a);}catch(e){}</script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>try{var _m=localStorage.getItem('va:modus'),_f=localStorage.getItem('va:farbe');if(_m==='hell'||_m==='dunkel')document.documentElement.setAttribute('data-theme',_m==='hell'?'light':'dark');if(_f&&_f!=='pink')document.documentElement.setAttribute('data-farbe',_f);var _a=localStorage.getItem('va:ansicht');if(['light','marketing','booking','finanzen'].indexOf(_a)>=0)document.documentElement.setAttribute('data-ansicht',_a);}catch(e){}</script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>RaveBüro</title>
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#091C41"><meta name="apple-mobile-web-app-title" content="RaveBüro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,10 +65,62 @@
 :root[data-ansicht="light"] .lead, :root[data-ansicht="light"] .lead-more, :root[data-ansicht="light"] .banner, :root[data-ansicht="light"] .tab[data-tab="marketing"]{display:none !important}
 :root[data-ansicht="light"] .tabbar-in{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Ansicht „Marketing“: nur der Marketing-Reiter, alles andere über die Einstellungen */
-:root[data-ansicht="marketing"] .lead, :root[data-ansicht="marketing"] .lead-more, :root[data-ansicht="marketing"] .banner, :root[data-ansicht="marketing"] .tab:not(.mk-only){display:none !important}
+:root[data-ansicht="marketing"] .lead, :root[data-ansicht="marketing"] .lead-more, :root[data-ansicht="marketing"] .banner, :root[data-ansicht="marketing"] .tab:not(.mo-marketing){display:none !important}
 :root[data-ansicht="marketing"] .tabbar-in{grid-template-columns:repeat(4,minmax(0,1fr))}
-.tab.mk-only{display:none}
-:root[data-ansicht="marketing"] .tab.mk-only{display:flex}
+.tab.mo{display:none}
+:root[data-ansicht="marketing"] .tab.mo-marketing, :root[data-ansicht="booking"] .tab.mo-booking, :root[data-ansicht="finanzen"] .tab.mo-finanzen{display:flex}
+:root[data-ansicht="booking"] .lead, :root[data-ansicht="booking"] .lead-more, :root[data-ansicht="booking"] .banner, :root[data-ansicht="booking"] .tab:not(.mo-booking),
+:root[data-ansicht="finanzen"] .lead, :root[data-ansicht="finanzen"] .lead-more, :root[data-ansicht="finanzen"] .banner, :root[data-ansicht="finanzen"] .tab:not(.mo-finanzen){display:none !important}
+:root[data-ansicht="booking"] .tabbar-in{grid-template-columns:repeat(4,minmax(0,1fr))}
+:root[data-ansicht="finanzen"] .tabbar-in{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Abend-Modus: groß, dunkel, gut im Club lesbar */
+.abend{--ab-bg:#07080d;--ab-card:#141722;--ab-line:#262a38;--ab-ink:#f5f6fa;--ab-ink2:#a9adbd;background:var(--ab-bg);color:var(--ab-ink);margin:-8px -16px 0;padding:16px 16px 28px;border-radius:0 0 18px 18px;min-height:70vh}
+.abend .muted{color:var(--ab-ink2)}
+.ab-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ab-live{font-weight:700;color:#ff4d8d}
+.ab-h1{font-size:clamp(30px,8vw,46px);font-weight:800;line-height:1.05;margin:12px 0 4px;color:var(--ab-ink)}
+.ab-sub{color:var(--ab-ink2);font-size:18px;margin:0 0 16px}
+.ab-card{background:var(--ab-card);border:1px solid var(--ab-line);border-radius:16px;padding:16px;margin:0 0 10px}
+.ab-card.now{border-color:#ff4d8d;box-shadow:0 0 0 1px #ff4d8d inset}
+.ab-k{color:var(--ab-ink2);font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.ab-name{font-size:30px;font-weight:800;line-height:1.1;margin:4px 0;overflow-wrap:anywhere}
+.ab-t{font-size:20px;font-variant-numeric:tabular-nums}
+.ab-sec{display:flex;align-items:center;gap:8px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--ab-ink2);margin:22px 0 8px}
+.ab-list{background:var(--ab-card);border:1px solid var(--ab-line);border-radius:16px;overflow:hidden}
+.ab-list > p{padding:14px;margin:0}
+.ab-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--ab-line)}
+.ab-row:first-child{border-top:0}
+.ab-row.now{background:rgba(255,77,141,.12)}
+.ab-row.past{opacity:.45}
+.ab-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;width:62px;flex:none}
+.ab-who{flex:1;min-width:0}
+.ab-name2{font-size:19px;font-weight:700;overflow-wrap:anywhere}
+.ab-meta{color:var(--ab-ink2);font-size:14px}
+.ab-da{flex:none;min-height:44px;min-width:64px;border-radius:12px;border:1px solid var(--ab-line);background:transparent;color:var(--ab-ink);font-weight:700;font-size:15px;cursor:pointer}
+.ab-da.on{background:#1f8f55;border-color:#1f8f55;color:#fff}
+.ab-tel{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#1d2130;text-decoration:none;font-size:20px}
+.ab-gl{background:var(--ab-card);border:1px solid var(--ab-line);border-radius:16px;padding:14px}
+.ab-gl-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.ab-gl-top .inp{flex:1;min-width:160px;background:#0d0f17;color:var(--ab-ink);border-color:var(--ab-line)}
+.ab-big{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.ab-big span{font-size:16px;font-weight:600;color:var(--ab-ink2)}
+.ab-gl-g{margin:14px 0 0}
+.ab-gl-h{font-weight:700;margin:0 0 6px;color:var(--ab-ink2)}
+.ab-gl-h span{font-weight:500}
+.ab-gl-n{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 12px;margin:0 0 6px;border-radius:12px;border:1px solid var(--ab-line);background:#0d0f17;color:var(--ab-ink);font-weight:600;font-size:18px;text-align:left;cursor:pointer}
+.ab-gl-n .muted{margin-left:auto}
+.ab-gl-n.on{background:#123524;border-color:#1f8f55}
+.ab-ck{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;border:2px solid var(--ab-line);flex:none}
+.ab-ck svg{width:18px;height:18px;opacity:0}
+.ab-gl-n.on .ab-ck{background:#1f8f55;border-color:#1f8f55}
+.ab-gl-n.on .ab-ck svg{opacity:1;color:#fff}
+.ab-gl-anon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--ab-ink2);padding:6px 2px}
+.ab-gl-anon span{flex:1}
+.ab-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin:0 0 14px;border-radius:16px;background:#07080d;color:#f5f6fa;text-decoration:none;border:1px solid #ff4d8d}
+.ab-banner > span{display:flex;flex-direction:column;gap:2px}
+.ab-banner .btn{flex:none}
+.akt .m strong{font-weight:700}
+a.row{text-decoration:none;color:inherit}
 .mkc{padding:12px 14px;border-top:1px solid var(--line)}
 .mkc:first-of-type{border-top:0}
 .mkc-h{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
@@ -683,10 +735,17 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
   <a class="tab" href="#events" data-tab="events"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M15 7.5v1.5M15 11.25v1.5M15 15v1.5"/></svg><span>Events</span></a>
   <a class="tab" href="#kalender" data-tab="kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Kalender</span></a>
   <a class="tab" href="#marketing" data-tab="marketing"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Marketing</span></a>
-  <a class="tab mk-only" href="#marketing" data-tab="mk-heute"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg><span>Heute</span></a>
-  <a class="tab mk-only" href="#mk-kalender" data-tab="mk-kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h6"/></svg><span>Content</span></a>
-  <a class="tab mk-only" href="#mk-inhalte" data-tab="mk-inhalte"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span>Inhalte</span></a>
-  <a class="tab mk-only" href="#mk-kanaele" data-tab="mk-kanaele"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Kanäle</span></a>
+  <a class="tab mo mo-marketing" href="#marketing" data-tab="mk-heute"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg><span>Heute</span></a>
+  <a class="tab mo mo-marketing" href="#mk-kalender" data-tab="mk-kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h6"/></svg><span>Content</span></a>
+  <a class="tab mo mo-marketing" href="#mk-inhalte" data-tab="mk-inhalte"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span>Inhalte</span></a>
+  <a class="tab mo mo-marketing" href="#mk-kanaele" data-tab="mk-kanaele"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Kanäle</span></a>
+  <a class="tab mo mo-booking" href="#booking" data-tab="bk-heute"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Heute</span></a>
+  <a class="tab mo mo-booking" href="#bk-anfragen" data-tab="bk-anfragen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Anfragen</span></a>
+  <a class="tab mo mo-booking" href="#bk-djs" data-tab="bk-djs"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span>DJs</span></a>
+  <a class="tab mo mo-booking" href="#bk-locs" data-tab="bk-locs"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Locations</span></a>
+  <a class="tab mo mo-finanzen" href="#finanzen" data-tab="fi-heute"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 6.5A7 7 0 1 0 17 17.5M4 10.5h9M4 13.5h9"/></svg><span>Übersicht</span></a>
+  <a class="tab mo mo-finanzen" href="#fi-offen" data-tab="fi-offen"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Offen</span></a>
+  <a class="tab mo mo-finanzen" href="#fi-abrechnung" data-tab="fi-abrechnung"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Abrechnung</span></a>
 </div></nav>
 
 <div id="sheet" class="sheet-wrap" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></div></div>
@@ -968,6 +1027,7 @@ function deriveLocal(){
   S.local = !S.watch.length ? S.localAll : S.localAll.filter(l => isWatched(l.match) || S.events.some(e => e.linkId && e.linkId === l.id));
 }
 function subscribe(){
+  aktHoeren();
   const timer = setTimeout(() => {
     if (!db) return;
     if (!COLS.every(c => S.fresh[c]) && S.conn === 'connecting') { S.conn = COLS.some(c => S.got[c]) ? 'stale' : 'slow'; scheduleRender(); }
@@ -1002,7 +1062,7 @@ const FB_CONFIG = {
 let fbStarted = false;
 function loginView(msg, err){
   const v = $('#view');
-  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Nutzbar nur mit Einladung: Melde dich mit dem Google-Konto an, das in einem Projekt eingetragen ist.') + '</p>' +
+  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('einlass') ? 'Du wurdest fürs Einlass-Team eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du die Gästeliste zum Abhaken.' : LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Nutzbar nur mit Einladung: Melde dich mit dem Google-Konto an, das in einem Projekt eingetragen ist.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="fb-login">Mit Google anmelden</button>' + (firebase.auth().currentUser ? '<button class="btn" id="fb-logout">Abmelden</button>' : '') + '</div></div>';
   const b = $('#fb-login'); if (b) b.onclick = () => {
@@ -1062,7 +1122,7 @@ async function projektWahl(msg, err){
   let L = [];
   let pFehler = '';
   try { L = await meineProjekte(); } catch (e) { pFehler = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); }
-  const F = await meineFreigaben(), nurPartner = await istPartnerKonto() || !!LS.get('zugang'), darf = !nurPartner && await istErsteller();
+  const F = await meineFreigaben(), EL = (await meineEinlaesse()).filter(f => (f.emails || []).indexOf(meineMail()) >= 0), nurPartner = await istPartnerKonto() || !!LS.get('zugang') || !!LS.get('einlass'), darf = !nurPartner && await istErsteller();
   if (pFehler && !nurPartner) { msg = pFehler; err = true; }
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
@@ -1073,13 +1133,15 @@ async function projektWahl(msg, err){
       const neu = p.owner !== me && seen.indexOf(p.id) < 0;
       return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>'
-      : F.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : (darf ? 'Leg unten dein erstes Projekt an – oder lass dich in ein bestehendes einladen.' : 'RaveBüro ist nur mit Einladung nutzbar. Bitte jemanden aus eurem Kollektiv, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und tippe danach auf „Neu laden“.')) + '</p></div>') +
+      : F.length || EL.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : (darf ? 'Leg unten dein erstes Projekt an – oder lass dich in ein bestehendes einladen.' : 'RaveBüro ist nur mit Einladung nutzbar. Bitte jemanden aus eurem Kollektiv, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und tippe danach auf „Neu laden“.')) + '</p></div>') +
+    (EL.length ? '<section class="panel"><div class="panel-h"><h2>Einlass</h2></div><ul class="rows">' + EL.map(f => '<li><button type="button" class="row" data-pe="' + esc(f.id) + '"><span class="av">E</span><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + '</span><span class="row-sub">Gästeliste · ' + fmtD((f.event || {}).date) + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
     (F.length ? '<section class="panel"><div class="panel-h"><h2>Für dich freigegeben</h2></div><ul class="rows">' + F.map(f => '<li><button type="button" class="row" data-pf="' + esc(f.id) + '"><span class="av">' + esc(initial(f.ort)) + '</span><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + '</span><span class="row-sub">von ' + esc(f.projekt || 'Veranstalter') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
     (!darf ? '' : '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>') +
     '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pj-reload">Neu laden</button><button class="btn btn-ghost" id="pj-out">Abmelden</button></div>';
   $('#conn').className = 'conn'; $('#conn-t').textContent = 'Projekt wählen';
   v.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => oeffneProjekt(L.find(p => p.id === b.getAttribute('data-pj'))));
   v.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => partnerView(b.getAttribute('data-pf')));
+  v.querySelectorAll('[data-pe]').forEach(b => b.onclick = () => einlassView(b.getAttribute('data-pe')));
   $('#pj-reload').onclick = () => projektWahl();
   $('#pj-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
   if ($('#pj-form')) $('#pj-form').onsubmit = async ev => {
@@ -1096,6 +1158,7 @@ async function projektWahl(msg, err){
   };
 }
 function stopProjekt(){
+  try { FG_STOP(); } catch (e) {}
   if (PV.unsub) { try { PV.unsub(); } catch (e) {} PV.unsub = null; }
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
@@ -1125,6 +1188,7 @@ function oeffneProjekt(p){
 const APP_URL = 'https://hennihut721.github.io/ravebuero/';
 const PARTNER_FELDER = [['lineup', 'Line-up & Running Order', true], ['flyer', 'Flyer', true], ['technik', 'Technik & Floors', true], ['gaeste', 'Gästeliste', false]];
 const FG_COLS = ['events', 'lineup', 'floors', 'mkmedia', 'venues'];
+const FG_STOP = () => { (FG.hoer || []).forEach(u => { try { u(); } catch (e) {} }); FG.hoer = []; FG.hoerIds = null; S.rm = {}; if (S.elUnsub) { try { S.elUnsub(); } catch (e) {} S.elUnsub = null; S.elFid = null; } };
 const FG = { bekannt:null, letzt:'', t:0 };
 const PV = { unsub:null, doc:null, flyer:{} };
 (function(){ try { const z = new URLSearchParams(location.search).get('zugang'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('zugang', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
@@ -1184,7 +1248,7 @@ async function fgLauf(){
     try {
       for (const ev of events) if (ev.flyer && ev.flyer !== altFly[ev.id]) { const d = await mkBild(ev.flyer.split(':')[0]); if (d) await fs.collection('freigaben').doc(fid).collection('flyer').doc(ev.id).set({ data:d, pid }); }
       const neu = Object.assign({}, body, { sig, stand:Date.now() });
-      await fs.collection('freigaben').doc(fid).set(neu); FG.bekannt[fid] = neu; delete FG.fehler[fid];
+      await fs.collection('freigaben').doc(fid).set(neu, { merge:true }); FG.bekannt[fid] = neu; delete FG.fehler[fid];
     } catch (e) { console.warn('Freigabe', fid, e); FG.fehler[fid] = (e && (e.code || e.message)) || String(e); }
   }
   // Zugänge, die es nicht mehr gibt, entfernen
@@ -1192,6 +1256,8 @@ async function fgLauf(){
     if (V.some(v => fgId(v) === fid)) continue;
     try { await fs.collection('freigaben').doc(fid).delete(); delete FG.bekannt[fid]; } catch (e) {}
   }
+  fgHoeren();
+  await elSync();
 }
 function partnerSheet(v){
   const fel = fgFelder(v), M = fgMails(v);
@@ -1302,6 +1368,11 @@ function partnerRender(fid, fehler){
       if (fel.lineup) h += '<h3 style="margin:4px 14px 6px">Line-up</h3>' + ((e.lineup || []).length ? '<ul class="rows">' + e.lineup.map(l => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.name) + '</span><span class="row-sub">' + [l.start ? l.start + (l.end ? '–' + l.end : '') : 'Zeit folgt', l.floor].filter(Boolean).map(esc).join(' · ') + '</span></span></div></li>').join('') + '</ul>' : '<p class="muted" style="margin:0 14px 12px">Folgt bald.</p>');
       if (fel.technik && (e.technik || []).length) h += '<h3 style="margin:14px 14px 6px">Technik</h3>' + e.technik.map(f => '<p style="margin:0 14px 10px"><strong>' + esc(f.name) + '</strong><br>' + ((f.tech || []).length ? f.tech.map(esc).join('<br>') : '<span class="muted">keine Angaben</span>') + '</p>').join('');
       if (fel.gaeste) { const G = e.gaeste || [], n = G.reduce((s, g) => s + g.n, 0); h += '<h3 style="margin:14px 14px 6px">Gästeliste' + (n ? ' · ' + n + ' Plätze' : '') + '</h3>' + (G.length ? G.map(g => '<p style="margin:0 14px 10px"><strong>' + esc(g.dj) + '</strong> · ' + g.n + ' Plätze' + (g.namen.length ? '<br>' + g.namen.map(esc).join(', ') : '') + '</p>').join('') : '<p class="muted" style="margin:0 14px 12px">Noch keine Einträge.</p>'); }
+      // Rückmeldung an die Veranstalter
+      const r = (x.rm || {})[e.id] || {}, sig = roSig(e), best = r.ok && r.okSig === sig;
+      h += '<div style="border-top:1px solid var(--line);margin:8px 0 0;padding:12px 14px 4px"><h3 style="margin:0 0 8px">Eure Rückmeldung</h3>' +
+        (best ? '<p class="ok-t" style="margin:0 0 10px">✓ Ihr habt Running Order und Technik am ' + fmtDs(isoVon(r.ok)) + ' bestätigt.</p>' : (r.ok ? '<p class="due-soon" style="margin:0 0 8px">Seit eurer Bestätigung hat sich etwas geändert.</p>' : '') + '<button class="btn btn-primary btn-sm" data-pv-ok="' + esc(e.id) + '" style="margin:0 0 10px">Passt so – Running Order und Technik bestätigen</button>') +
+        '<textarea class="inp" id="pv-t-' + esc(e.id) + '" rows="2" maxlength="1000" placeholder="Anmerkung an die Veranstalter, z. B. zur Technik" style="width:100%;font-family:var(--f-body)">' + esc(r.text || '') + '</textarea><button class="btn btn-sm" data-pv-txt="' + esc(e.id) + '" style="margin:8px 0 6px">Senden</button>' + (r.textAt ? '<span class="muted small" style="margin-left:8px">zuletzt gesendet ' + wann(r.textAt) + '</span>' : '') + '</div>';
       h += '<div style="height:6px"></div></section>';
     });
     if (x.stand) { const d = new Date(x.stand); h += '<p class="muted small">Stand: ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '. ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' Uhr</p>'; }
@@ -1312,7 +1383,515 @@ function partnerRender(fid, fehler){
   }
   $('#pv-wahl').onclick = () => projektWahl();
   $('#pv-out').onclick = () => { LS.set('zugang', ''); firebase.auth().signOut().then(() => location.reload()); };
+  if (!x) return;
+  const ref = fs.collection('freigaben').doc(fid);
+  v.querySelectorAll('[data-pv-ok]').forEach(b => b.onclick = async () => { const eid = b.getAttribute('data-pv-ok'), ev = (x.events || []).find(q => q.id === eid); if (!ev) return; b.disabled = true; try { await ref.update({ ['rm.' + eid + '.ok']:Date.now(), ['rm.' + eid + '.okSig']:roSig(ev) }); toast('Danke! Die Veranstalter sehen eure Bestätigung.'); } catch (e) { b.disabled = false; toast('Hat nicht geklappt.'); } });
+  v.querySelectorAll('[data-pv-txt]').forEach(b => b.onclick = async () => { const eid = b.getAttribute('data-pv-txt'), t = (document.getElementById('pv-t-' + eid) || {}).value || ''; b.disabled = true; try { await ref.update({ ['rm.' + eid + '.text']:t.trim().slice(0, 1000), ['rm.' + eid + '.textAt']:Date.now() }); toast('Gesendet.'); } catch (e) { toast('Hat nicht geklappt.'); } b.disabled = false; });
 }
+/* ---------- Organisation: Ablauf, Booking, Abend-Modus, Einlass, Abrechnung, Rückblick, Aufgaben, Verlauf, Ansichten ---------- */
+// Wer bin ich im Team? (Person, deren Google-Adresse zu meinem Konto passt)
+const ichPerson = () => (S.people || []).find(p => (p.email || '').trim().toLowerCase() === meineMail());
+const meinName = () => { const p = ichPerson(); return p ? p.name : meineMail().split('@')[0]; };
+const isoVon = ms => iso(new Date(ms || 0));
+const uhr = ms => { const d = new Date(ms || 0); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const wann = ms => { const d = isoVon(ms), t = today(); return (d === t ? 'heute' : d === addDays(t, -1) ? 'gestern' : fmtDs(d)) + ' ' + uhr(ms); };
+const telLink = s => { const n = String(s || '').replace(/[^\d+]/g, ''); return n.length >= 6 ? 'tel:' + n : ''; };
+const evName = id => (S.events.find(e => e.id === id) || {}).name || 'Event';
+// Ansichten: Pro, Light und die Bereichs-Ansichten mit eigenen Reitern
+const ANSICHTEN = [['pro', 'Pro'], ['light', 'Light'], ['marketing', 'Marketing'], ['booking', 'Booking'], ['finanzen', 'Finanzen']];
+const ansicht = () => { const a = LS.get('ansicht') || 'pro'; return ANSICHTEN.some(x => x[0] === a) ? a : 'pro'; };
+const startHash = () => ({ marketing:'#marketing', booking:'#booking', finanzen:'#finanzen' })[ansicht()] || '#events';
+const bereichsAnsicht = () => ['marketing', 'booking', 'finanzen'].indexOf(ansicht()) >= 0;
+
+/* ===== Aktivitätsverlauf ===== */
+async function logA(text, eventId, docId){
+  if (!db || S.ro) return;
+  try { await db.collection('aktivitaet').doc(docId || newId('a')).set({ text:String(text).slice(0, 240), wer:meinName(), mail:meineMail(), eventId:eventId || '', at:Date.now() }); } catch (e) { console.warn('Verlauf', e); }
+}
+function aktHoeren(){
+  S.akt = S.akt || [];
+  try { UNSUB.push(db.collection('aktivitaet').orderBy('at', 'desc').limit(60).onSnapshot(sn => { S.akt = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); scheduleRender(); }, () => {})); } catch (e) {}
+}
+function aktListe(n){
+  const A = (S.akt || []).slice(0, n);
+  if (!A.length) return empty('Noch nichts passiert. Sobald jemand ein Act bestätigt, Flyer fertig macht oder Aufgaben erledigt, steht es hier.');
+  return '<ul class="wl akt">' + A.map(a => '<li><a href="' + (a.eventId ? '#ev-' + esc(a.eventId) : '#events') + '" style="display:flex;gap:10px;align-items:flex-start;min-width:0;flex:1"><span class="av" style="flex:none">' + esc(initial(a.wer)) + '</span><span style="min-width:0"><span class="m" style="white-space:normal"><strong>' + esc(a.wer) + '</strong> ' + esc(a.text) + '</span><span class="muted small" style="display:block">' + wann(a.at) + '</span></span></a></li>').join('') + '</ul>';
+}
+
+/* ===== (1) Ablauf pro Event ===== */
+const ABLAUF = [
+  ['location', 'Location fix', -70, 'location'], ['lineup', 'Line-up fix', -49, 'lineup'], ['flyer', 'Flyer fertig', -35, 'flyer'],
+  ['ank', 'Ankündigung raus', -28, 'plan'], ['technik', 'Technik geklärt', -21, 'location'], ['ro', 'Running Order an die Location', -7, 'ro']
+];
+function ablauf(e){
+  const man = e.ablauf || {}, L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt');
+  const M = mkCol('mkmedia').filter(m => m.eventId === e.id), P = mkCol('mkposts').filter(p => p.eventId === e.id);
+  const auto = {
+    location: !!(e.venue || '').trim() && (e.status === 'planung' || e.status === 'bestaetigt'),
+    lineup: L.length > 0 && L.every(l => l.status === 'zugesagt'),
+    flyer: M.some(m => m.kind === 'flyer' && m.status === 'fertig'),
+    ank: P.some(p => p.done && (p.typ === 'ankuendigung' || /ankünd/i.test(p.title || ''))),
+    technik: S.floors.some(f => f.eventId === e.id && techLines(f.tech).length),
+    ro: rmStand(e).ok === 'aktuell'
+  };
+  return ABLAUF.map(([k, label, off, ziel]) => ({ k, label, ziel, due:isDate(e.date) ? addDays(e.date, off) : '', auto:!!auto[k], done:!!auto[k] || !!man[k] }));
+}
+function ablaufPanel(e){
+  const A = ablauf(e), ok = A.filter(x => x.done).length, t = today();
+  return '<section class="panel"><div class="panel-h"><h2>Ablauf</h2><span class="muted small">' + ok + ' von ' + A.length + ' erledigt</span></div>' +
+    '<div class="mkbar" style="margin:0 14px 6px"><span style="width:' + Math.round(ok / A.length * 100) + '%"></span></div><ul class="rows">' + A.map(x => {
+      const late = !x.done && x.due && x.due < t, soon = !x.done && x.due && !late && dayDiff(t, x.due) <= 7;
+      const sub = x.done ? (x.auto ? 'erledigt · automatisch erkannt' : 'erledigt · abgehakt') : (x.due ? (late ? '<span class="overdue">überfällig seit ' + fmtDs(x.due) + '</span>' : soon ? '<span class="due-soon">bis ' + fmtDs(x.due) + '</span>' : 'bis ' + fmtDs(x.due)) : 'ohne Datum');
+      return '<li class="task' + (x.done ? ' done' : '') + '"><button class="chk" role="checkbox" aria-checked="' + x.done + '" aria-label="' + esc(x.label) + '" data-o="ablauf" data-id="' + esc(e.id) + '" data-v="' + x.k + '"' + (S.ro || x.auto ? ' disabled' : '') + '>' + I.check + '</button>' +
+        '<button class="task-main" data-o="ablauf-ziel" data-id="' + esc(e.id) + '" data-v="' + x.ziel + '"><span class="row-title">' + esc(x.label) + '</span><span class="row-sub">' + sub + '</span></button></li>';
+    }).join('') + '</ul></section>';
+}
+function ablaufZiel(e, ziel){
+  if (ziel === 'location' || ziel === 'lineup') { S.evTab = ziel; location.hash = '#ev-' + e.id; render(); return; }
+  if (ziel === 'ro') { const v = (S.venues || []).find(x => fgOrt(e.venue, x.name)); if (v) partnerSheet(v); else { S.evTab = 'location'; render(); toast('Leg die Location im Verzeichnis an, dann kannst du den Betreiber einladen.'); } return; }
+  S.mkEv = e.id; LS.set('mkEv', e.id); S.mkTab = ziel === 'flyer' ? 'medien' : 'plan'; LS.set('mkTab', S.mkTab);
+  location.hash = istMk() ? '#mk-inhalte' : '#marketing';
+}
+
+/* ===== (2) Booking: Anfragen und Nachhaken ===== */
+const NACHHAKEN_TAGE = 5;
+const anfrageSeit = l => l.nachgehaktAm || l.anfrageAm || l.createdAt || 0;
+const offenTage = l => l.status === 'angefragt' ? Math.max(0, dayDiff(isoVon(anfrageSeit(l)), today())) : 0;
+const upEv = id => { const e = S.events.find(x => x.id === id); return e && isDate(e.date) && e.date >= today() && e.status !== 'abgesagt' ? e : null; };
+const nachhakenListe = () => S.lineup.filter(l => l.status === 'angefragt' && upEv(l.eventId) && offenTage(l) >= NACHHAKEN_TAGE).sort((a, b) => offenTage(b) - offenTage(a));
+function bkText(l, e, art){
+  const d = isDate(e.date) ? WD[pd(e.date).getDay()] + ', ' + fmtDs(e.date) + pd(e.date).getFullYear() : 'bald', wo = e.venue ? ' in ' + e.venue : '';
+  const slot = l.start ? ' (Slot ' + l.start + (l.end ? '–' + l.end : '') + ')' : '';
+  if (art === 'nachhaken') return 'Hi ' + (l.name || '') + ', kurze Nachfrage zu unserer Anfrage für ' + d + ' („' + (e.name || 'unser Event') + '“' + wo + '). Hast du schon reingeschaut? Wir planen gerade das Line-up 🙂';
+  return 'Hi ' + (l.name || '') + '! 👋 Wir veranstalten am ' + d + ' „' + (e.name || 'unser Event') + '“' + wo + '. Hättest du Lust auf ein Set' + slot + '?' + (num(l.fee) ? ' Gage: ' + eur(l.fee) + '.' : '') + ' Wir freuen uns auf deine Antwort! – ' + ((projekt && projekt.name) || 'euer Kollektiv');
+}
+async function bkSenden(l, art){
+  const e = S.events.find(x => x.id === l.eventId); if (!e) return;
+  const txt = bkText(l, e, art), n = waNum(l.wa);
+  window.open('https://wa.me/' + (n || '') + '?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+  if (S.ro) return;
+  const upd = art === 'nachhaken' ? { nachgehaktAm:Date.now() } : { anfrageAm:Date.now(), status:'angefragt' };
+  try { await db.doc('lineup/' + l.id).update(upd); } catch (x) {}
+  logA((art === 'nachhaken' ? 'hat bei ' : 'hat ') + (l.name || 'einem Act') + (art === 'nachhaken' ? ' nachgehakt' : ' angefragt') + ' (' + (e.name || 'Event') + ')', e.id);
+  if (!n) toast('Keine WhatsApp-Nummer hinterlegt – wähle den Chat selbst aus.');
+}
+function bkZeile(l, mitEvent){
+  const e = S.events.find(x => x.id === l.eventId) || {}, tg = offenTage(l), faellig = tg >= NACHHAKEN_TAGE;
+  const st = LST[l.status] || LST.angefragt;
+  const sub = [mitEvent ? esc(e.name || 'Event') + ' · ' + fmtDs(e.date) : '', l.status === 'angefragt' ? (l.anfrageAm || l.nachgehaktAm ? (faellig ? '<span class="overdue">seit ' + tg + ' Tagen ohne Antwort</span>' : (l.nachgehaktAm ? 'nachgehakt' : 'angefragt') + ' vor ' + tg + (tg === 1 ? ' Tag' : ' Tagen')) : '<span class="due-soon">noch nicht angefragt</span>') : '', num(l.fee) ? eur(l.fee) : ''].filter(Boolean).join(' · ');
+  const btn = l.status !== 'angefragt' || S.ro ? '' : (!l.anfrageAm && !l.nachgehaktAm ? '<button class="btn btn-sm" data-o="bk-wa" data-id="' + esc(l.id) + '" data-v="anfrage" style="flex:none">Anfragen</button>' : faellig ? '<button class="btn btn-sm btn-primary" data-o="bk-wa" data-id="' + esc(l.id) + '" data-v="nachhaken" style="flex:none">Nachhaken</button>' : '');
+  return '<li><div class="task"><span class="pill ' + st.cls + '" style="flex:none;align-self:center">' + st.label + '</span><button class="task-main" data-act="edit-lineup" data-id="' + esc(l.id) + '"><span class="row-title">' + esc(l.name || 'Act') + '</span><span class="row-sub">' + sub + '</span></button>' + btn + '</div></li>';
+}
+function bkPanel(e){
+  const A = S.lineup.filter(l => l.eventId === e.id && l.status === 'angefragt');
+  if (!A.length) return '';
+  const f = A.filter(l => offenTage(l) >= NACHHAKEN_TAGE || (!l.anfrageAm && !l.nachgehaktAm)).length;
+  return '<section class="panel"><div class="panel-h"><h2>Offene Anfragen</h2>' + (f ? '<span class="pill st-planung">' + f + ' zu tun</span>' : '') + '</div><p class="pad" style="padding-top:0">Nach ' + NACHHAKEN_TAGE + ' Tagen ohne Antwort erinnert dich die App ans Nachhaken. Die Nachricht ist schon vorgeschrieben.</p><ul class="rows">' + A.sort((a, b) => offenTage(b) - offenTage(a)).map(l => bkZeile(l)).join('') + '</ul></section>';
+}
+
+/* ===== (11) Rückmeldungen der Location-Betreiber ===== */
+const roSig = ev => fgHash(JSON.stringify({ lineup:ev.lineup || [], technik:ev.technik || [] }));
+function rmStand(e){
+  const x = (S.rm || {})[e.id];
+  if (!x) return { ok:'', text:'' };
+  return { ok:x.ok ? (x.aktuell ? 'aktuell' : 'alt') : '', at:x.ok, text:x.text || '', textAt:x.textAt || 0, ort:x.ort };
+}
+function fgHoeren(){
+  // Rückmeldungen live mitbekommen (nur Locations mit Betreiber-Zugang)
+  const V = (S.venues || []).filter(v => fgMails(v).length), ids = V.map(fgId).sort().join(',');
+  if (FG.hoerIds === ids) return;
+  (FG.hoer || []).forEach(u => { try { u(); } catch (e) {} });
+  FG.hoer = []; FG.hoerIds = ids; FG.rmDocs = {};
+  V.forEach(v => {
+    const fid = fgId(v);
+    try { FG.hoer.push(fs.collection('freigaben').doc(fid).onSnapshot(d => { FG.rmDocs[fid] = d.exists ? d.data() : null; rmAufbauen(); }, () => {})); } catch (e) {}
+  });
+}
+function rmAufbauen(){
+  const R = {};
+  Object.keys(FG.rmDocs || {}).forEach(fid => {
+    const x = FG.rmDocs[fid]; if (!x) return;
+    const rm = x.rm || {};
+    (x.events || []).forEach(ev => {
+      const r = rm[ev.id]; if (!r) return;
+      R[ev.id] = { ort:x.ort, ok:r.ok || 0, aktuell:!!r.ok && r.okSig === roSig(ev), text:r.text || '', textAt:r.textAt || 0 };
+      // im Verlauf festhalten (feste ID, damit es nicht doppelt erscheint)
+      if (r.ok) logOnce('rm_ok_' + ev.id + '_' + r.ok, (x.ort || 'Die Location') + ' hat die Running Order bestätigt (' + (ev.name || 'Event') + ')', ev.id, r.ok);
+      if (r.text && r.textAt) logOnce('rm_txt_' + ev.id + '_' + r.textAt, (x.ort || 'Die Location') + ' schreibt: „' + r.text.slice(0, 120) + '“', ev.id, r.textAt);
+    });
+  });
+  S.rm = R; scheduleRender();
+}
+const LOG_GESEHEN = {};
+async function logOnce(id, text, eventId, at){
+  if (LOG_GESEHEN[id] || !db || S.ro) return; LOG_GESEHEN[id] = 1;
+  try { const ref = db.collection('aktivitaet').doc(id); const d = await ref.get(); if (!d.exists) await ref.set({ text, wer:'Location', mail:'', eventId, at:at || Date.now() }); } catch (e) {}
+}
+function rmPanel(e){
+  const v = (S.venues || []).find(x => fgOrt(e.venue, x.name) && fgMails(x).length);
+  if (!v) return '';
+  const r = rmStand(e);
+  const st = r.ok === 'aktuell' ? '<span class="pill st-ok">✓ Running Order bestätigt</span> <span class="muted small">' + wann(r.at) + '</span>'
+    : r.ok === 'alt' ? '<span class="pill st-planung">Bestätigt, aber seitdem geändert</span> <span class="muted small">Die Location sieht den neuen Stand und kann erneut bestätigen.</span>'
+    : '<span class="muted">Noch keine Bestätigung.</span>';
+  return '<section class="panel"><div class="panel-h"><h2>Rückmeldung von ' + esc(v.name) + '</h2><button class="btn btn-ghost" data-o="partner" data-id="' + esc(v.id) + '">Zugang</button></div><div style="padding:0 14px 14px">' + st +
+    (r.text ? '<blockquote style="margin:10px 0 0;padding:10px 12px;border-left:3px solid var(--pink);background:var(--sunk);border-radius:8px">' + esc(r.text) + '<div class="muted small" style="margin-top:4px">' + wann(r.textAt) + '</div></blockquote>' : '') + '</div></section>';
+}
+
+/* ===== (6) Abrechnung ===== */
+function abrechnung(e){
+  const c = calc(e), ist = e.ist || {}, hatIst = ['ak', 'vvk', 'bar'].some(k => ist[k] != null && ist[k] !== '');
+  const tix = hatIst ? (num(ist.ak) || 0) + (num(ist.vvk) || 0) : c.tickets;
+  const bar = num(ist.bar) || 0, ein = tix + bar + c.incSum, aus = c.totalOut, erg = ein - aus;
+  const n = Math.max(1, int(e.anteile) || ((projekt && projekt.members) || []).length || 1);
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt' && num(l.fee) > 0 && !l.paid);
+  const K = S.money.filter(m => m.eventId === e.id && m.kind === 'ausgabe' && !m.paid);
+  const E = S.money.filter(m => m.eventId === e.id && m.kind === 'einnahme' && !m.paid);
+  return { hatIst, tix, bar, inc:c.incSum, ein, aus, erg, n, pro:erg / n, gaeste:int(ist.gaeste) || 0, offenAus:L.map(l => [l.name + ' (Gage)', num(l.fee), 'lineup', l.id]).concat(K.map(m => [m.label || m.category || 'Kosten', num(m.amount), 'money', m.id])), offenEin:E.map(m => [m.label || m.category || 'Einnahme', num(m.amount), 'money', m.id]) };
+}
+function abrPanel(e){
+  const a = abrechnung(e), vorbei = isDate(e.date) && e.date <= today();
+  const zeile = (k, v, cls) => '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0"><span>' + k + '</span><span class="num ' + (cls || '') + '">' + v + '</span></div>';
+  let h = '<section class="panel" id="abrechnung"><div class="panel-h"><h2>Abrechnung</h2>' + (S.ro ? '' : '<button class="btn btn-sm" data-o="abr-ist" data-id="' + esc(e.id) + '">' + (a.hatIst ? 'Ist-Zahlen ändern' : 'Ist-Zahlen eintragen') + '</button>') + '</div><div style="padding:0 14px 14px">';
+  if (!a.hatIst) h += '<p class="hint" style="margin:0 0 8px">' + (vorbei ? 'Trag ein, was an Abendkasse, Vorverkauf und Bar wirklich reingekommen ist. Bis dahin rechnet die Abrechnung mit den geplanten Tickets.' : 'Nach dem Event trägst du hier die echten Zahlen ein. Bis dahin siehst du die Planung.') + '</p>';
+  h += zeile('Tickets' + (a.hatIst ? ' (Abendkasse + VVK)' : ' (Plan)'), eur(a.tix)) + (a.bar ? zeile('Bar-Anteil', eur(a.bar)) : '') + (a.inc ? zeile('Weitere Einnahmen', eur(a.inc)) : '') +
+    zeile('<strong>Einnahmen</strong>', '<strong>' + eur(a.ein) + '</strong>') + zeile('Gagen und Kosten', '−' + eur(a.aus)) +
+    '<div style="border-top:1px solid var(--line);margin:6px 0"></div>' + zeile('<strong>Ergebnis</strong>', '<strong>' + eurS(a.erg) + '</strong>', a.erg >= 0 ? 'pos' : 'neg') +
+    zeile('Pro Person (' + a.n + ' ' + (a.n === 1 ? 'Person' : 'Personen') + ')', eurS(a.pro), a.pro >= 0 ? 'pos' : 'neg') + (a.gaeste ? zeile('Gäste', a.gaeste) : '');
+  if (a.offenAus.length || a.offenEin.length) h += '<h3 style="margin:14px 0 4px;font-size:15px">Noch offen</h3>' + a.offenAus.map(x => zeile(esc(x[0]), '−' + eur(x[1]), 'neg')).join('') + a.offenEin.map(x => zeile(esc(x[0]) + ' <span class="muted small">kommt noch</span>', eur(x[1]))).join('');
+  else h += '<p class="ok-t" style="margin:10px 0 0">Alles bezahlt.</p>';
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-sm" data-o="abr-teilen" data-id="' + esc(e.id) + '">Teilen</button><button class="btn btn-sm" data-o="abr-pdf" data-id="' + esc(e.id) + '">Als PDF</button></div>';
+  return h + '</div></section>';
+}
+function abrText(e){
+  const a = abrechnung(e);
+  return 'Abrechnung ' + (e.name || 'Event') + ' (' + fmtD(e.date) + ')\n\nEinnahmen: ' + eur(a.ein) + '\n  Tickets: ' + eur(a.tix) + (a.bar ? '\n  Bar: ' + eur(a.bar) : '') + (a.inc ? '\n  Weitere: ' + eur(a.inc) : '') +
+    '\nGagen und Kosten: ' + eur(a.aus) + '\n\nErgebnis: ' + eurS(a.erg) + '\nPro Person (' + a.n + '): ' + eurS(a.pro) + (a.gaeste ? '\nGäste: ' + a.gaeste : '') +
+    (a.offenAus.length ? '\n\nNoch zu zahlen:\n' + a.offenAus.map(x => '- ' + x[0] + ': ' + eur(x[1])).join('\n') : '') + (a.offenEin.length ? '\n\nKommt noch rein:\n' + a.offenEin.map(x => '- ' + x[0] + ': ' + eur(x[1])).join('\n') : '');
+}
+function abrPdf(e){
+  const a = abrechnung(e), w = window.open('', '_blank');
+  if (!w) { toast('Bitte Pop-ups für diese Seite erlauben.'); return; }
+  const r = (k, v, b) => '<tr' + (b ? ' class="b"' : '') + '><td>' + k + '</td><td>' + v + '</td></tr>';
+  w.document.write('<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Abrechnung ' + esc(e.name || '') + '</title><style>body{font:15px/1.5 system-ui,sans-serif;margin:40px;color:#111}h1{margin:0 0 4px}p{color:#555;margin:0 0 24px}table{border-collapse:collapse;width:100%;max-width:560px}td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right;font-variant-numeric:tabular-nums}tr.b td{font-weight:700;border-top:2px solid #111}h2{font-size:16px;margin:28px 0 8px}</style></head><body>' +
+    '<h1>Abrechnung ' + esc(e.name || 'Event') + '</h1><p>' + fmtD(e.date) + (e.venue ? ' · ' + esc(e.venue) : '') + ' · ' + esc((projekt && projekt.name) || '') + '</p><table>' +
+    r('Tickets' + (a.hatIst ? ' (Abendkasse + VVK)' : ' (Plan)'), eur(a.tix)) + (a.bar ? r('Bar-Anteil', eur(a.bar)) : '') + (a.inc ? r('Weitere Einnahmen', eur(a.inc)) : '') + r('Einnahmen', eur(a.ein), 1) + r('Gagen und Kosten', '−' + eur(a.aus)) + r('Ergebnis', eurS(a.erg), 1) + r('Pro Person (' + a.n + ')', eurS(a.pro)) + (a.gaeste ? r('Gäste', a.gaeste) : '') + '</table>' +
+    (a.offenAus.length ? '<h2>Noch zu zahlen</h2><table>' + a.offenAus.map(x => r(esc(x[0]), eur(x[1]))).join('') + '</table>' : '') + (a.offenEin.length ? '<h2>Kommt noch rein</h2><table>' + a.offenEin.map(x => r(esc(x[0]), eur(x[1]))).join('') + '</table>' : '') +
+    '<p style="margin-top:28px">Stand ' + fmtD(today()) + '</p><script>setTimeout(function(){print()},300)<\/script></body></html>');
+  w.document.close();
+}
+function abrIstForm(e){
+  const x = e.ist || {}, v = k => x[k] != null && x[k] !== '' ? esc(numIn(x[k])) : '';
+  showSheet('<h2 id="sheet-title">Ist-Zahlen · ' + esc(e.name || 'Event') + '</h2><form class="f" id="abr-form" novalidate>' +
+    '<div class="two">' + field('ab-ak', 'Abendkasse (€)', '<input id="ab-ak" inputmode="decimal" placeholder="0" value="' + v('ak') + '">') + field('ab-vvk', 'Vorverkauf (€)', '<input id="ab-vvk" inputmode="decimal" placeholder="0" value="' + v('vvk') + '">') + '</div>' +
+    '<div class="two">' + field('ab-bar', 'Bar-Anteil (€)', '<input id="ab-bar" inputmode="decimal" placeholder="0" value="' + v('bar') + '">') + field('ab-g', 'Gäste insgesamt', '<input id="ab-g" type="number" inputmode="numeric" min="0" placeholder="0" value="' + (int(x.gaeste) || '') + '">') + '</div>' +
+    field('ab-n', 'Aufteilen auf wie viele Personen?', '<input id="ab-n" type="number" inputmode="numeric" min="1" max="50" value="' + (int(e.anteile) || ((projekt && projekt.members) || []).length || 1) + '">') +
+    '<p class="hint">Weitere Einnahmen und alle Kosten kommen automatisch aus den Finanzen. Ob etwas bezahlt ist, hakst du dort beim Posten ab.</p>' +
+    '<p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+  $('#abr-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const z = id => { const s = $('#' + id).value.trim(); if (!s) return ''; const n = num(s); return isNaN(n) || n < 0 ? NaN : n; };
+    const ist = { ak:z('ab-ak'), vvk:z('ab-vvk'), bar:z('ab-bar'), gaeste:int($('#ab-g').value) || 0 };
+    if ([ist.ak, ist.vvk, ist.bar].some(n => typeof n === 'number' && isNaN(n))) return formErr($('#abr-form'), 'Gib die Beträge als Zahl an, z. B. 1250 oder 1250,50.');
+    const anteile = Math.max(1, int($('#ab-n').value) || 1);
+    if (await save(() => db.doc('events/' + e.id).update({ ist, anteile }), 'Gespeichert')) { closeSheet(); logA('hat die Abrechnung aktualisiert (' + (e.name || 'Event') + ')', e.id); }
+  };
+}
+
+/* ===== (7) Rückblick ===== */
+function rbPanel(e){
+  const rb = e.rueckblick || {}, g = int((e.ist || {}).gaeste) || 0, has = rb.gut || rb.besser || g;
+  return '<section class="panel"><div class="panel-h"><h2>Rückblick</h2>' + (S.ro ? '' : '<button class="btn btn-sm' + (has ? '' : ' btn-primary') + '" data-o="rb" data-id="' + esc(e.id) + '">' + (has ? 'Bearbeiten' : 'Ausfüllen') + '</button>') + '</div>' +
+    (has ? '<dl class="dl"><dt>Gäste</dt><dd>' + (g || '–') + '</dd><dt>Lief gut</dt><dd>' + (esc(rb.gut) || '–') + '</dd><dt>Nächstes Mal besser</dt><dd>' + (esc(rb.besser) || '–') + '</dd></dl>' : '<p class="pad">Drei kurze Angaben, solange alles frisch ist. Beim nächsten Event in ' + (esc(e.venue) || 'dieser Location') + ' bekommst du sie automatisch angezeigt.</p>') + '</section>';
+}
+function rbFrueher(e){
+  if (!(e.venue || '').trim()) return '';
+  const n = s => (s || '').trim().toLowerCase(), v = n(e.venue);
+  const P = S.events.filter(x => x.id !== e.id && isDate(x.date) && x.date < (isDate(e.date) ? e.date : today()) && x.date < today() && (n(x.venue) === v || fgOrt(x.venue, e.venue) || fgOrt(e.venue, x.venue)) && (x.rueckblick || int((x.ist || {}).gaeste))).sort((a, b) => b.date.localeCompare(a.date));
+  const x = P[0]; if (!x) return '';
+  const rb = x.rueckblick || {}, g = int((x.ist || {}).gaeste) || 0, a = abrechnung(x);
+  return '<section class="panel"><div class="panel-h"><h2>Letztes Mal in ' + esc(e.venue) + '</h2><a class="btn btn-ghost" href="#ev-' + esc(x.id) + '">' + esc(x.name || 'Event') + ' · ' + fmtDs(x.date) + '</a></div><dl class="dl">' +
+    (g ? '<dt>Gäste</dt><dd>' + g + '</dd>' : '') + (a.hatIst ? '<dt>Ergebnis</dt><dd class="num">' + eurS(a.erg) + '</dd>' : '') + (rb.gut ? '<dt>Lief gut</dt><dd>' + esc(rb.gut) + '</dd>' : '') + (rb.besser ? '<dt>Besser machen</dt><dd>' + esc(rb.besser) + '</dd>' : '') + '</dl></section>';
+}
+function rbForm(e){
+  const rb = e.rueckblick || {};
+  showSheet('<h2 id="sheet-title">Rückblick · ' + esc(e.name || 'Event') + '</h2><form class="f" id="rb-form" novalidate>' +
+    field('rb-g', 'Wie viele Gäste waren da?', '<input id="rb-g" type="number" inputmode="numeric" min="0" placeholder="z. B. 180" value="' + (int((e.ist || {}).gaeste) || '') + '">') +
+    field('rb-gut', 'Was lief gut?', '<textarea id="rb-gut" rows="3" maxlength="1000" placeholder="z. B. Timetable passte, Bar war schnell">' + esc(rb.gut || '') + '</textarea>') +
+    field('rb-besser', 'Was machen wir nächstes Mal besser?', '<textarea id="rb-besser" rows="3" maxlength="1000" placeholder="z. B. Garderobe früher besetzen">' + esc(rb.besser || '') + '</textarea>') +
+    '<p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+  $('#rb-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const ist = Object.assign({}, e.ist || {}, { gaeste:int($('#rb-g').value) || 0 });
+    if (await save(() => db.doc('events/' + e.id).update({ ist, rueckblick:{ gut:$('#rb-gut').value.trim(), besser:$('#rb-besser').value.trim() } }), 'Gespeichert')) { closeSheet(); logA('hat den Rückblick ausgefüllt (' + (e.name || 'Event') + ')', e.id); }
+  };
+}
+
+/* ===== (8) Deine Aufgaben ===== */
+function meineAufgaben(){
+  const p = ichPerson(); if (!p) return null;
+  return S.tasks.filter(t => !t.done && t.whoId === p.id).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+}
+function wMeine(N){
+  const T = meineAufgaben();
+  if (!T) return wCard('Deine Aufgaben', null, '<p class="muted small">Damit du hier deine Aufgaben siehst, verknüpfe dich einmal mit deinem Namen im Team.</p>' + (S.ro ? '' : '<button class="btn btn-sm" data-o="ich-bin">Ich bin …</button>'));
+  const gesehen = num(LS.get('meineGesehen')) || 0, neu = T.filter(t => (t.assignedAt || 0) > gesehen && t.assignedBy !== meinName()).length;
+  if (!S.meineT) S.meineT = setTimeout(() => { LS.set('meineGesehen', String(Date.now())); }, 5000);
+  return wCard('Deine Aufgaben' + (neu ? ' <span class="pill st-planung">' + neu + ' neu</span>' : ''), null, T.length ? '<ul class="wl">' + T.slice(0, N).map(t => '<li><a href="#ev-' + esc(t.eventId) + '" data-act="ev-tab" data-id="' + esc(t.eventId) + '" data-v="aufgaben" style="display:flex;gap:10px;align-items:center;min-width:0;flex:1"><span class="m">' + esc(t.title) + '<span class="muted small" style="display:block">' + esc(evName(t.eventId)) + (t.assignedBy && t.assignedBy !== meinName() ? ' · von ' + esc(t.assignedBy) : '') + '</span></span>' + (dueText(t) ? '<span class="small" style="flex:none">' + dueText(t) + '</span>' : '') + ((t.assignedAt || 0) > gesehen && t.assignedBy !== meinName() ? '<span class="pill st-planung" style="flex:none">neu</span>' : '') + '</a></li>').join('') + '</ul>' : empty('Nichts offen für dich. 🎉'));
+}
+function ichBinSheet(){
+  const P = peopleSorted();
+  showSheet('<h2 id="sheet-title">Wer bist du im Team?</h2><p class="hint" style="margin:-6px 0 14px">Damit verknüpfst du deine Google-Adresse ' + esc(meineMail()) + ' mit einem Namen. Danach siehst du auf der Startseite „Deine Aufgaben“ und neue Zuweisungen.</p><ul class="rows">' +
+    P.map(p => '<li><button class="row" data-o="ich-bin-p" data-id="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name) + '</span>' + (p.email ? '<span class="row-sub">' + esc(p.email) + '</span>' : '') + '</span></button></li>').join('') +
+    '</ul><form id="ich-neu" style="display:flex;gap:8px;margin:14px 0 0"><input class="inp" id="ich-name" maxlength="60" placeholder="Oder neu: dein Name" aria-label="Dein Name" style="flex:1"><button class="btn btn-primary" type="submit">Anlegen</button></form><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button></div>');
+  $('#ich-neu').onsubmit = async ev => { ev.preventDefault(); const n = $('#ich-name').value.trim(); if (!n) return; if (await save(() => db.collection('people').doc(newId('pp')).set({ name:n, email:meineMail(), createdAt:Date.now() }), 'Verknüpft')) closeSheet(); };
+}
+async function ichBin(pid){
+  const alt = (S.people || []).filter(p => p.id !== pid && (p.email || '').toLowerCase() === meineMail());
+  if (await save(async () => { for (const p of alt) await db.doc('people/' + p.id).update({ email:'' }); await db.doc('people/' + pid).update({ email:meineMail() }); }, 'Verknüpft')) closeSheet();
+}
+function neuZugewiesenHinweis(){
+  if (S.zuwHinweis || !ichPerson() || !COLS.every(c => S.fresh[c])) return;
+  S.zuwHinweis = true;
+  const g = num(LS.get('meineGesehen')) || 0, n = (meineAufgaben() || []).filter(t => (t.assignedAt || 0) > g && t.assignedBy !== meinName()).length;
+  if (n) toast(n === 1 ? 'Dir wurde eine neue Aufgabe zugewiesen.' : 'Dir wurden ' + n + ' neue Aufgaben zugewiesen.');
+}
+
+/* ===== (4) Abend-Modus und (5) Einlass ===== */
+const jetztMin = () => { const d = new Date(), h = d.getHours(); return (h < 12 ? h + 24 : h) * 60 + d.getMinutes(); };
+function abendEvent(id){
+  if (id) return S.events.find(e => e.id === id);
+  const t = today(), h = new Date().getHours();
+  return S.events.find(e => e.date === t && e.status !== 'abgesagt') || (h < 12 ? S.events.find(e => e.date === addDays(t, -1) && e.status !== 'abgesagt') : null) || upEvents()[0];
+}
+const istHeute = e => e && (e.date === today() || (e.date === addDays(today(), -1) && new Date().getHours() < 12));
+const glKey = (lid, i) => lid + '_' + i;
+function gaesteAus(e){
+  return S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt' && (int(l.gl) || 0) > 0).map(l => ({ id:l.id, dj:l.name || '', n:int(l.gl) || 0, namen:String(l.glNames || '').split('\n').map(x => x.trim()).filter(Boolean) }));
+}
+function einlassHoeren(e){
+  const fid = projekt.id + '_' + e.id;
+  if (S.elFid === fid) return;
+  if (S.elUnsub) { try { S.elUnsub(); } catch (x) {} }
+  S.elFid = fid; S.el = null;
+  try { S.elUnsub = fs.collection('einlass').doc(fid).onSnapshot(d => { S.el = d.exists ? d.data() : {}; scheduleRender(); }, () => { S.el = {}; }); } catch (x) {}
+}
+function glBlock(G, el, kannSchreiben, ziel){
+  const drin = (el && el.drin) || {}, frei = (el && el.frei) || {}, q = (S.glQ || '').trim().toLowerCase();
+  let gesamt = 0, da = 0;
+  G.forEach(g => { gesamt += g.n; da += g.namen.filter((n, i) => drin[glKey(g.id, i)]).length + Math.min(int(frei[g.id]) || 0, Math.max(0, g.n - g.namen.length)); });
+  let h = '<div class="ab-gl-top"><div class="ab-big">' + da + ' <span>von ' + gesamt + ' drin</span></div><input class="inp" id="gl-q" placeholder="Name suchen" aria-label="Name auf der Gästeliste suchen" value="' + esc(S.glQ || '') + '" autocomplete="off"></div>';
+  if (!G.length) return h + '<p class="muted">Noch niemand auf der Gästeliste. Plätze trägst du beim jeweiligen Act im Line-up ein.</p>';
+  G.forEach(g => {
+    const namen = g.namen.map((n, i) => [n, glKey(g.id, i)]).filter(x => !q || x[0].toLowerCase().indexOf(q) >= 0 || g.dj.toLowerCase().indexOf(q) >= 0);
+    const anon = Math.max(0, g.n - g.namen.length), fa = Math.min(int(frei[g.id]) || 0, anon);
+    if (q && !namen.length) return;
+    h += '<div class="ab-gl-g"><div class="ab-gl-h">' + esc(g.dj) + ' <span>' + g.n + ' Plätze</span></div>' + namen.map(x => '<button class="ab-gl-n' + (drin[x[1]] ? ' on' : '') + '" data-o="gl-tog" data-v="' + esc(x[1]) + '" data-z="' + ziel + '"' + (kannSchreiben ? '' : ' disabled') + ' aria-pressed="' + !!drin[x[1]] + '"><span class="ab-ck">' + I.check + '</span>' + esc(x[0]) + (drin[x[1]] ? '<span class="muted small">' + uhr(drin[x[1]]) + '</span>' : '') + '</button>').join('') +
+      (anon ? '<div class="ab-gl-anon"><span>Ohne Namen: <strong>' + fa + '</strong> von ' + anon + ' drin</span>' + (kannSchreiben ? '<button class="btn btn-sm" data-o="gl-frei" data-id="' + esc(g.id) + '" data-v="-1" data-z="' + ziel + '"' + (fa ? '' : ' disabled') + '>−</button><button class="btn btn-sm btn-primary" data-o="gl-frei" data-id="' + esc(g.id) + '" data-v="1" data-z="' + ziel + '"' + (fa < anon ? '' : ' disabled') + '>+1 rein</button>' : '') + '</div>' : '') + '</div>';
+  });
+  return h;
+}
+async function glSchreiben(ref, el, art, key, delta, basis){
+  const FV = firebase.firestore.FieldValue;
+  try {
+    if (art === 'tog') { const on = !((el && el.drin) || {})[key]; await ref.set(Object.assign({}, basis || {}, { drin:{ [key]:on ? Date.now() : FV.delete() } }), { merge:true }); }
+    else { const cur = int(((el && el.frei) || {})[key]) || 0; await ref.set(Object.assign({}, basis || {}, { frei:{ [key]:Math.max(0, cur + delta) } }), { merge:true }); }
+  } catch (x) { console.warn(x); toast('Hat nicht geklappt – bist du online?'); }
+}
+function viewAbend(id){
+  const e = abendEvent(id);
+  if (!e) return '<div class="empty"><h3>Kein Event</h3><p>Leg ein Event an, dann hast du hier am Abend alles auf einen Blick.</p></div>';
+  einlassHoeren(e);
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt').sort((a, b) => timeKey(a.start) - timeKey(b.start));
+  const fl = id => (S.floors.find(f => f.id === id) || {}).name || '';
+  const nowM = jetztMin(), heute = istHeute(e);
+  const m = t => timeKey(t) === 99999 ? null : timeKey(t);
+  const lauf = heute ? L.filter(l => m(l.start) != null && m(l.start) <= nowM && (m(l.end) == null || nowM < m(l.end))) : [];
+  const naechst = heute ? L.filter(l => m(l.start) != null && m(l.start) > nowM)[0] : L[0];
+  let h = '<div class="abend"><div class="ab-top"><a class="back" href="#ev-' + esc(e.id) + '" style="color:inherit">' + I.left + 'Zum Event</a><span class="ab-live">' + (heute ? '● Heute' : fmtD(e.date)) + '</span></div>' +
+    '<h1 class="ab-h1">' + esc(e.name || 'Event') + '</h1><p class="ab-sub">' + [timeStr(e) ? esc(timeStr(e)) + ' Uhr' : '', esc(e.venue || '')].filter(Boolean).join(' · ') + '</p>';
+  if (lauf.length) h += lauf.map(l => '<div class="ab-card now"><div class="ab-k">Läuft gerade' + (fl(l.floorId) ? ' · ' + esc(fl(l.floorId)) : '') + '</div><div class="ab-name">' + esc(l.name) + '</div><div class="ab-t">' + esc(l.start) + '–' + esc(l.end || '?') + '</div></div>').join('');
+  if (naechst) { const dm = heute && m(naechst.start) != null ? m(naechst.start) - nowM : null; h += '<div class="ab-card"><div class="ab-k">Als Nächstes' + (fl(naechst.floorId) ? ' · ' + esc(fl(naechst.floorId)) : '') + '</div><div class="ab-name">' + esc(naechst.name) + '</div><div class="ab-t">' + esc(naechst.start || 'Zeit offen') + (dm != null ? ' · in ' + (dm >= 60 ? Math.floor(dm / 60) + ' Std ' + (dm % 60) + ' Min' : dm + ' Min') : '') + '</div></div>'; }
+  h += '<h2 class="ab-sec">Running Order</h2><div class="ab-list">' + (L.length ? L.map(l => {
+    const jetzt = lauf.indexOf(l) >= 0, vorbei = heute && m(l.end) != null && m(l.end) <= nowM;
+    return '<div class="ab-row' + (jetzt ? ' now' : '') + (vorbei ? ' past' : '') + '"><div class="ab-time">' + esc(l.start || '–') + '</div><div class="ab-who"><div class="ab-name2">' + esc(l.name) + '</div><div class="ab-meta">' + [fl(l.floorId), l.ankunft ? 'Ankunft ' + esc(l.ankunft) : '', l.end ? 'bis ' + esc(l.end) : ''].filter(Boolean).join(' · ') + '</div></div>' +
+      (S.ro ? '' : '<button class="ab-da' + (l.da ? ' on' : '') + '" data-o="da" data-id="' + esc(l.id) + '" aria-pressed="' + !!l.da + '">' + (l.da ? '✓ Da' : 'Da?') + '</button>') + (telLink(l.wa) ? '<a class="ab-tel" href="' + telLink(l.wa) + '" aria-label="' + esc(l.name) + ' anrufen">📞</a>' : '') + '</div>';
+  }).join('') : '<p class="muted">Noch kein Line-up.</p>') + '</div>';
+  const nums = [];
+  if (e.venueContact) nums.push(['Location' + (e.venue ? ' (' + e.venue + ')' : ''), e.venueContact]);
+  String(e.kontakte || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(z => { const i = z.indexOf(':'); nums.push(i > 0 ? [z.slice(0, i).trim(), z.slice(i + 1).trim()] : ['', z]); });
+  h += '<h2 class="ab-sec">Wichtige Nummern' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="kontakte" data-id="' + esc(e.id) + '" style="margin-left:auto">Bearbeiten</button>') + '</h2><div class="ab-list">' + (nums.length ? nums.map(x => '<div class="ab-row"><div class="ab-who"><div class="ab-meta">' + esc(x[0]) + '</div><div class="ab-name2">' + esc(x[1]) + '</div></div>' + (telLink(x[1]) ? '<a class="ab-tel" href="' + telLink(x[1]) + '">📞</a>' : '') + '</div>').join('') : '<p class="muted">Trag Security, Technik, Awareness und Location ein – dann ist am Abend alles mit einem Tipp erreichbar.</p>') + '</div>';
+  const G = gaesteAus(e), M = Array.isArray((S.el || {}).emails) ? S.el.emails : (e.einlassEmails || []);
+  h += '<h2 class="ab-sec">Gästeliste' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="einlass" data-id="' + esc(e.id) + '" style="margin-left:auto">' + (M.length ? 'Einlass-Zugang' : 'Einlass einladen') + '</button>') + '</h2><div class="ab-gl">' + glBlock(G, S.el, !S.ro, 'm') + '</div></div>';
+  S.abendEv = e;
+  if (!S.abendT) S.abendT = setInterval(() => { if (route().view === 'abend' && !document.querySelector('.sheet-open, #sheet:not([hidden])')) render(); else if (route().view !== 'abend') { clearInterval(S.abendT); S.abendT = 0; } }, 60000);
+  return h;
+}
+function kontakteForm(e){
+  showSheet('<h2 id="sheet-title">Wichtige Nummern am Abend</h2><form class="f" id="ko-form" novalidate>' +
+    field('ko-t', 'Eine pro Zeile, z. B. „Security: 0171 1234567“', '<textarea id="ko-t" rows="6" maxlength="1500" placeholder="Security: 0171 …\nTechnik: 0160 …\nAwareness: 0152 …">' + esc(e.kontakte || '') + '</textarea>') +
+    '<p class="hint">Die Nummer der Location kommt aus dem Location-Reiter des Events.</p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+  $('#ko-form').onsubmit = async ev => { ev.preventDefault(); if (await save(() => db.doc('events/' + e.id).update({ kontakte:$('#ko-t').value.trim() }), 'Gespeichert')) closeSheet(); };
+}
+const elLink = e => APP_URL + '?einlass=' + encodeURIComponent(projekt.id + '_' + e.id);
+function einlassSheet(e){
+  const M = (e.einlassEmails || []).map(x => String(x).toLowerCase());
+  const txt = () => 'Hi! Für „' + (e.name || 'unser Event') + '“ am ' + fmtD(e.date) + ' hast du Zugriff auf unsere Gästeliste zum Abhaken am Einlass:\n\n' + elLink(e) + '\n\nMelde dich dort mit deinem Google-Konto (' + M.join(' oder ') + ') an.';
+  showSheet('<h2 id="sheet-title">Einlass · ' + esc(e.name || 'Event') + '</h2><p class="muted" style="margin:0 0 14px">Die Person am Einlass sieht nur die Gästeliste dieses Events und hakt Namen ab. Ihr seht im Abend-Modus live, wer schon drin ist. Keine Kosten, kein Line-up, kein eigenes Projekt.</p>' +
+    '<form class="f" id="el-form" novalidate>' + field('el-mail', 'Google-Adressen fürs Einlass-Team', '<textarea id="el-mail" rows="2" maxlength="600" placeholder="eine Adresse pro Zeile">' + esc(M.join('\n')) + '</textarea>') +
+    '<p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>' +
+    (M.length ? '<section class="panel" style="margin-top:18px"><div class="panel-h"><h2>Einladungslink</h2></div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px;word-break:break-all">' + esc(elLink(e)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="el-copy">Kopieren</button><button class="btn btn-sm" id="el-wa">WhatsApp</button></div></div></section>' : ''));
+  if (M.length) { $('#el-copy').onclick = async () => toast(await copyText(txt()) ? 'Einladung kopiert.' : 'Kopieren hat nicht geklappt.'); $('#el-wa').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(txt()), '_blank', 'noopener'); }
+  $('#el-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const mails = [...new Set($('#el-mail').value.split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean))];
+    const bad = mails.filter(m => !okMail(m));
+    if (bad.length) return formErr($('#el-form'), 'Das sieht nicht wie eine E-Mail-Adresse aus: ' + bad.join(', '));
+    const ok = await save(async () => {
+      await db.doc('events/' + e.id).update({ einlassEmails:mails });
+      await fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:mails }, { merge:true });
+    }, mails.length ? 'Einlass-Zugang gespeichert' : 'Einlass-Zugang beendet');
+    if (ok) { fgPlan(); if (mails.length && !M.length) einlassSheet(Object.assign({}, e, { einlassEmails:mails })); else closeSheet(); }
+  };
+}
+// Kopie der Gästeliste für das Einlass-Team (nur Namen und Plätze)
+async function elSync(){
+  for (const e of S.events.filter(x => Array.isArray(x.einlassEmails))) {
+    const fid = projekt.id + '_' + e.id, emails = e.einlassEmails.map(x => String(x).toLowerCase());
+    const body = { pid:projekt.id, emails, event:{ name:e.name || '', date:e.date || '', start:e.start || '', end:e.end || '', venue:e.venue || '' }, gaeste:gaesteAus(e) };
+    const sig = fgHash(JSON.stringify(body));
+    try {
+      const ref = fs.collection('einlass').doc(fid), d = await ref.get();
+      if (d.exists && d.data().sig === sig) continue;
+      if (!emails.length && !d.exists) continue;
+      await ref.set(Object.assign(body, { sig, stand:Date.now() }), { merge:true });
+    } catch (x) { console.warn('Einlass', fid, x); }
+  }
+}
+async function meineEinlaesse(){
+  let L = [];
+  try { const sn = await fs.collection('einlass').where('emails', 'array-contains', meineMail()).get(); L = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { console.warn('Einlass', e); }
+  const z = LS.get('einlass');
+  if (z && !L.some(f => f.id === z)) { try { const d = await fs.collection('einlass').doc(z).get(); if (d.exists) L.push(Object.assign({ id:d.id }, d.data())); } catch (e) {} }
+  return L;
+}
+// Ansicht fürs Einlass-Team – nur die Gästeliste
+function einlassView(fid){
+  stopProjekt(); LS.set('elzuletzt', fid);
+  document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
+  $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Lädt …';
+  const ref = fs.collection('einlass').doc(fid);
+  PV.unsub = ref.onSnapshot(d => {
+    const v = $('#view'), x = d.exists ? d.data() : null;
+    $('#conn').className = 'conn ' + (x ? 'live' : 'bad'); $('#conn-t').textContent = x ? 'Einlass' : 'Kein Zugang';
+    const fuss = '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-wahl">Übersicht</button><button class="btn btn-ghost" id="pv-out">Abmelden</button></div><p class="muted small" style="margin-top:10px">Angemeldet als ' + esc(meineMail()) + '</p>';
+    if (!x || (x.emails || []).indexOf(meineMail()) < 0) v.innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Für diese Gästeliste ist deine Adresse nicht (mehr) eingetragen.</p></div>' + fuss;
+    else {
+      const ev = x.event || {}, a = document.activeElement, keep = a && a.id === 'gl-q' ? [a.selectionStart] : null;
+      v.innerHTML = '<div class="abend"><h1 class="ab-h1">' + esc(ev.name || 'Event') + '</h1><p class="ab-sub">' + [fmtD(ev.date), ev.start ? ev.start + ' Uhr' : '', ev.venue].filter(Boolean).map(esc).join(' · ') + '</p><h2 class="ab-sec">Gästeliste</h2><div class="ab-gl">' + glBlock(x.gaeste || [], x, true, 'e') + '</div></div>' + fuss;
+      if (keep) { const q = $('#gl-q'); q.focus(); try { q.setSelectionRange(keep[0], keep[0]); } catch (e) {} }
+      S.elDoc = { ref, x };
+    }
+    $('#pv-wahl').onclick = () => projektWahl();
+    $('#pv-out').onclick = () => { LS.set('einlass', ''); firebase.auth().signOut().then(() => location.reload()); };
+  }, () => { $('#view').innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Melde dich mit der Google-Adresse an, an die die Einladung ging.</p></div>'; });
+}
+(function(){ try { const z = new URLSearchParams(location.search).get('einlass'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('einlass', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
+
+/* ===== (10) Ansichten Booking und Finanzen ===== */
+function viewBkHeute(){
+  const U = upEvents(), N = nachhakenListe();
+  const A = S.lineup.filter(l => l.status === 'angefragt' && upEv(l.eventId)), Z = S.lineup.filter(l => l.status === 'zugesagt' && upEv(l.eventId));
+  const leer = U.filter(e => !S.lineup.some(l => l.eventId === e.id && l.status !== 'abgesagt'));
+  let h = '<section class="vh"><h1>Booking</h1><p class="muted" style="margin:4px 0 0">' + fmtD(today()) + '</p></section><div class="kpis">' +
+    kpi('Nachhaken', N.length, 'seit ' + NACHHAKEN_TAGE + '+ Tagen ohne Antwort', N.length ? 'neg' : '') + kpi('Angefragt', A.length, 'offene Anfragen') + kpi('Zugesagt', Z.length, 'für kommende Events') + kpi('Ohne Line-up', leer.length, leer.length === 1 ? 'Event' : 'Events') + '</div>';
+  h += '<section class="panel"><div class="panel-h"><h2>Jetzt nachhaken</h2></div>' + (N.length ? '<ul class="rows">' + N.map(l => bkZeile(l, true)).join('') + '</ul>' : '<p class="pad">Gerade niemand, bei dem du nachhaken musst.</p>') + '</section>';
+  h += '<section class="panel"><div class="panel-h"><h2>Line-up pro Event</h2></div><ul class="rows">' + (U.length ? U.slice(0, 12).map(e => {
+    const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt'), z = L.filter(l => l.status === 'zugesagt').length, st = ablauf(e).find(x => x.k === 'lineup');
+    return '<li><a class="row" href="#ev-' + esc(e.id) + '" data-act="ev-tab" data-id="' + esc(e.id) + '" data-v="lineup"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + ' · ' + (L.length ? z + '/' + L.length + ' zugesagt' : '<span class="due-soon">noch kein Act</span>') + (st && !st.done && st.due ? ' · Line-up fix bis ' + fmtDs(st.due) : '') + '</span></span>' + I.right + '</a></li>';
+  }).join('') : '<li><p class="pad">Keine kommenden Events.</p></li>') + '</ul></section>';
+  return h;
+}
+function viewBkAnfragen(){
+  const L = S.lineup.filter(l => upEv(l.eventId)).sort((a, b) => (upEv(a.eventId).date || '').localeCompare(upEv(b.eventId).date || '') || timeKey(a.start) - timeKey(b.start));
+  const grp = [['angefragt', 'Angefragt'], ['zugesagt', 'Zugesagt'], ['abgesagt', 'Abgesagt']];
+  let h = '<section class="vh"><h1>Anfragen</h1><p class="muted" style="margin:4px 0 0">Alle Acts für kommende Events.</p></section>';
+  grp.forEach(([k, t]) => { const G = L.filter(l => (l.status || 'angefragt') === k); h += '<section class="panel"><div class="panel-h"><h2>' + t + '</h2><span class="muted small">' + G.length + '</span></div>' + (G.length ? '<ul class="rows">' + G.map(l => bkZeile(l, true)).join('') + '</ul>' : '<p class="pad">Keine.</p>') + '</section>'; });
+  return h;
+}
+function viewFiHeute(){
+  const U = upEvents(), t = today(), C = U.map(e => [e, calc(e)]);
+  const P = S.events.filter(e => isDate(e.date) && e.date < t && e.status !== 'abgesagt').sort((a, b) => b.date.localeCompare(a.date));
+  const offen = S.events.reduce((s, e) => s + abrechnung(e).offenAus.reduce((a, x) => a + (x[1] || 0), 0), 0);
+  const letzte = P.find(e => abrechnung(e).hatIst);
+  let h = '<section class="vh"><h1>Finanzen</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section><div class="kpis">' +
+    kpi('Plan kommende', eurS(sum(C, x => x[1].result)), U.length + ' Events', sum(C, x => x[1].result) >= 0 ? 'pos' : 'neg') + kpi('Noch zu zahlen', eur(offen), 'Gagen und Kosten', offen > 0 ? 'neg' : '') +
+    kpi('Letzte Abrechnung', letzte ? eurS(abrechnung(letzte).erg) : '–', letzte ? esc(letzte.name || 'Event') : 'noch keine') + kpi('Abrechnung fehlt', P.filter(e => !abrechnung(e).hatIst).length, 'vergangene Events') + '</div>';
+  h += '<section class="panel"><div class="panel-h"><h2>Kommende Events</h2></div><ul class="rows">' + (C.length ? C.map(([e, c]) => '<li><a class="row" href="#ev-' + esc(e.id) + '" data-act="ev-tab" data-id="' + esc(e.id) + '" data-v="finanzen"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + ' · Ein ' + eur(c.totalIn) + ' · Aus ' + eur(c.totalOut) + (c.breakEven != null ? ' · Break-even ' + c.breakEven + ' Gäste' : '') + '</span></span><span class="num ' + (c.result >= 0 ? 'pos' : 'neg') + '">' + eurS(c.result) + '</span></a></li>').join('') : '<li><p class="pad">Keine kommenden Events.</p></li>') + '</ul></section>';
+  return h;
+}
+function viewFiOffen(){
+  const R = [];
+  S.events.forEach(e => { const a = abrechnung(e); a.offenAus.forEach(x => R.push([e, x, 'aus'])); a.offenEin.forEach(x => R.push([e, x, 'ein'])); });
+  R.sort((a, b) => (a[0].date || '').localeCompare(b[0].date || ''));
+  const aus = R.filter(r => r[2] === 'aus'), ein = R.filter(r => r[2] === 'ein');
+  const zeile = r => '<li><div class="task"><button class="chk" role="checkbox" aria-checked="false" aria-label="' + esc(r[1][0]) + ' bezahlt" data-o="fi-paid" data-v="' + r[1][2] + '" data-id="' + esc(r[1][3]) + '"' + (S.ro ? ' disabled' : '') + '>' + I.check + '</button><a class="task-main" href="#ev-' + esc(r[0].id) + '" data-act="ev-tab" data-id="' + esc(r[0].id) + '" data-v="finanzen"><span class="row-title">' + esc(r[1][0]) + '</span><span class="row-sub">' + esc(r[0].name || 'Event') + ' · ' + fmtDs(r[0].date) + '</span></a><span class="num ' + (r[2] === 'aus' ? 'neg' : 'pos') + '" style="flex:none;align-self:center">' + (r[2] === 'aus' ? '−' : '+') + eur(r[1][1]) + '</span></div></li>';
+  return '<section class="vh"><h1>Offen</h1><p class="muted" style="margin:4px 0 0">Abhaken, sobald bezahlt oder eingegangen.</p></section>' +
+    '<section class="panel"><div class="panel-h"><h2>Noch zu zahlen</h2><span class="num neg">' + eur(sum(aus, r => r[1][1])) + '</span></div>' + (aus.length ? '<ul class="rows">' + aus.map(zeile).join('') + '</ul>' : '<p class="pad">Alles bezahlt.</p>') + '</section>' +
+    '<section class="panel"><div class="panel-h"><h2>Kommt noch rein</h2><span class="num pos">' + eur(sum(ein, r => r[1][1])) + '</span></div>' + (ein.length ? '<ul class="rows">' + ein.map(zeile).join('') + '</ul>' : '<p class="pad">Nichts offen.</p>') + '</section>';
+}
+function viewFiAbrechnung(){
+  const P = S.events.filter(e => isDate(e.date) && e.date <= today() && e.status !== 'abgesagt').sort((a, b) => b.date.localeCompare(a.date));
+  return '<section class="vh"><h1>Abrechnungen</h1><p class="muted" style="margin:4px 0 0">Vergangene Events mit echtem Ergebnis.</p></section><section class="panel"><ul class="rows">' + (P.length ? P.map(e => { const a = abrechnung(e);
+    return '<li><a class="row" href="#ev-' + esc(e.id) + '" data-act="ev-tab" data-id="' + esc(e.id) + '" data-v="finanzen"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + (a.hatIst ? ' · pro Person ' + eurS(a.pro) + (a.gaeste ? ' · ' + a.gaeste + ' Gäste' : '') : ' · <span class="due-soon">Ist-Zahlen fehlen</span>') + '</span></span><span class="num ' + (a.erg >= 0 ? 'pos' : 'neg') + '">' + (a.hatIst ? eurS(a.erg) : '–') + '</span></a></li>'; }).join('') : '<li><p class="pad">Noch keine vergangenen Events.</p></li>') + '</ul></section>';
+}
+
+/* ===== Startseiten-Hinweise ===== */
+function abendBanner(){
+  const e = S.events.find(x => istHeute(x) && x.status !== 'abgesagt');
+  if (!e) return '';
+  return '<a class="ab-banner" href="#abend-' + esc(e.id) + '"><span><strong>' + (e.date === today() ? 'Heute' : 'Läuft noch') + ': ' + esc(e.name || 'Event') + '</strong><span class="small">Running Order, Gästeliste und Nummern auf einen Blick</span></span><span class="btn btn-sm btn-primary">Abend-Modus</span></a>';
+}
+function wAblauf(N){
+  const R = [];
+  upEvents().forEach(e => { const x = ablauf(e).find(s => !s.done); if (x) R.push([e, x]); });
+  R.sort((a, b) => (a[1].due || '9999').localeCompare(b[1].due || '9999'));
+  return wCard('Ablauf', null, R.length ? '<ul class="wl">' + R.slice(0, N).map(([e, x]) => '<li><a href="#ev-' + esc(e.id) + '" style="display:flex;gap:10px;align-items:center;min-width:0;flex:1"><span class="m">' + esc(x.label) + '<span class="muted small" style="display:block">' + esc(e.name || 'Event') + ' · ' + fmtDs(e.date) + '</span></span><span class="small" style="flex:none">' + (x.due ? (x.due < today() ? '<span class="overdue">überfällig</span>' : 'bis ' + fmtDs(x.due)) : '') + '</span></a></li>').join('') + '</ul>' : empty('Alle kommenden Events sind auf Kurs.'));
+}
+function wNachhaken(N){
+  const L = nachhakenListe();
+  return wCard('Nachhaken', null, L.length ? '<ul class="rows">' + L.slice(0, N).map(l => bkZeile(l, true)).join('') + '</ul>' : empty('Gerade niemand, bei dem du nachhaken musst.'));
+}
+
+/* ===== Klicks der neuen Bereiche ===== */
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-o]'); if (!el || el.disabled) return;
+  const o = el.dataset.o, id = el.dataset.id, v = el.dataset.v, e = id && S.events.find(x => x.id === id);
+  if (o === 'ablauf') { if (!e || S.ro) return; const on = !((e.ablauf || {})[v]); save(() => db.doc('events/' + id).update({ ['ablauf.' + v]:on })); if (on) logA('hat „' + (ABLAUF.find(x => x[0] === v) || [, v])[1] + '“ abgehakt (' + (e.name || 'Event') + ')', id); }
+  else if (o === 'ablauf-ziel') { if (e) ablaufZiel(e, v); }
+  else if (o === 'bk-wa') { const l = S.lineup.find(x => x.id === id); if (l) bkSenden(l, v); }
+  else if (o === 'partner') { const x = (S.venues || []).find(q => q.id === id); if (x) partnerSheet(x); }
+  else if (o === 'abr-ist') { if (e) abrIstForm(e); }
+  else if (o === 'abr-teilen') { if (!e) return; const txt = abrText(e); if (navigator.share) navigator.share({ text:txt }).catch(() => {}); else copyText(txt).then(ok => toast(ok ? 'Abrechnung kopiert – zum Einfügen in WhatsApp.' : 'Kopieren hat nicht geklappt.')); }
+  else if (o === 'abr-pdf') { if (e) abrPdf(e); }
+  else if (o === 'rb') { if (e) rbForm(e); }
+  else if (o === 'ich-bin') ichBinSheet();
+  else if (o === 'ich-bin-p') ichBin(id);
+  else if (o === 'kontakte') { if (e) kontakteForm(e); }
+  else if (o === 'einlass') { if (e) einlassSheet(e); }
+  else if (o === 'da') { const l = S.lineup.find(x => x.id === id); if (l && !S.ro) { save(() => db.doc('lineup/' + id).update({ da:!l.da })); if (!l.da) logA(l.name + ' ist da (' + evName(l.eventId) + ')', l.eventId); } }
+  else if (o === 'fi-paid') { if (S.ro) return; const c = v === 'lineup' ? 'lineup' : 'money'; save(() => db.doc(c + '/' + id).update({ paid:true }), 'Abgehakt'); const x = (S[c] || []).find(q => q.id === id); if (x) logA('hat „' + (x.label || x.name || x.category || 'Posten') + '“ als bezahlt markiert', x.eventId); }
+  else if (o === 'gl-tog' || o === 'gl-frei') {
+    const z = el.dataset.z;
+    let ref, x, basis = null;
+    if (z === 'e') { if (!S.elDoc) return; ref = S.elDoc.ref; x = S.elDoc.x; }
+    else { const ae = S.abendEv; if (!ae || S.ro) return; ref = fs.collection('einlass').doc(projekt.id + '_' + ae.id); x = S.el || {}; basis = { pid:projekt.id, emails:(ae.einlassEmails || []).map(q => String(q).toLowerCase()) }; }
+    if (o === 'gl-tog') glSchreiben(ref, x, 'tog', v, 0, basis); else glSchreiben(ref, x, 'frei', id, Number(v), basis);
+  }
+});
+document.addEventListener('input', ev => { if (ev.target.id === 'gl-q') { S.glQ = ev.target.value; if (S.elDoc && route().view !== 'abend' && !projekt) { const s = S.elDoc; einlassRerender(s); } else render(); } });
+function einlassRerender(s){ const box = document.querySelector('.ab-gl'); if (box) { box.innerHTML = glBlock((s.x.gaeste || []), s.x, true, 'e'); const q = $('#gl-q'); q.focus(); const n = q.value.length; try { q.setSelectionRange(n, n); } catch (e) {} } }
+
 /* ---------- Profil, Mitglieder & Projekt ---------- */
 async function openProfil(){
   if (!db || !user || !projekt) return;
@@ -1422,9 +2001,9 @@ function openEinstellungen(){
   const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (istMk() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li>' + (istLight() ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
-    '<h3 style="margin:0 0 8px">Ansicht</h3><div class="seg" role="radiogroup" style="margin:0 0 6px">' + [['pro', 'Pro'], ['light', 'Light'], ['marketing', 'Marketing']].map(a => '<button type="button" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + ((LS.get('ansicht') || 'pro') === a[0]) + '" aria-pressed="' + ((LS.get('ansicht') || 'pro') === a[0]) + '">' + a[1] + '</button>').join('') + '</div>' +
-    '<p class="hint" style="margin:0 0 18px">' + (istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
+    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
+    '<h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
+    '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
     '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
     FARBEN.map(f => '<button type="button" class="chip" data-farbe-w="' + f[0] + '" aria-pressed="' + (farbe === f[0]) + '" style="justify-content:flex-start;gap:8px;padding:10px 12px"><span style="width:18px;height:18px;border-radius:50%;background:' + (dunkel ? f[3] : f[2]) + ';flex:none"></span>' + f[1] + '</button>').join('') + '</div>' +
     '<h3 style="margin:0 0 8px">Hell oder dunkel</h3><div class="seg" role="radiogroup" style="margin:0 0 18px">' +
@@ -1433,7 +2012,7 @@ function openEinstellungen(){
     '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
   document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
   document.querySelectorAll('[data-ansicht-w]').forEach(b => b.onclick = () => { const a = b.dataset.ansichtW; LS.set('ansicht', a); if (a === 'pro') document.documentElement.removeAttribute('data-ansicht'); else document.documentElement.setAttribute('data-ansicht', a);
-    if (a === 'marketing' && location.hash !== '#marketing') location.hash = '#marketing'; else if (a !== 'marketing' && /^#(mk-|marketing$)/.test(location.hash)) location.hash = a === 'light' ? '#events' : '#marketing'; render(); openEinstellungen(); });
+    if (location.hash !== startHash()) location.hash = startHash(); render(); openEinstellungen(); });
   document.querySelectorAll('[data-modus-w]').forEach(b => b.onclick = () => { LS.set('modus', b.dataset.modusW); themaSetzen(b.dataset.modusW, LS.get('farbe') || 'pink'); openEinstellungen(); });
 }
 window.openEinstellungen = openEinstellungen;
@@ -1491,10 +2070,14 @@ async function init(){
     try { await umzug(); } catch (e) { console.error('Umzug', e); }
     let L = [], pErr = null;
     try { L = await meineProjekte(); } catch (e) { pErr = e; console.warn('Projekte', e); }
-    const F = await meineFreigaben(), z = LS.get('zugang'), partner = await istPartnerKonto();
+    const F = await meineFreigaben(), z = LS.get('zugang'), partner = await istPartnerKonto(), EL = await meineEinlaesse(), ez = LS.get('einlass');
+    if (ez && EL.some(f => f.id === ez && (f.emails || []).indexOf(meineMail()) >= 0)) { einlassView(ez); return; }
     if (z && F.some(f => f.id === z)) { partnerView(z); return; }
+    if (ez && !L.length) { zugangFalsch(false); return; }
     if (z) { zugangFalsch(L.length > 0); return; } // Einladungslink, aber dieses Konto ist nicht eingeladen
     if (F.length && (partner || !L.length)) { partnerView((F.find(f => f.id === LS.get('pzuletzt')) || F[0]).id); return; }
+    const ELa = EL.filter(f => (f.emails || []).indexOf(meineMail()) >= 0);
+    if (!L.length && ELa.length === 1) { einlassView(ELa[0].id); return; }
     if (pErr) { projektWahl('Projekte konnten nicht geladen werden: ' + (pErr && pErr.message || pErr), true); return; }
     const letztes = L.find(p => p.id === LS.get('projekt'));
     if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
@@ -1511,9 +2094,11 @@ function route(){
   if (h.indexOf('ev-') === 0) return { view:'event', id:h.slice(3) };
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
   if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
-  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele') return { view:h };
+  if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele' ||
+    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend'].indexOf(h) >= 0) return { view:h };
+  if (h.indexOf('abend-') === 0) return { view:'abend', id:h.slice(6) };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
-  return { view:h === '' && LS.get('ansicht') === 'marketing' ? 'marketing' : 'events' };
+  return { view:h === '' ? startHash().slice(1) : 'events' };
 }
 const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['Keine Verbindung','bad'], stale:['Evtl. veraltet','wait'], error:['Verbindung weg','bad'], revoked:['Kein Zugriff','bad'], nodb:['Offline','bad'] };
 function render(){
@@ -1522,7 +2107,7 @@ function render(){
   let keep = null;
   if (a && a.id && view.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) keep = { id:a.id, v:a.value, s:a.selectionStart, e:a.selectionEnd };
   const r = route();
-  const tab = r.view === 'event' ? 'events' : (r.view === 'finden' || r.view === 'monat') ? 'kalender' : r.view === 'veranstalter' ? 'umfeld' : r.view === 'marketing' && istMk() ? 'mk-heute' : r.view;
+  const tab = r.view === 'event' ? 'events' : (r.view === 'finden' || r.view === 'monat') ? 'kalender' : r.view === 'veranstalter' ? 'umfeld' : r.view === 'marketing' && istMk() ? 'mk-heute' : r.view === 'booking' ? 'bk-heute' : r.view === 'finanzen' ? 'fi-heute' : r.view === 'abend' ? 'events' : r.view;
   document.body.classList.toggle('wide', r.view === 'events');
   topH();
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tab) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
@@ -1541,8 +2126,16 @@ function render(){
   else if (r.view === 'mk-inhalte') h += viewMarketing(true);
   else if (r.view === 'mk-kanaele') h += '<section class="vh"><h1>Kanäle</h1></section>' + mkChannels();
   else if (r.view === 'verzeichnis') h += viewVerzeichnis();
+  else if (r.view === 'abend') h += viewAbend(r.id);
+  else if (r.view === 'booking') h += viewBkHeute();
+  else if (r.view === 'bk-anfragen') h += viewBkAnfragen();
+  else if (r.view === 'bk-djs' || r.view === 'bk-locs') { const t = r.view === 'bk-djs' ? 'dj' : 'loc'; if (S.vzTab !== t) { S.vzTab = t; LS.set('vzTab', t); } h += viewVerzeichnis(); }
+  else if (r.view === 'finanzen') h += viewFiHeute();
+  else if (r.view === 'fi-offen') h += viewFiOffen();
+  else if (r.view === 'fi-abrechnung') h += viewFiAbrechnung();
   else h += viewEvents();
   view.innerHTML = h;
+  neuZugewiesenHinweis();
   const st = $('.subtabs', view), at = st && $('[aria-selected="true"]', st);
   if (at && at.offsetLeft + at.offsetWidth > st.clientWidth) st.scrollLeft = at.offsetLeft + at.offsetWidth - st.clientWidth + 28;
   if (keep) {
@@ -1576,6 +2169,7 @@ function viewEvents(){
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
   if (S.owner && !LS.get('invite-ok')) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
+  if (!waiting('events')) h += abendBanner();
   if (up && !waiting('events')) h += dashboard(nextEvent());
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
   if (waiting('events')) return h + loading();
@@ -1586,7 +2180,11 @@ function viewEvents(){
   return h + '<div class="tickets">' + list.map(ticket).join('') + '</div>';
 }
 const WIDGETS = [
+  ['meine', 'Deine Aufgaben', 'Was dir zugewiesen ist, Neues zuerst markiert'],
   ['next', 'Nächstes Event', 'Countdown, Zahlen, Check und nächste Aufgaben'],
+  ['ablauf', 'Ablauf', 'Der nächste offene Schritt pro Event mit Frist'],
+  ['nachhaken', 'Nachhaken', 'Acts, die seit Tagen nicht geantwortet haben'],
+  ['aktivitaet', 'Was ist passiert', 'Wer im Kollektiv was gemacht hat'],
   ['upcoming', 'Kommende Events', 'Die nächsten Events mit Status'],
   ['money', 'Finanzen', 'Einnahmen, Kosten und Ergebnis aller kommenden Events'],
   ['tickets', 'Break-even', 'Geplante Gäste gegenüber Break-even pro Event'],
@@ -1601,9 +2199,12 @@ const WIDGETS = [
   ['floors', 'Floors & Technik', 'Floors und Setups des nächsten Events'],
   ['watch', 'Veranstalter', 'Beobachtungsliste und letzter Abgleich']
 ];
-const W_DEF = ['next', 'upcoming', 'tasks', 'money', 'acts', 'finder', 'parties'];
+const W_DEF = ['meine', 'next', 'ablauf', 'upcoming', 'nachhaken', 'tasks', 'money', 'aktivitaet', 'finder', 'parties'];
+// Neue Kacheln einmalig bei bestehenden Startseiten ergänzen
+(function(){ try { if (LS.get('wneu2')) return; const x = JSON.parse(LS.get('widgets') || 'null'); if (Array.isArray(x)) { if (x.indexOf('meine') < 0) x.unshift('meine'); ['ablauf', 'nachhaken', 'aktivitaet'].forEach(k => { if (x.indexOf(k) < 0) x.push(k); }); LS.set('widgets', JSON.stringify(x)); } LS.set('wneu2', '1'); } catch (e) {} })();
 const WI = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
 const WICON = {
+  meine:WI('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'), ablauf:WI('<path d="M4 6h16M4 12h10M4 18h6"/>'), nachhaken:WI('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'), aktivitaet:WI('<path d="M3 12h4l3-8 4 16 3-8h4"/>'),
   next:WI('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>'), upcoming:WI('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
   money:WI('<path d="M17 6.5A7 7 0 1 0 17 17.5M4 10.5h9M4 13.5h9"/>'), tickets:WI('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
   lineup:WI('<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'), tasks:WI('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/>'),
@@ -1625,6 +2226,10 @@ const dShort = d => WD[pd(d).getDay()] + ' ' + fmtDs(d);
 const empty = txt => '<p class="muted small">' + txt + '</p>';
 function widget(k, nx, size){
   const t = today(), U = upEvents(), N = { s:3, m:6, l:12 }[size] || 6, S_ = size === 's';
+  if (k === 'meine') return wMeine(N);
+  if (k === 'ablauf') return wAblauf(N);
+  if (k === 'nachhaken') return wNachhaken(N);
+  if (k === 'aktivitaet') return wCard('Was ist passiert', null, aktListe(N));
   if (k === 'next') return nx ? dashNext(nx, size) : wCard('Nächstes Event', ['#finden', 'Termin finden'], empty('Kein kommendes Event geplant.'));
   if (k === 'upcoming') return wCard('Kommende Events', null, U.length ? '<ul class="wl">' + U.slice(0, N).map(e => '<li><a href="#ev-' + esc(e.id) + '" style="display:flex;gap:10px;align-items:center;min-width:0;flex:1"><span class="d">' + dShort(e.date) + '</span><span class="m">' + esc(e.name || 'Ohne Titel') + '<small>' + esc([e.venue, timeStr(e)].filter(Boolean).join(' · ') || 'Ort und Zeit offen') + '</small></span></a><span class="r">' + statusPill(e.status) + '</span></li>').join('') + '</ul>' : empty('Noch keine kommenden Events.'));
   if (k === 'money') {
@@ -1711,7 +2316,7 @@ function dashStrip(nx){
 }
 const istLight = () => LS.get('ansicht') === 'light', istMk = () => LS.get('ansicht') === 'marketing';
 function dashboard(nx){
-  if (istLight()) { const L = ['next', 'tasks']; return '<div class="wgrid">' + L.map(k => { curW = k; return '<div class="wcell ws-' + (k === 'next' ? 'l' : 'm') + '" data-w="' + k + '">' + widget(k, nx, k === 'next' ? 'l' : 'm') + '</div>'; }).join('') + '</div>'; }
+  if (istLight()) { const L = ['meine', 'next', 'tasks']; return '<div class="wgrid">' + L.map(k => { curW = k; return '<div class="wcell ws-' + (k === 'next' ? 'l' : 'm') + '" data-w="' + k + '">' + widget(k, nx, k === 'next' ? 'l' : 'm') + '</div>'; }).join('') + '</div>'; }
   const list = wList(), ed = !!S.wEdit, hr = new Date().getHours();
   let h = '<div class="wtop"><h2>Übersicht</h2><div class="btns">' + (ed ? '<button class="btn btn-sm" data-act="w-reset">Standard</button><button class="btn btn-sm btn-primary" data-act="w-edit">Fertig</button>' : '<button class="btn btn-sm" data-act="w-edit">Bearbeiten</button>') + '</div></div>';
   h += ed ? '<p class="w-hi">Ziehe Kacheln am Griff ⠿ an eine andere Stelle oder nutze die Pfeile. S, M und L ändern die Größe, ✕ blendet eine Kachel aus.</p>' : dashStrip(nx);
@@ -1877,6 +2482,11 @@ function tabOverview(e, c){
     kpi('Break-even', beOk ? c.breakEven : '–', beOk ? 'Gäste' + (cap ? ', ' + Math.round(c.breakEven / cap * 100) + ' % Kapazität' : '') : (e.linkId ? 'Tickets beim Veranstalter' : 'Ticketpreis fehlt')) +
     kpi('Line-up', conf + '/' + L.length, 'zugesagt') +
     kpi('Aufgaben', done + '/' + T.length, 'erledigt') + '</div>';
+  const vorbei = isDate(e.date) && e.date < today();
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px"><a class="btn' + (istHeute(e) ? ' btn-primary' : '') + '" href="#abend-' + esc(e.id) + '">Abend-Modus</a>' + (vorbei ? '<button class="btn" data-act="evtab" data-v="finanzen">Abrechnung</button>' : '') + '</div>';
+  if (vorbei) h += rbPanel(e);
+  else h += ablaufPanel(e) + rbFrueher(e);
+  h += rmPanel(e);
   const li = linkInfo(e);
   if (li) h += linkPanel(e, li);
   h += '<section class="panel"><div class="panel-h"><h2>Details</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-act="edit-event" data-id="' + esc(e.id) + '">Bearbeiten</button>') + '</div>' +
@@ -1915,7 +2525,7 @@ function tabFinance(e, c){
   const be = c.breakEven === null ? 'Leg Ticketphasen mit Preis an, dann siehst du, ab wie vielen Gästen ihr im Plus seid.'
     : 'Break-even ab <strong>' + c.breakEven + '</strong> zahlenden Gästen (Ø ' + eur(c.avg) + ' pro Ticket)' + (cap ? ', das sind ' + Math.round(c.breakEven / cap * 100) + ' % der Kapazität' : '') + '.';
   const meta = [c.open > 0.004 ? '<span>Noch offen zu zahlen: <strong class="num">' + eur(c.open) + '</strong></span>' : '', c.perGuest != null && c.totalOut > 0 ? '<span>Kosten pro Gast: <strong class="num">' + nf2.format(c.perGuest) + '</strong></span>' : ''].filter(Boolean).join('');
-  let h = '<section class="panel"><div class="sum-top"><div><div class="k">Ergebnis (Plan)</div><div class="sum-res ' + (c.result >= 0 ? 'pos' : 'neg') + '">' + eurS(c.result) + '</div></div><div class="be">' + be + '</div></div>' +
+  let h = abrPanel(e) + '<section class="panel"><div class="sum-top"><div><div class="k">Ergebnis (Plan)</div><div class="sum-res ' + (c.result >= 0 ? 'pos' : 'neg') + '">' + eurS(c.result) + '</div></div><div class="be">' + be + '</div></div>' +
     '<div class="bars"><div class="bar-row"><span>Einnahmen</span><div class="bar"><span class="c-tix" style="width:' + w(c.tickets) + '"></span><span class="c-inc" style="width:' + w(c.incSum) + '"></span></div><span class="num">' + eur(c.totalIn) + '</span></div>' +
     '<div class="bar-row"><span>Kosten</span><div class="bar"><span class="c-fee" style="width:' + w(c.fees) + '"></span><span class="c-cost" style="width:' + w(c.costSum) + '"></span></div><span class="num">' + eur(c.totalOut) + '</span></div></div>' +
     '<p class="bar-key"><span><i class="sw c-tix"></i>Tickets</span><span><i class="sw c-inc"></i>Weitere Einnahmen</span><span><i class="sw c-fee"></i>Gagen</span><span><i class="sw c-cost"></i>Sonstige Kosten</span></p>' +
@@ -2047,7 +2657,7 @@ function glText(l){
 }
 function tabLineup(e, c){
   const L = S.lineup.filter(l => l.eventId === e.id).sort((a, b) => timeKey(a.start) - timeKey(b.start) || (a.createdAt || 0) - (b.createdAt || 0));
-  let h = briefPanel(e, L) + '<section class="panel"><div class="panel-h"><h2>Running Order</h2><div style="display:flex;gap:6px"><a class="btn btn-ghost btn-sm" href="#verzeichnis" data-vz="dj">DJ-Verzeichnis</a>' + addBtn('new-lineup', e.id, 'Act') + '</div></div>';
+  let h = bkPanel(e) + briefPanel(e, L) + '<section class="panel"><div class="panel-h"><h2>Running Order</h2><div style="display:flex;gap:6px"><a class="btn btn-ghost btn-sm" href="#verzeichnis" data-vz="dj">DJ-Verzeichnis</a>' + addBtn('new-lineup', e.id, 'Act') + '</div></div>';
   if (!L.length) h += '<p class="pad">Noch niemand im Line-up. Trag DJs und Acts mit Zeitslot und Gage ein. Die Gagen landen automatisch in der Kalkulation.</p>';
   else h += '<ul class="rows">' + L.map(l => {
     const st = LST[l.status] || LST.angefragt;
@@ -2134,11 +2744,11 @@ function tabTasks(e){
 function openTeam(){
   const people = peopleSorted();
   const openCount = id => S.tasks.filter(t => !t.done && t.whoId === id).length;
-  let h = '<h2 id="sheet-title">Team</h2><p class="hint" style="margin:-6px 0 14px">Personen, denen ihr Aufgaben zuweisen könnt. Sie brauchen dafür keinen Zugang zur App.</p>' +
+  let h = '<h2 id="sheet-title">Team</h2><p class="hint" style="margin:-6px 0 14px">Personen, denen ihr Aufgaben zuweisen könnt. Wer die App nutzt, verknüpft seinen Namen mit seinem Google-Konto – dann sieht er auf der Startseite „Deine Aufgaben“.' + (ichPerson() ? '' : ' <button type="button" class="btn btn-sm" data-o="ich-bin">Ich bin …</button>') + '</p>' +
     '<form data-form="person" data-id="" novalidate style="display:grid;gap:8px;margin:0 0 14px"><div style="display:flex;gap:8px"><input class="inp" id="team-new" name="name" maxlength="60" placeholder="Name, z. B. Lena" aria-label="Neue Person" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Hinzufügen</button></div><p class="err" hidden></p></form>';
   h += people.length ? '<ul class="rows" style="border-bottom:1px solid var(--line);margin-bottom:14px">' + people.map(p => {
     const n = openCount(p.id);
-    return '<li><button class="row" data-act="edit-person" data-id="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name) + '</span><span class="row-sub">' + (n ? n + (n === 1 ? ' offene Aufgabe' : ' offene Aufgaben') : 'keine offenen Aufgaben') + '</span></span>' + I.right + '</button></li>';
+    return '<li><button class="row" data-act="edit-person" data-id="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name) + '</span><span class="row-sub">' + (n ? n + (n === 1 ? ' offene Aufgabe' : ' offene Aufgaben') : 'keine offenen Aufgaben') + (p.email ? ' · ' + esc(p.email) : '') + '</span></span>' + I.right + '</button></li>';
   }).join('') + '</ul>' : '<p class="muted" style="margin:0 0 14px">Noch niemand im Team.</p>';
   showSheet(h + '<div class="actions"><button type="button" class="btn" data-act="close-sheet">Fertig</button></div>');
 }
@@ -2821,7 +3431,7 @@ function mkMediaForm(m, e){
     delete data.id;
     const mid = m ? m.id : newId('mm');
     if (bild) { data.bild = true; if (!await mkSet('mkbilder', mid, { data:bild, eventId:data.eventId })) return; MK_BILD[mid] = bild; }
-    if (await mkSet('mkmedia', mid, data, m ? 'Gespeichert.' : 'Medium angelegt.')) closeSheet();
+    if (await mkSet('mkmedia', mid, data, m ? 'Gespeichert.' : 'Medium angelegt.')) { closeSheet(); if (data.status === 'fertig' && (!m || m.status !== 'fertig')) logA('hat „' + title + '“ fertig gemacht (' + evName(data.eventId) + ')', data.eventId); else if (!m && bild) logA('hat „' + title + '“ hochgeladen (' + evName(data.eventId) + ')', data.eventId); }
   };
   if (m) $('#mk-del').onclick = () => { if (!confirm('Dieses Medium löschen?')) return; if (m.bild) mkDel('mkbilder', m.id); mkDel('mkmedia', m.id, 'Gelöscht.').then(ok => { if (ok) closeSheet(); }); };
 }
@@ -3342,6 +3952,7 @@ function lineupForm(evId, item){
     '<div class="two">' + field('l-role', 'Rolle', '<select id="l-role" name="role">' + opts(ROLES, v.role) + '</select>') + field('l-status', 'Status', '<select id="l-status" name="status">' + opts(Object.keys(LST).map(k => [k, LST[k].label]), v.status) + '</select>') + '</div>' +
     (floorsOf(item ? item.eventId : evId).length ? field('l-floor', 'Floor', '<select id="l-floor" name="floorId">' + opts([['', 'Noch offen']].concat(floorsOf(item ? item.eventId : evId).map(fl => [fl.id, fl.name])), v.floorId || '') + '</select>') : '') +
     '<div class="two">' + field('l-start', 'Slot von', '<input id="l-start" name="start" type="time" value="' + esc(v.start) + '">') + field('l-end', 'Slot bis', '<input id="l-end" name="end" type="time" value="' + esc(v.end) + '">') + '</div>' +
+    field('l-ank', 'Ankunft (für den Abend-Modus)', '<input id="l-ank" name="ankunft" type="time" value="' + esc(v.ankunft || '') + '">') +
     '<div class="two">' + field('l-fee', 'Gage (€)', '<input id="l-fee" name="fee" inputmode="decimal" placeholder="0" value="' + esc(numIn(v.fee)) + '">') + '<label class="check" style="align-self:end;min-height:44px"><input type="checkbox" id="l-paid" name="paid"' + (v.paid ? ' checked' : '') + '> Gage bezahlt</label></div>' +
     field('l-gl', 'Gästeliste (Plätze)', '<input id="l-gl" name="gl" type="number" inputmode="numeric" min="0" max="99" step="1" placeholder="0" value="' + esc(int(v.gl) || '') + '">') +
     field('l-glnames', 'Namen auf der Gästeliste (optional, einer pro Zeile)', '<textarea id="l-glnames" name="glNames" rows="2" maxlength="1500" placeholder="z. B. Lena Müller">' + esc(v.glNames || '') + '</textarea>') +
@@ -3549,6 +4160,7 @@ function taskForm(item){
 function personForm(item, quick){
   showSheet('<h2 id="sheet-title">' + (item ? 'Person bearbeiten' : 'Neue Person') + '</h2><form class="f" data-form="person" data-id="' + (item ? esc(item.id) : '') + '"' + (quick ? ' data-quick="1"' : '') + ' novalidate>' +
     field('pp-name', 'Name', '<input id="pp-name" name="name" maxlength="60" autocomplete="off" placeholder="z. B. Lena" value="' + esc(item ? item.name : '') + '">') +
+    (projekt && (projekt.members || []).length ? field('pp-mail', 'Google-Konto (für „Deine Aufgaben“)', '<select id="pp-mail" name="email">' + opts([['', 'Kein Konto – nur Name']].concat((projekt.members || []).map(m => [m, m])), item ? (item.email || '') : '') + '</select>') : '') +
     (item ? '<p class="hint">Wenn du die Person löschst, bleiben ihre Aufgaben bestehen und zeigen weiter ihren Namen.</p>' : '') +
     formEnd(item ? 'Speichern' : 'Hinzufügen', 'person', item && item.id) + '</form>');
 }
@@ -3634,10 +4246,10 @@ const FORMS = {
     if (isNaN(cap) || cap < 0) return formErr(f, 'Gib die Kapazität als ganze Zahl an, z. B. 300.');
     const data = { name, date:d.date, status:d.status || 'idee', start:d.start || '', end:d.end || '', venue:(d.venue || '').trim(), capacity:cap, notes:(d.notes || '').trim() };
     const id = f.dataset.id;
-    if (id) { if (await save(() => db.doc('events/' + id).update(data), 'Gespeichert')) closeSheet(); return; }
+    if (id) { const alt = S.events.find(x => x.id === id) || {}; if (await save(() => db.doc('events/' + id).update(data), 'Gespeichert')) { closeSheet(); if (alt.status !== data.status) logA('hat „' + name + '“ auf ' + (STATUS[data.status] || STATUS.idee).label + ' gesetzt', id); } return; }
     const nid = newId('e');
     data.createdAt = Date.now();
-    if (await save(() => db.collection('events').doc(nid).set(data), 'Event angelegt')) { closeSheet(); location.hash = 'ev-' + nid; }
+    if (await save(() => db.collection('events').doc(nid).set(data), 'Event angelegt')) { closeSheet(); location.hash = 'ev-' + nid; logA('hat das Event „' + name + '“ angelegt (' + fmtDs(data.date) + ')', nid); }
   },
   async venue(f, d){
     const cap = d.capacity ? int(d.capacity) : 0;
@@ -3731,6 +4343,12 @@ const FORMS = {
     const data = { gl, glNames, eventId:f.dataset.ev, name, role:d.role || '', status:d.status || 'angefragt', start:d.start || '', end:d.end || '', fee, paid:!!d.paid, contact:(d.contact || '').trim(), notes:(d.notes || '').trim(),
       wa:(d.wa || '').trim(), tg:tgUser(d.tg), ig:igUser(d.ig), mail:(d.mail || '').trim() };
     if ('floorId' in d) data.floorId = d.floorId || '';
+    data.ankunft = d.ankunft || '';
+    const vorher = f.dataset.id ? (S.lineup.find(x => x.id === f.dataset.id) || {}) : {};
+    if (data.status === 'angefragt' && vorher.status !== 'angefragt') data.anfrageAm = Date.now();
+    const evN = evName(f.dataset.ev);
+    if (!f.dataset.id) logA((data.status === 'zugesagt' ? 'hat ' + name + ' fest gebucht' : 'hat ' + name + ' ins Line-up genommen') + ' (' + evN + ')', f.dataset.ev);
+    else if (vorher.status !== data.status) logA(data.status === 'zugesagt' ? 'hat ' + name + ' bestätigt (' + evN + ')' : data.status === 'abgesagt' ? 'hat ' + name + ' als abgesagt markiert (' + evN + ')' : 'hat ' + name + ' wieder auf angefragt gesetzt (' + evN + ')', f.dataset.ev);
     if (d.saveArt) { const aid = await artistMerken(Object.assign({}, data, { artistId:d.artistId || (f.dataset.id && (S.lineup.find(x => x.id === f.dataset.id) || {}).artistId) || '' })); if (aid) data.artistId = aid; }
     else if (d.artistId) data.artistId = d.artistId;
     const id = f.dataset.id;
@@ -3751,7 +4369,14 @@ const FORMS = {
     const title = (d.title || '').trim();
     if (!title) return formErr(f, 'Beschreib die Aufgabe kurz.');
     const who = await resolvePerson(f, d.who, d.whoNew); if (who === false) return;
-    if (await save(() => db.doc('tasks/' + f.dataset.id).update({ title, whoId:who.id, who:who.name, due:isDate(d.due) ? d.due : '', prio:PRIO[d.prio] ? d.prio : '', done:!!d.done }), 'Gespeichert')) closeSheet();
+    const alt = S.tasks.find(x => x.id === f.dataset.id) || {};
+    const upd = { title, whoId:who.id, who:who.name, due:isDate(d.due) ? d.due : '', prio:PRIO[d.prio] ? d.prio : '', done:!!d.done };
+    if (who.id && who.id !== alt.whoId) Object.assign(upd, { assignedAt:Date.now(), assignedBy:meinName() });
+    if (await save(() => db.doc('tasks/' + f.dataset.id).update(upd), 'Gespeichert')) {
+      closeSheet();
+      if (upd.assignedAt) logA('hat ' + who.name + ' die Aufgabe „' + title + '“ gegeben', alt.eventId);
+      else if (upd.done && !alt.done) logA('hat „' + title + '“ erledigt', alt.eventId);
+    }
   },
   async person(f, d){
     const name = (d.name || '').trim();
@@ -3764,7 +4389,8 @@ const FORMS = {
       return;
     }
     S.afterPeople = 'team';
-    const ok = id ? await save(() => db.doc('people/' + id).update({ name }), 'Gespeichert') : await save(() => db.collection('people').doc(newId('pp')).set({ name, createdAt:Date.now() }), name + ' ist im Team');
+    const em = String(d.email || '').toLowerCase();
+    const ok = id ? await save(() => db.doc('people/' + id).update({ name, email:em }), 'Gespeichert') : await save(() => db.collection('people').doc(newId('pp')).set({ name, email:em, createdAt:Date.now() }), name + ' ist im Team');
     if (!ok) S.afterPeople = null;
   },
   async blocker(f, d){
@@ -3797,6 +4423,7 @@ const FORMS = {
     if (!title) { toast('Schreib zuerst, was zu tun ist.'); return; }
     const p = S.people.find(x => x.id === d.who);
     const data = { eventId:f.dataset.ev, title, whoId:p ? p.id : '', who:p ? p.name : '', due:isDate(d.due) ? d.due : '', prio:PRIO[d.prio] ? d.prio : '', done:false, createdAt:Date.now() };
+    if (p) { data.assignedAt = Date.now(); data.assignedBy = meinName(); logA('hat ' + p.name + ' die Aufgabe „' + title + '“ gegeben', f.dataset.ev); }
     S.quick.title = ''; S.quick.due = ''; S.quick.prio = '';
     ['#quick-task', '#quick-due', '#quick-prio'].forEach(q => { const x = f.querySelector(q); if (x) x.value = ''; });
     await save(() => db.collection('tasks').doc(newId('t')).set(data));
@@ -3864,7 +4491,7 @@ document.addEventListener('click', ev => {
     case 'edit-phase': { const x = find('phases'); if (x) phaseForm(null, x); break; }
     case 'std-phases': el.disabled = true; addStdPhases(el.dataset.ev); break;
     case 'edit-money': { const x = find('money'); if (x) moneyForm(null, null, x); break; }
-    case 'toggle-task': { const x = find('tasks'); if (x) save(() => db.doc('tasks/' + id).update({ done:!x.done })); break; }
+    case 'toggle-task': { const x = find('tasks'); if (x) { save(() => db.doc('tasks/' + id).update({ done:!x.done })); if (!x.done) logA('hat „' + x.title + '“ erledigt', x.eventId); } break; }
     case 'edit-task': { const x = find('tasks'); if (x) taskForm(x); break; }
     case 'team': openTeam(); break;
     case 'edit-person': { const x = find('people'); if (x) personForm(x); break; }
@@ -4110,7 +4737,7 @@ document.querySelector('.mark').addEventListener('click', ev => {
   ev.preventDefault();
   if (window.firebase && !projekt) return;
   closeSheet();
-  const start = LS.get('ansicht') === 'marketing' ? '#marketing' : '#events';
+  const start = startHash();
   if (location.hash !== start) location.hash = start;
   else { render(); window.scrollTo(0, 0); }
 });
