@@ -63,7 +63,7 @@
 
 /* Ansicht „Light“ (Einstellungen): weniger Erklärtexte und Zusatzflächen */
 :root[data-ansicht="light"] .lead, :root[data-ansicht="light"] .lead-more, :root[data-ansicht="light"] .banner, :root[data-ansicht="light"] .tab[data-tab="marketing"]{display:none !important}
-:root[data-ansicht="light"] .tabbar-in{grid-template-columns:repeat(2,minmax(0,1fr))}
+:root[data-ansicht="light"] .tabbar-in{grid-template-columns:repeat(3,minmax(0,1fr))}
 /* Ansicht „Marketing“: nur der Marketing-Reiter, alles andere über die Einstellungen */
 :root[data-ansicht="marketing"] .lead, :root[data-ansicht="marketing"] .lead-more, :root[data-ansicht="marketing"] .banner, :root[data-ansicht="marketing"] .tab:not(.mo-marketing){display:none !important}
 :root[data-ansicht="marketing"] .tabbar-in{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -756,7 +756,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 
 /* Tab-Leiste */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
-.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;color:var(--ink-3);text-decoration:none;font:600 11.5px var(--f-body);border-radius:10px}
 .tab[aria-current="page"]{color:var(--pink)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom, 0px));z-index:60;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font:500 14px var(--f-body);max-width:calc(100% - 32px);box-shadow:var(--shadow);text-align:center}
@@ -771,6 +771,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 <main id="view" class="wrap"></main>
 
 <nav class="tabbar" aria-label="Bereiche"><div class="tabbar-in">
+  <a class="tab" href="#dashboard" data-tab="dashboard"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Dashboard</span></a>
   <a class="tab" href="#events" data-tab="events"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M15 7.5v1.5M15 11.25v1.5M15 15v1.5"/></svg><span>Events</span></a>
   <a class="tab" href="#kalender" data-tab="kalender"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>Kalender</span></a>
   <a class="tab" href="#marketing" data-tab="marketing"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Marketing</span></a>
@@ -1575,7 +1576,7 @@ const evName = id => (S.events.find(e => e.id === id) || {}).name || 'Event';
 // Ansichten: Pro, Light und die Bereichs-Ansichten mit eigenen Reitern
 const ANSICHTEN = [['pro', 'Pro'], ['light', 'Light'], ['marketing', 'Marketing'], ['booking', 'Booking'], ['finanzen', 'Finanzen']];
 const ansicht = () => { const a = LS.get('ansicht') || 'pro'; return ANSICHTEN.some(x => x[0] === a) ? a : 'pro'; };
-const startHash = () => ({ marketing:'#marketing', booking:'#booking', finanzen:'#finanzen' })[ansicht()] || '#events';
+const startHash = () => ({ marketing:'#marketing', booking:'#booking', finanzen:'#finanzen' })[ansicht()] || '#dashboard';
 const bereichsAnsicht = () => ['marketing', 'booking', 'finanzen'].indexOf(ansicht()) >= 0;
 
 /* ===== Aktivitätsverlauf ===== */
@@ -2578,7 +2579,7 @@ function route(){
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
   if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
   if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele' ||
-    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend', 'verlauf', 'nachrichten'].indexOf(h) >= 0) return { view:h };
+    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend', 'verlauf', 'nachrichten', 'dashboard'].indexOf(h) >= 0) return { view:h };
   if (h.indexOf('abend-') === 0) return { view:'abend', id:h.slice(6) };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:h === '' ? startHash().slice(1) : 'events' };
@@ -2587,6 +2588,10 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08m', titel:'Dashboard als eigener Reiter', punkte:[
+    'Die Übersicht mit den Kacheln hat jetzt einen eigenen Reiter „Dashboard“ ganz links – dort startet die App',
+    'Im Reiter Events steht das nächste Event groß mit allen Infos, darunter die folgenden Events klein'
+  ]},
   { v:'2026-11-08l', titel:'Admin-Bereich', punkte:[
     'Nur für den Admin: 🛡 Admin-Bereich in den Einstellungen und in der Projektauswahl',
     'Alle Projekte, Mitglieder, Nutzer, Location- und Einlass-Zugänge auf einen Blick – mit Verwaltung',
@@ -2650,7 +2655,7 @@ const NEUES = [
 // Alle Hinweise in einer schmalen Leiste: heutiges Event, Neuigkeiten, Einladen
 function hinweise(view){
   const Z = [];
-  const start = ['events', 'marketing', 'booking', 'finanzen'].indexOf(view) >= 0;
+  const start = ['dashboard', 'events', 'marketing', 'booking', 'finanzen'].indexOf(view) >= 0;
   const ab = start && S.got.events ? S.events.find(x => istHeute(x) && x.status !== 'abgesagt') : null;
   if (ab) Z.push('<div class="hw-z"><span class="hw-i">🎉</span><span class="hw-t"><strong>' + (ab.date === today() ? 'Heute' : 'Läuft noch') + ':</strong> ' + esc(ab.name || 'Event') + '</span><a class="btn btn-sm btn-primary" href="#abend-' + esc(ab.id) + '">Abend-Modus</a></div>');
   if (S.gast) Z.push('<div class="hw-z"><span class="hw-i">🛡</span><span class="hw-t"><strong>Admin-Modus:</strong> Du bist in „' + esc((projekt || {}).name || 'Projekt') + '“ kein Mitglied. Änderungen sind möglich, werden aber nicht im Verlauf festgehalten.</span><button class="btn btn-sm" data-ad="start">Admin</button></div>');
@@ -2682,7 +2687,8 @@ const tutStep = () => { const v = LS.get('tutS'); return v === null || v === '' 
 const tutZuEv = tab => { const id = tutEv(); if (!id) return; S.evId = id; S.evTab = tab; if (location.hash !== '#ev-' + id) location.hash = '#ev-' + id; else render(); };
 const TUT = [
   ['Willkommen im Tutorial', 'Ich habe ein Beispiel-Event angelegt: „🎓 Beispiel-Event“ im Beispiel-Club, mit Line-up, Floors, Kosten, Tickets und Aufgaben. Damit gehen wir einmal durch alles. Du kannst überall draufdrücken und ausprobieren – am Ende kannst du das Beispiel mit einem Knopf wieder löschen.', () => { location.hash = '#events'; }],
-  ['Startseite', 'Oben die Hinweisleiste (heutiges Event, neue Nachrichten, Updates), darunter die Übersicht mit Countdown zum nächsten Event und Kacheln. Mit „Bearbeiten“ stellst du die Kacheln zusammen. Der runde ＋-Knopf unten rechts legt von überall Events, Aufgaben, Acts oder Kosten an. Die Lupe oben sucht über alles.', () => { location.hash = '#events'; }],
+  ['Dashboard', 'Der erste Reiter: oben die Hinweisleiste (heutiges Event, neue Nachrichten, Updates), darunter Countdown und Kacheln. Mit „Bearbeiten“ stellst du die Kacheln zusammen. Der runde ＋-Knopf unten rechts legt von überall Events, Aufgaben, Acts oder Kosten an. Die Lupe oben sucht über alles.', () => { location.hash = '#dashboard'; }],
+  ['Events', 'Im Reiter Events steht das nächste Event groß mit allen wichtigen Infos, darunter die folgenden Events klein. Oben wechselst du zwischen kommenden und vergangenen Events.', () => { location.hash = '#events'; }],
   ['Das Event: Überblick', 'Jedes Event hat diese Seite. Oben der Status und der nächste offene Schritt aus dem Ablauf (Location fix → Line-up fix → Flyer → …). Darunter der Abend-Modus-Knopf, der Ablauf zum Aufklappen und die Details. Gerade siehst du das Beispiel-Event.', () => tutZuEv('ueberblick')],
   ['Finanzen', 'Hier rechnet die App: Kosten (Miete, Technik), Gagen aus dem Line-up und Ticketphasen (Early Bird 12 €, Regular 15 €). Daraus ergeben sich Ergebnis und Break-even – also wie viele Tickets ihr verkaufen müsst. Nach dem Event trägst du hier die echten Zahlen für die Abrechnung ein.', () => tutZuEv('finanzen')],
   ['Location & Floors', 'Pro Event legst du Floors an, wählst Technik-Setups (z. B. 2× CDJ-3000, DJM-900) und ordnest Acts zu. Steht die Location im Verzeichnis, kannst du den Betreiber einladen: Er sieht Line-up, Flyer und Technik und kann euch über „Nachrichten“ schreiben.', () => tutZuEv('location')],
@@ -2770,7 +2776,7 @@ function render(){
   if (a && a.id && view.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) keep = { id:a.id, v:a.value, s:a.selectionStart, e:a.selectionEnd };
   const r = route();
   const tab = r.view === 'event' ? 'events' : (r.view === 'finden' || r.view === 'monat') ? 'kalender' : r.view === 'veranstalter' ? 'umfeld' : r.view === 'marketing' && istMk() ? 'mk-heute' : r.view === 'booking' ? 'bk-heute' : r.view === 'finanzen' ? 'fi-heute' : r.view === 'abend' ? 'events' : r.view;
-  document.body.classList.toggle('wide', r.view === 'events');
+  document.body.classList.toggle('wide', r.view === 'events' || r.view === 'dashboard');
   topH();
   document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === tab) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
   const cn = CONN[S.conn] || CONN.connecting;
@@ -2792,6 +2798,7 @@ function render(){
   else if (r.view === 'abend') h += viewAbend(r.id);
   else if (r.view === 'verlauf') h += viewVerlauf();
   else if (r.view === 'nachrichten') h += viewNachrichten();
+  else if (r.view === 'dashboard') h += viewDashboard();
   else if (r.view === 'booking') h += viewBkHeute();
   else if (r.view === 'bk-anfragen') h += viewBkAnfragen();
   else if (r.view === 'bk-djs' || r.view === 'bk-locs') { const t = r.view === 'bk-djs' ? 'dj' : 'loc'; if (S.vzTab !== t) { S.vzTab = t; LS.set('vzTab', t); } h += viewVerzeichnis(); }
@@ -2835,14 +2842,23 @@ function viewEvents(){
   let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>' + bereichKnoepfe(['verzeichnis', 'verlauf', 'nachrichten'].concat(istLight() ? ['marketing'] : []));
   if (false) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
 
-  if (up && !waiting('events')) h += dashboard(nextEvent());
+  // Nächstes Event groß, die folgenden darunter klein
+  const nx = up && !waiting('events') ? nextEvent() : null;
+  if (nx) { curW = 'next'; h += '<div class="wgrid ev-next"><div class="wcell ws-l" data-w="next">' + widget('next', nx, 'l') + '</div></div>'; }
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
   if (waiting('events')) return h + loading();
   if (!list.length) {
     if (!up) return h + '<p class="muted">Noch keine vergangenen Events.</p>';
     return h + '<div class="empty"><h3>Noch keine Events</h3><p>Leg euer erstes Event an. Sobald es ein Datum hat, siehst du, ob es mit Ferien, Festivals oder euren anderen Terminen kollidiert. Freie Samstage findest du im Kalender.</p>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Erstes Event anlegen</button>') + '</div>';
   }
-  return h + '<div class="tickets">' + list.map(ticket).join('') + '</div>';
+  const rest = nx ? list.filter(e => e.id !== nx.id) : list;
+  if (nx && !rest.length) return h;
+  return h + (nx ? '<h2 class="sec-h" style="margin-top:6px">Danach</h2>' : '') + '<div class="tickets">' + rest.map(ticket).join('') + '</div>';
+}
+function viewDashboard(){
+  let h = '<section class="vh"><h1>Dashboard</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#events">Alle Events</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
+  if (waiting('events')) return h + loading();
+  return h + dashboard(nextEvent());
 }
 const WIDGETS = [
   ['meine', 'Deine Aufgaben', 'Was dir zugewiesen ist, Neues zuerst markiert'],
