@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>try{var _m=localStorage.getItem('va:modus'),_f=localStorage.getItem('va:farbe');if(_m==='hell'||_m==='dunkel')document.documentElement.setAttribute('data-theme',_m==='hell'?'light':'dark');if(_f&&_f!=='pink')document.documentElement.setAttribute('data-farbe',_f);}catch(e){}</script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>try{var _m=localStorage.getItem('va:modus'),_f=localStorage.getItem('va:farbe');if(_m==='hell'||_m==='dunkel')document.documentElement.setAttribute('data-theme',_m==='hell'?'light':'dark');if(_f&&_f!=='pink')document.documentElement.setAttribute('data-farbe',_f);if(localStorage.getItem('va:ansicht')==='light')document.documentElement.setAttribute('data-ansicht','light');}catch(e){}</script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>RaveBüro</title>
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#091C41"><meta name="apple-mobile-web-app-title" content="RaveBüro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,6 +61,9 @@
   color-scheme:dark;
 }
 
+/* Ansicht „Light“ (Einstellungen): weniger Erklärtexte und Zusatzflächen */
+:root[data-ansicht="light"] .lead, :root[data-ansicht="light"] .lead-more, :root[data-ansicht="light"] .banner, :root[data-ansicht="light"] .tab[data-tab="marketing"]{display:none !important}
+:root[data-ansicht="light"] .tabbar-in{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* Farbthemen (Einstellungen) */
 :root[data-farbe="lila"]{--pink:#7A3FD6; --pink-ink:#FFFFFF; --pink-soft:#EDE3FB;}
 @media (prefers-color-scheme: dark){:root[data-farbe="lila"]:not([data-theme="light"]){--pink:#B48CFF; --pink-ink:#160A2A; --pink-soft:#2B1F4A;}}
@@ -1175,7 +1178,9 @@ function openEinstellungen(){
   const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px"><li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li></ul>' +
+    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px"><li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li>' + (istLight() ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
+    '<h3 style="margin:0 0 8px">Ansicht</h3><div class="seg" role="radiogroup" style="margin:0 0 6px">' + [['pro', 'Pro'], ['light', 'Light']].map(a => '<button type="button" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + ((LS.get('ansicht') || 'pro') === a[0]) + '" aria-pressed="' + ((LS.get('ansicht') || 'pro') === a[0]) + '">' + a[1] + '</button>').join('') + '</div>' +
+    '<p class="hint" style="margin:0 0 18px">' + (istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
     '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
     FARBEN.map(f => '<button type="button" class="chip" data-farbe-w="' + f[0] + '" aria-pressed="' + (farbe === f[0]) + '" style="justify-content:flex-start;gap:8px;padding:10px 12px"><span style="width:18px;height:18px;border-radius:50%;background:' + (dunkel ? f[3] : f[2]) + ';flex:none"></span>' + f[1] + '</button>').join('') + '</div>' +
     '<h3 style="margin:0 0 8px">Hell oder dunkel</h3><div class="seg" role="radiogroup" style="margin:0 0 18px">' +
@@ -1183,6 +1188,7 @@ function openEinstellungen(){
     '<p class="hint">Die Einstellungen gelten nur auf diesem Gerät.</p>' +
     '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
   document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
+  document.querySelectorAll('[data-ansicht-w]').forEach(b => b.onclick = () => { LS.set('ansicht', b.dataset.ansichtW); if (b.dataset.ansichtW === 'light') document.documentElement.setAttribute('data-ansicht', 'light'); else document.documentElement.removeAttribute('data-ansicht'); render(); openEinstellungen(); });
   document.querySelectorAll('[data-modus-w]').forEach(b => b.onclick = () => { LS.set('modus', b.dataset.modusW); themaSetzen(b.dataset.modusW, LS.get('farbe') || 'pink'); openEinstellungen(); });
 }
 window.openEinstellungen = openEinstellungen;
@@ -1450,7 +1456,9 @@ function dashStrip(nx){
   if (!ch.some(c => c[0] === 'w')) ch.push(['ok', '', I.check, 'Nichts überfällig, keine Konflikte', '']);
   return '<div class="wstrip">' + ch.map(c => c[1] ? '<a class="wchip ' + c[0] + '" href="' + c[1] + '" ' + c[4] + '>' + c[2] + '<span>' + c[3] + '</span></a>' : '<span class="wchip ' + c[0] + '">' + c[2] + '<span>' + c[3] + '</span></span>').join('') + '</div>';
 }
+const istLight = () => LS.get('ansicht') === 'light';
 function dashboard(nx){
+  if (istLight()) { const L = ['next', 'tasks']; return '<div class="wgrid">' + L.map(k => { curW = k; return '<div class="wcell ws-' + (k === 'next' ? 'l' : 'm') + '" data-w="' + k + '">' + widget(k, nx, k === 'next' ? 'l' : 'm') + '</div>'; }).join('') + '</div>'; }
   const list = wList(), ed = !!S.wEdit, hr = new Date().getHours();
   let h = '<div class="wtop"><h2>Übersicht</h2><div class="btns">' + (ed ? '<button class="btn btn-sm" data-act="w-reset">Standard</button><button class="btn btn-sm btn-primary" data-act="w-edit">Fertig</button>' : '<button class="btn btn-sm" data-act="w-edit">Bearbeiten</button>') + '</div></div>';
   h += ed ? '<p class="w-hi">Ziehe Kacheln am Griff ⠿ an eine andere Stelle oder nutze die Pfeile. S, M und L ändern die Größe, ✕ blendet eine Kachel aus.</p>' : dashStrip(nx);
@@ -1762,6 +1770,7 @@ function techsetsSheet(){
     '<div class="actions"><button class="btn" data-act="close-sheet">Schließen</button></div>');
 }
 function briefPanel(e, L){
+  if (istLight()) return '';
   const A = L.filter(l => l.status !== 'abgesagt'), d = briefDates(e), b = brief(), t = today();
   let h = '<section class="panel"><div class="panel-h"><h2>Infos von den Acts</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-act="brief-settings">Vorlage</button>') + '</div>';
   h += '<div class="br-sub"><span>Anfragen ab <strong>' + fmtD(d.from) + '</strong></span><span>Frist <strong>' + fmtD(d.due) + '</strong></span>' + (safeUrl(e.uploadUrl) ? '<span>Upload-Link hinterlegt</span>' : '') + (S.ro ? '' : '<button class="btn btn-ghost btn-sm" data-act="brief-event" data-id="' + esc(e.id) + '">Ändern</button>') + '</div>';
