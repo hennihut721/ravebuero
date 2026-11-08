@@ -120,6 +120,41 @@
 .ab-banner > span{display:flex;flex-direction:column;gap:2px}
 .ab-banner .btn{flex:none}
 .akt .m strong{font-weight:700}
+/* Hinweisleiste */
+.hw{border:1px solid var(--line);background:var(--surface);border-radius:14px;margin:0 0 14px;overflow:hidden}
+.hw-z{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)}
+.hw-z:first-child{border-top:0}
+.hw-z .hw-t{flex:1;min-width:0;font-size:14px}
+.hw-z .hw-t strong{font-weight:700}
+.hw-i{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);font-size:14px}
+.hw-x{flex:none;border:0;background:transparent;color:var(--ink-3);font-size:18px;cursor:pointer;padding:4px 6px}
+.hw-neu ul{margin:6px 0 0;padding-left:18px;line-height:1.5}
+/* Aufklappbare Abschnitte */
+details.klapp{margin:0 0 14px}
+details.klapp > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-weight:700}
+details.klapp > summary::-webkit-details-marker{display:none}
+details.klapp > summary::after{content:'›';margin-left:auto;color:var(--ink-3);font-size:20px;transition:transform .15s}
+details.klapp[open] > summary::after{transform:rotate(90deg)}
+details.klapp[open] > summary{border-radius:14px 14px 0 0;border-bottom:0}
+details.klapp > .klapp-b > section.panel{border-radius:0 0 14px 14px;margin:0}
+details.klapp > .klapp-b > section.panel > .panel-h > h2{display:none}
+details.klapp > summary .muted{font-weight:500}
+.next-step{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--pink-soft, var(--sunk));margin:0 0 14px}
+.next-step .t{flex:1;min-width:0}
+/* Plus-Knopf */
+.fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:40;width:58px;height:58px;border-radius:50%;border:0;background:var(--pink);color:var(--pink-ink, #fff);font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.fab[hidden]{display:none}
+/* Laden: Platzhalter */
+.skel{display:grid;gap:12px;margin:8px 0}
+.skel div{height:74px;border-radius:14px;background:linear-gradient(90deg,var(--sunk) 0%,var(--line) 50%,var(--sunk) 100%);background-size:200% 100%;animation:skel 1.2s infinite linear}
+.skel div:nth-child(2){height:120px}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel div{animation:none}}
+/* Offline */
+.offline-leiste{position:sticky;top:0;z-index:30;background:#d18b00;color:#fff;text-align:center;font-size:14px;font-weight:600;padding:6px 12px}
+/* Wischen */
+.task.wisch{transition:transform .15s}
+.toast .undo{margin-left:12px;border:0;background:transparent;color:inherit;font-weight:800;text-decoration:underline;cursor:pointer}
 a.row{text-decoration:none;color:inherit}
 .mkc{padding:12px 14px;border-top:1px solid var(--line)}
 .mkc:first-of-type{border-top:0}
@@ -726,7 +761,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 
 <header class="top"><div class="top-in">
   <a class="mark" href="#events">RaveBüro</a>
-  <span style="display:flex;align-items:center;gap:10px"><span id="conn" class="conn wait"><span class="dot"></span><span id="conn-t">Verbinde …</span></span><button class="btn-ghost btn" id="fb-set" title="Einstellungen" aria-label="Einstellungen" onclick="openEinstellungen()" style="padding:6px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button><button class="btn-ghost btn" id="fb-prof" title="Profil & Mitglieder" onclick="openProfil()" hidden><span class="av" id="fb-av" style="width:22px;height:22px;font-size:11px;line-height:22px;margin-right:6px">·</span>Profil</button></span>
+  <span style="display:flex;align-items:center;gap:10px"><span id="conn" class="conn wait"><span class="dot"></span><span id="conn-t">Verbinde …</span></span><button class="btn-ghost btn" id="fb-such" title="Suchen" aria-label="Suchen" onclick="openSuche()" hidden style="padding:6px 8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button><button class="btn-ghost btn" id="fb-set" title="Einstellungen" aria-label="Einstellungen" onclick="openEinstellungen()" style="padding:6px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button><button class="btn-ghost btn" id="fb-prof" title="Profil & Mitglieder" onclick="openProfil()" hidden><span class="av" id="fb-av" style="width:22px;height:22px;font-size:11px;line-height:22px;margin-right:6px">·</span>Profil</button></span>
 </div></header>
 
 <main id="view" class="wrap"></main>
@@ -750,6 +785,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 
 <div id="sheet" class="sheet-wrap" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></div></div>
 <div id="toast" class="toast" role="status" hidden></div>
+<button type="button" id="fab" class="fab" aria-label="Neu anlegen" hidden>+</button>
 
 <script src="vendor/firebase-app-compat.js"></script>
 <script src="vendor/firebase-auth-compat.js"></script>
@@ -1511,7 +1547,7 @@ function bkZeile(l, mitEvent){
   const st = LST[l.status] || LST.angefragt;
   const sub = [mitEvent ? esc(e.name || 'Event') + ' · ' + fmtDs(e.date) : '', l.status === 'angefragt' ? (l.anfrageAm || l.nachgehaktAm ? (faellig ? '<span class="overdue">seit ' + tg + ' Tagen ohne Antwort</span>' : (l.nachgehaktAm ? 'nachgehakt' : 'angefragt') + ' vor ' + tg + (tg === 1 ? ' Tag' : ' Tagen')) : '<span class="due-soon">noch nicht angefragt</span>') : '', num(l.fee) ? eur(l.fee) : ''].filter(Boolean).join(' · ');
   const btn = l.status !== 'angefragt' || S.ro ? '' : (!l.anfrageAm && !l.nachgehaktAm ? '<button class="btn btn-sm" data-o="bk-wa" data-id="' + esc(l.id) + '" data-v="anfrage" style="flex:none">Anfragen</button>' : faellig ? '<button class="btn btn-sm btn-primary" data-o="bk-wa" data-id="' + esc(l.id) + '" data-v="nachhaken" style="flex:none">Nachhaken</button>' : '');
-  return '<li><div class="task"><span class="pill ' + st.cls + '" style="flex:none;align-self:center">' + st.label + '</span><button class="task-main" data-act="edit-lineup" data-id="' + esc(l.id) + '"><span class="row-title">' + esc(l.name || 'Act') + '</span><span class="row-sub">' + sub + '</span></button>' + btn + '</div></li>';
+  return '<li><div class="task"' + (waNum(l.wa) ? ' data-wa="' + waNum(l.wa) + '"' : '') + '><span class="pill ' + st.cls + '" style="flex:none;align-self:center">' + st.label + '</span><button class="task-main" data-act="edit-lineup" data-id="' + esc(l.id) + '"><span class="row-title">' + esc(l.name || 'Act') + '</span><span class="row-sub">' + sub + '</span></button>' + btn + '</div></li>';
 }
 function bkPanel(e){
   const A = S.lineup.filter(l => l.eventId === e.id && l.status === 'angefragt');
@@ -1785,7 +1821,7 @@ function einlassSheet(e){
     const ok = await save(async () => {
       await db.doc('events/' + e.id).update({ einlassEmails:mails });
       await fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:mails }, { merge:true });
-    }, mails.length ? 'Einlass-Zugang gespeichert' : 'Einlass-Zugang beendet');
+    }, mails.length ? 'Einlass-Team gespeichert' : 'Einlass-Team beendet');
     if (ok) { fgPlan(); if (mails.length && !M.length) einlassSheet(Object.assign({}, e, { einlassEmails:mails })); else closeSheet(); }
   };
 }
@@ -1991,12 +2027,11 @@ document.addEventListener('click', ev => {
   else if (a === 'zahl') { EK.zahl = v; k.neu(); }
   else if (a === 'kamera') ekKamera(k.fid, () => (ekKontext() || k).x);
   else if (a === 'verkauf') ekVerkauf(k.fid, k.x, Number(v));
-  else if (a === 'storno') { if (confirm('Diesen Verkauf stornieren?')) fs.collection('einlass').doc(k.fid).collection('kasse').doc(el.dataset.id).delete().then(() => toast('Storniert.')).catch(() => toast('Hat nicht geklappt.')); }
+  else if (a === 'storno') { const kx = EK.kasse.find(q => q.id === el.dataset.id); fs.collection('einlass').doc(k.fid).collection('kasse').doc(el.dataset.id).delete().then(() => { if (kx) undoToast('Storniert', () => fs.collection('einlass').doc(k.fid).collection('kasse').doc(kx.id).set(roh(kx))); }).catch(() => toast('Hat nicht geklappt.')); }
   else if (a === 'arten' && k.e) ekArtenForm(k.e);
   else if (a === 'liste-weg' && k.e) {
-    if (!confirm('Importierte Ticketliste löschen? Bereits gescannte Tickets bleiben gezählt. Ohne Liste prüft der Scanner nicht mehr, ob ein Ticket gültig ist.')) return;
-    const FV = firebase.firestore.FieldValue;
-    save(() => fs.collection('einlass').doc(k.fid).update({ tickets:FV.delete(), ticketsStand:FV.delete() }), 'Ticketliste gelöscht').then(ok => { if (ok) logA('hat die Eventim-Ticketliste gelöscht (' + (k.e.name || 'Event') + ')', k.e.id); });
+    const FV = firebase.firestore.FieldValue, alt = { tickets:k.x.tickets, ticketsStand:k.x.ticketsStand || Date.now() };
+    save(() => fs.collection('einlass').doc(k.fid).update({ tickets:FV.delete(), ticketsStand:FV.delete() })).then(ok => { if (ok) { logA('hat die Eventim-Ticketliste gelöscht (' + (k.e.name || 'Event') + ')', k.e.id); undoToast('Ticketliste gelöscht', () => fs.collection('einlass').doc(k.fid).update(alt)); } });
   }
   else if (a === 'shop' && k.e) ekShopForm(k.e);
   else if (a === 'abr' && k.e) {
@@ -2226,14 +2261,17 @@ function openEinstellungen(){
   const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<h3 style="margin:0 0 4px">Bereiche</h3><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 18px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
-    '<h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
+    '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">1 · Bereiche</p><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
+    '<p class="kicker" style="margin:0 0 10px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">2 · Ansicht & Aussehen</p><h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
     '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
     FARBEN.map(f => '<button type="button" class="chip" data-farbe-w="' + f[0] + '" aria-pressed="' + (farbe === f[0]) + '" style="justify-content:flex-start;gap:8px;padding:10px 12px"><span style="width:18px;height:18px;border-radius:50%;background:' + (dunkel ? f[3] : f[2]) + ';flex:none"></span>' + f[1] + '</button>').join('') + '</div>' +
     '<h3 style="margin:0 0 8px">Hell oder dunkel</h3><div class="seg" role="radiogroup" style="margin:0 0 18px">' +
     [['system', 'Wie das Gerät'], ['hell', 'Hell'], ['dunkel', 'Dunkel']].map(m => '<button type="button" role="radio" data-modus-w="' + m[0] + '" aria-checked="' + (modus === m[0]) + '" aria-pressed="' + (modus === m[0]) + '">' + m[1] + '</button>').join('') + '</div>' +
-    '<p class="hint">Die Einstellungen gelten nur auf diesem Gerät.</p>' +
+    '<p class="hint" style="margin:0 0 22px">Ansicht und Aussehen gelten nur auf diesem Gerät.</p>' +
+    '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">3 · Team & Zugänge</p><ul class="rows" style="margin:0 0 8px">' +
+    [['ez-profil', 'Mitglieder & Projekt', 'Wer im Projekt mitarbeitet, Projekt wechseln'], ['ez-team', 'Team für Aufgaben', 'Namen zum Zuweisen, „Wer bin ich?“'], ['ez-loc', 'Location-Zugang', 'Betreiber sehen Line-up, Flyer, Technik'], ['ez-einlass', 'Einlass-Team', 'Pro Event im Abend-Modus einladen']]
+      .map(x => '<li><button type="button" class="row" data-act="' + x[0] + '"><span class="row-main"><span class="row-title">' + x[1] + '</span><span class="row-sub">' + x[2] + '</span></span>' + I.right + '</button></li>').join('') + '</ul>' +
     '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
   document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
   document.querySelectorAll('[data-ansicht-w]').forEach(b => b.onclick = () => { const a = b.dataset.ansichtW; LS.set('ansicht', a); if (a === 'pro') document.documentElement.removeAttribute('data-ansicht'); else document.documentElement.setAttribute('data-ansicht', a);
@@ -2329,6 +2367,16 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08g', titel:'Aufgeräumt und schneller', punkte:[
+    'Hinweise stehen jetzt in einer schmalen Leiste – die Startseite hat eine schlanke Auswahl an Kacheln (weitere über „Bearbeiten“)',
+    'Event-Seite: oben der nächste offene Schritt, Ablauf, Rückblick und Rückmeldung zum Aufklappen',
+    'Einstellungen in drei Teilen: Bereiche · Ansicht & Aussehen · Team & Zugänge',
+    'Neuer „+“-Knopf unten rechts: Event, Aufgabe, Act, Kosten oder Post in zwei Tipps',
+    'Suche oben (Lupe): Events, Line-up, DJs, Locations, Aufgaben und Verlauf auf einmal',
+    'Am Handy wischen: nach rechts zum Abhaken, nach links öffnet WhatsApp beim Act',
+    'Löschen ohne Nachfrage – dafür kurz „Rückgängig“',
+    'Offline-Hinweis und ruhigere Ladeanzeige'
+  ] },
   { v:'2026-11-08f', titel:'Neu: Verlauf', punkte:[
     'Eigene Seite „Verlauf“ mit allem, was im Kollektiv passiert ist – nach Tagen sortiert',
     'Filter nach Event und Person',
@@ -2357,6 +2405,19 @@ const NEUES = [
     'Sofort-Abgleich aus dem Profil entfernt'
   ] }
 ];
+// Alle Hinweise in einer schmalen Leiste: heutiges Event, Neuigkeiten, Einladen
+function hinweise(view){
+  const Z = [];
+  const start = ['events', 'marketing', 'booking', 'finanzen'].indexOf(view) >= 0;
+  const ab = start && S.got.events ? S.events.find(x => istHeute(x) && x.status !== 'abgesagt') : null;
+  if (ab) Z.push('<div class="hw-z"><span class="hw-i">🎉</span><span class="hw-t"><strong>' + (ab.date === today() ? 'Heute' : 'Läuft noch') + ':</strong> ' + esc(ab.name || 'Event') + '</span><a class="btn btn-sm btn-primary" href="#abend-' + esc(ab.id) + '">Abend-Modus</a></div>');
+  const g = LS.get('neuGesehen'), i = NEUES.findIndex(n => n.v === g), N = (i < 0 ? NEUES : NEUES.slice(0, i)).slice(0, 3);
+  if (N.length) Z.push('<div class="hw-z hw-neu" id="neu-hinweis" style="flex-wrap:wrap"><span class="hw-i">✨</span><span class="hw-t"><strong>' + esc(N[0].titel) + '</strong>' + (N.length > 1 ? ' <span class="muted">+ ' + (N.length - 1) + ' weitere</span>' : '') + '</span>' +
+    '<button class="btn btn-sm" data-act="neu-auf" aria-expanded="' + !!S.neuAuf + '">' + (S.neuAuf ? 'Weniger' : 'Ansehen') + '</button><button class="hw-x" data-act="neu-weg" aria-label="Hinweis schließen">✕</button>' +
+    (S.neuAuf ? '<div style="flex-basis:100%;padding:0 4px 4px 38px;font-size:14px">' + N.map((n, j) => (j ? '<div style="margin-top:8px"><strong>' + esc(n.titel) + '</strong></div>' : '') + '<ul>' + n.punkte.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>').join('') + '</div>' : '') + '</div>');
+  if (start && S.owner && !LS.get('invite-ok') && projekt && (projekt.members || []).length < 2) Z.push('<div class="hw-z"><span class="hw-i">👋</span><span class="hw-t"><strong>Leute einladen:</strong> unter Profil → Mitglieder</span><button class="hw-x" data-act="invite-ok" aria-label="Hinweis schließen">✕</button></div>');
+  return Z.length ? '<div class="hw" role="region" aria-label="Hinweise">' + Z.join('') + '</div>' : '';
+}
 function neuHinweis(){
   // alle Updates seit dem letzten Wegklicken (höchstens drei)
   const g = LS.get('neuGesehen'), i = NEUES.findIndex(n => n.v === g), L = (i < 0 ? NEUES : NEUES.slice(0, i)).slice(0, 3);
@@ -2364,7 +2425,10 @@ function neuHinweis(){
   return '<section class="panel" id="neu-hinweis" style="border:2px solid var(--pink)"><div class="panel-h"><h2>' + esc(L[0].titel) + '</h2><button class="btn btn-ghost" data-act="neu-weg" aria-label="Hinweis schließen">✕</button></div>' +
     L.map((n, j) => (j ? '<h3 style="margin:4px 14px 6px;font-size:15px">' + esc(n.titel) + '</h3>' : '') + '<ul style="margin:0;padding:0 14px 12px 32px;line-height:1.55">' + n.punkte.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>').join('') + '</section>';
 }
-document.addEventListener('click', ev => { if (ev.target.closest('[data-act="neu-weg"]')) { LS.set('neuGesehen', NEUES[0].v); const x = $('#neu-hinweis'); if (x) x.remove(); } });
+document.addEventListener('click', ev => {
+  if (ev.target.closest('[data-act="neu-weg"]')) { LS.set('neuGesehen', NEUES[0].v); S.neuAuf = false; render(); }
+  else if (ev.target.closest('[data-act="neu-auf"]')) { S.neuAuf = !S.neuAuf; render(); }
+});
 function render(){
   if (window.firebase && !projekt) return; // Anmeldung oder Projektauswahl wird angezeigt
   const a = document.activeElement, view = $('#view');
@@ -2379,7 +2443,8 @@ function render(){
   const label = S.ro && S.conn === 'live' ? 'Nur lesen' : cn[0];
   $('#conn').className = 'conn ' + (S.ro && S.conn === 'live' ? '' : cn[1]);
   $('#conn-t').textContent = label;
-  let h = neuHinweis() + banners();
+  let h = (navigator.onLine === false ? '<div class="offline-leiste">Offline – Änderungen werden gespeichert, sobald du wieder Netz hast.</div>' : '') + hinweise(r.view) + banners();
+  $('#fab').hidden = S.ro || r.view === 'abend'; $('#fb-such').hidden = false;
   if (r.view === 'event') h += viewEvent(r.id);
   else if (r.view === 'kalender') h += viewCal();
   else if (r.view === 'finden') h += viewFinder();
@@ -2419,7 +2484,7 @@ function banners(){
   return out.map(b => '<div class="banner ' + b[0] + '">' + b[1] + '</div>').join('');
 }
 const waiting = c => !S.got[c] && (S.conn === 'connecting' || S.conn === 'slow');
-const loading = () => '<div class="loading"><span class="spin"></span>Lade Daten …</div>';
+const loading = () => '<div class="skel" aria-label="Lade Daten …" role="status"><div></div><div></div><div></div></div>';
 const lead = (k, short, more) => '<p class="lead">' + short + (more ? ' <button class="more-btn" data-act="more" data-v="' + k + '" aria-expanded="' + !!S.more[k] + '">' + (S.more[k] ? 'Weniger' : 'Mehr dazu') + '</button>' : '') + '</p>' + (more && S.more[k] ? '<p class="lead lead-more">' + more + '</p>' : '');
 const field = (id, label, ctrl) => '<div class="field"><label for="' + id + '">' + label + '</label>' + ctrl + '</div>';
 const statusPill = s => { const x = STATUS[s] || STATUS.idee; return '<span class="pill ' + x.cls + '">' + x.label + '</span>'; };
@@ -2433,8 +2498,8 @@ function viewEvents(){
   const nUp = dated.filter(e => e.date >= t).length, nPast = dated.length - nUp;
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
   let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
-  if (S.owner && !LS.get('invite-ok')) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
-  if (!waiting('events')) h += abendBanner();
+  if (false) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
+
   if (up && !waiting('events')) h += dashboard(nextEvent());
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
   if (waiting('events')) return h + loading();
@@ -2464,7 +2529,9 @@ const WIDGETS = [
   ['floors', 'Floors & Technik', 'Floors und Setups des nächsten Events'],
   ['watch', 'Veranstalter', 'Beobachtungsliste und letzter Abgleich']
 ];
-const W_DEF = ['meine', 'next', 'ablauf', 'upcoming', 'nachhaken', 'tasks', 'money', 'aktivitaet', 'finder', 'parties'];
+const W_DEF = ['meine', 'next', 'ablauf', 'upcoming', 'aktivitaet'];
+// Startseite einmalig auf die schlanke Auswahl zurücksetzen (weitere Kacheln über „Bearbeiten“)
+(function(){ try { if (!LS.get('wneu3')) { LS.set('widgets', JSON.stringify(W_DEF)); LS.set('wneu3', '1'); LS.set('wneu2', '1'); } } catch (e) {} })();
 // Neue Kacheln einmalig bei bestehenden Startseiten ergänzen
 (function(){ try { if (LS.get('wneu2')) return; const x = JSON.parse(LS.get('widgets') || 'null'); if (Array.isArray(x)) { if (x.indexOf('meine') < 0) x.unshift('meine'); ['ablauf', 'nachhaken', 'aktivitaet'].forEach(k => { if (x.indexOf(k) < 0) x.push(k); }); LS.set('widgets', JSON.stringify(x)); } LS.set('wneu2', '1'); } catch (e) {} })();
 const WI = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
@@ -2748,12 +2815,15 @@ function tabOverview(e, c){
     kpi('Line-up', conf + '/' + L.length, 'zugesagt') +
     kpi('Aufgaben', done + '/' + T.length, 'erledigt') + '</div>';
   const vorbei = isDate(e.date) && e.date < today();
+  const nx = vorbei ? null : ablauf(e).find(x => !x.done);
+  if (nx) { const late = nx.due && nx.due < today(); h += '<div class="next-step"><span class="t"><span class="muted small">Nächster Schritt</span><br><strong>' + esc(nx.label) + '</strong>' + (nx.due ? ' <span class="' + (late ? 'overdue' : 'muted') + '">· ' + (late ? 'überfällig seit ' : 'bis ') + fmtDs(nx.due) + '</span>' : '') + '</span><button class="btn btn-sm btn-primary" data-o="ablauf-ziel" data-id="' + esc(e.id) + '" data-v="' + nx.ziel + '">Erledigen</button></div>'; }
   h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px"><a class="btn' + (istHeute(e) ? ' btn-primary' : '') + '" href="#abend-' + esc(e.id) + '">Abend-Modus</a>' + (vorbei ? '<button class="btn" data-act="evtab" data-v="finanzen">Abrechnung</button>' : '') + '</div>';
-  if (vorbei) h += rbPanel(e);
-  else h += ablaufPanel(e) + rbFrueher(e);
-  h += rmPanel(e);
+  const A = ablauf(e), aOk = A.filter(x => x.done).length;
+  if (vorbei) h += klapp('rb', 'Rückblick', '', rbPanel(e), true);
+  else { h += klapp('ablauf', 'Ablauf', aOk + ' von ' + A.length + ' erledigt', ablaufPanel(e), false); const fr = rbFrueher(e); if (fr) h += klapp('frueher', 'Letztes Mal in ' + esc(e.venue), '', fr, false); }
+  const rmP = rmPanel(e); if (rmP) { const r = rmStand(e); h += klapp('rm', 'Rückmeldung der Location', r.ok === 'aktuell' ? '✓ bestätigt' : r.ok === 'alt' ? 'seitdem geändert' : 'offen', rmP, false); }
   const li = linkInfo(e);
-  if (li) h += linkPanel(e, li);
+  if (li) h += klapp('extern', 'Extern dabei', '', linkPanel(e, li), false);
   h += '<section class="panel"><div class="panel-h"><h2>Details</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-act="edit-event" data-id="' + esc(e.id) + '">Bearbeiten</button>') + '</div>' +
     '<dl class="dl"><dt>Datum</dt><dd>' + fmtD(e.date) + '</dd><dt>Zeit</dt><dd>' + (esc(timeStr(e)) || '–') + '</dd><dt>Location</dt><dd>' + (esc(e.venue) || '–') + '</dd>' +
     '<dt>Kapazität</dt><dd>' + (cap ? cap + ' Personen' : '–') + '</dd><dt>Notizen</dt><dd>' + (esc(e.notes) || '–') + '</dd></dl>' +
@@ -2761,6 +2831,13 @@ function tabOverview(e, c){
   if (!S.ro) h += '<div class="danger-zone"><button class="btn btn-danger" data-act="del" data-kind="event" data-id="' + esc(e.id) + '">Event löschen</button></div>';
   return h;
 }
+// Aufklappbarer Abschnitt; offen/zu merkt sich das Gerät
+function klapp(k, titel, info, inhalt, std){
+  let m = {}; try { m = JSON.parse(LS.get('klapp') || '{}') || {}; } catch (x) {}
+  const auf = m[k] === undefined ? std : !!m[k];
+  return '<details class="klapp" data-k="' + k + '"' + (auf ? ' open' : '') + '><summary>' + titel + (info ? ' <span class="muted small">' + esc(info) + '</span>' : '') + '</summary><div class="klapp-b">' + inhalt + '</div></details>';
+}
+document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('klapp')) return; let m = {}; try { m = JSON.parse(LS.get('klapp') || '{}') || {}; } catch (x) {} m[d.dataset.k] = d.open; LS.set('klapp', JSON.stringify(m)); }, true);
 function linkPanel(e, li){
   const title = li.url ? '<a href="' + esc(li.url) + '" target="_blank" rel="noopener">' + esc(li.title) + '</a>' : esc(li.title);
   let h = '<section class="panel"><div class="panel-h"><h2>Extern dabei</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-act="link-ev" data-id="' + esc(e.id) + '">Ändern</button>') + '</div><div class="link-card">' +
@@ -3639,8 +3716,8 @@ const mkOpt = (list, sel) => list.map(x => '<option value="' + x[0] + '"' + (x[0
 const mkEnd = (del) => '<p class="err" id="mk-err" hidden></p><div class="actions">' + (del ? '<button type="button" class="btn btn-ghost" id="mk-del" style="color:var(--bad)">Löschen</button><span class="spacer"></span>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div>';
 function mkErr(msg){ const p = $('#mk-err'); if (p) { p.textContent = msg; p.hidden = false; } }
 function mkConfirmDel(c, id, what){
-  if (!confirm(what + ' löschen?')) return;
-  mkDel(c, id, 'Gelöscht.').then(ok => { if (ok) closeSheet(); });
+  const x = mkCol(c).find(q => q.id === id);
+  mkDel(c, id).then(ok => { if (ok) { closeSheet(); if (x) undoToast(what + ' gelöscht', () => db.collection(c).doc(id).set(roh(x))); } });
 }
 const mkAccounts = () => mkCol('mkchannels').slice().sort((a, b) => (Number(b.followers) || 0) - (Number(a.followers) || 0));
 const mkAccName = c => (c.name || mkLabel(MK_CH, c.kind)) + (c.name && c.kind && c.kind !== 'sonstiges' && c.name.toLowerCase().indexOf(mkLabel(MK_CH, c.kind).toLowerCase()) < 0 ? ' · ' + mkLabel(MK_CH, c.kind) : '');
@@ -4268,7 +4345,7 @@ function viewVerzeichnis(){
     if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>' + vorschlH + netz();
     return h + '<section class="panel"><ul class="rows">' + L.map(v => {
       const n = S.events.filter(e => (e.venue || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()).length;
-      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + (beobachtet(v.name) ? ' <span class="pill st-ok">Partys beobachtet</span>' : '') + (fgMails(v).length ? ' <span class="pill st-planung">Betreiber-Zugang</span>' : '') + '</span></span>' + I.right + '</button></li>';
+      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + (beobachtet(v.name) ? ' <span class="pill st-ok">Partys beobachtet</span>' : '') + (fgMails(v).length ? ' <span class="pill st-planung">Location-Zugang</span>' : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>' + vorschlH + netz();
   }
   if (S.vzTab === 'tech') {
@@ -4294,7 +4371,7 @@ function venueDirForm(v){
     field('vl-notes', 'Notizen', '<textarea id="vl-notes" rows="3" maxlength="2000" placeholder="Zugang, Aufbauzeiten, Parken, Deal …">' + esc(x.notes || '') + '</textarea>') +
     field('vl-url', 'Website', '<input id="vl-url" type="url" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://…" value="' + esc(x.url || (watchVon(x.name) || {}).url || '') + '">') +
     '<label class="check"><input type="checkbox" id="vl-watch"' + (v ? (beobachtet(x.name) ? ' checked' : '') : '') + '> Partys dieser Location beobachten – der Abgleich holt ihre Termine</label>' +
-    (v && !S.ro ? '<div class="field"><label>Zugang für Betreiber</label><p class="hint" style="margin:0 0 8px">' + (fgMails(x).length ? 'Aktiv für ' + esc(fgMails(x).join(', ')) : 'Lade die Betreiber ein – sie sehen nur Line-up, Flyer und was du freigibst.') + '</p><button type="button" class="btn btn-sm" data-vz="partner" data-id="' + esc(v.id) + '">' + (fgMails(x).length ? 'Zugang verwalten' : 'Betreiber einladen') + '</button></div>' : '') +
+    (v && !S.ro ? '<div class="field"><label>Location-Zugang</label><p class="hint" style="margin:0 0 8px">' + (fgMails(x).length ? 'Aktiv für ' + esc(fgMails(x).join(', ')) : 'Lade die Betreiber ein – sie sehen nur Line-up, Flyer und was du freigibst.') + '</p><button type="button" class="btn btn-sm" data-vz="partner" data-id="' + esc(v.id) + '">' + (fgMails(x).length ? 'Zugang verwalten' : 'Betreiber einladen') + '</button></div>' : '') +
     vzEnd(!!v) + '</form>');
   vzWire('venues', v, 'Diese Location', () => {
     const name = $('#vl-name').value.trim(); if (!name) return 'Gib einen Namen ein.';
@@ -4337,8 +4414,9 @@ function vzWire(col, item, what, read, prefix, nachher){
   };
   if ($('#vz-del')) $('#vz-del').onclick = async () => {
     const w = col === 'venues' ? watchVon(item.name) : null;
-    if (!confirm(what + ' aus dem Verzeichnis löschen? Bestehende Events bleiben unverändert.' + (w ? ' Ihre Partys werden dann auch nicht mehr beobachtet.' : ''))) return;
-    if (await save(async () => { await db.collection(col).doc(item.id).delete(); if (w) await db.doc('watch/' + w.id).delete(); }, 'Gelöscht')) closeSheet();
+    if (await save(async () => { await db.collection(col).doc(item.id).delete(); if (w) await db.doc('watch/' + w.id).delete(); })) {
+      closeSheet(); undoToast(what + ' gelöscht', async () => { await db.collection(col).doc(item.id).set(roh(item)); if (w) await db.doc('watch/' + w.id).set(roh(w)); });
+    }
   };
 }
 document.addEventListener('click', ev => {
@@ -4385,8 +4463,7 @@ function artistForm(a){
     if (await save(() => db.collection('artists').doc(a ? a.id : newId('ar')).set(data, { merge:true }), a ? 'Gespeichert' : name + ' ist im Verzeichnis')) closeSheet();
   };
   if ($('#ar-del')) $('#ar-del').onclick = async () => {
-    if (!confirm(a.name + ' aus dem Verzeichnis löschen? Die Einträge in euren Line-ups bleiben.')) return;
-    if (await save(() => db.collection('artists').doc(a.id).delete(), 'Gelöscht')) closeSheet();
+    if (await save(() => db.collection('artists').doc(a.id).delete())) { closeSheet(); undoToast(a.name + ' gelöscht', () => db.collection('artists').doc(a.id).set(roh(a))); }
   };
 }
 function moneyForm(evId, kind, item, cat){
@@ -4695,23 +4772,40 @@ const FORMS = {
   }
 };
 
+const roh = x => { const o = Object.assign({}, x); delete o.id; return o; };
+// Löschen ohne Nachfrage – stattdessen kurz „Rückgängig“ anbieten
 async function doDelete(kind, id){
   if (kind === 'event') {
+    const e = S.events.find(x => x.id === id); if (!e) return;
     const kids = [];
-    ['lineup', 'money', 'tasks', 'phases', 'floors'].forEach(c => S[c].forEach(x => { if (x.eventId === id) kids.push(c + '/' + x.id); }));
-    const ok = await save(async () => { await db.doc('events/' + id).delete(); await Promise.all(kids.map(p => db.doc(p).delete())); }, 'Event gelöscht');
-    if (ok) location.hash = 'events';
+    ['lineup', 'money', 'tasks', 'phases', 'floors'].forEach(c => S[c].forEach(x => { if (x.eventId === id) kids.push([c, x]); }));
+    const ok = await save(async () => { await db.doc('events/' + id).delete(); await Promise.all(kids.map(k => db.doc(k[0] + '/' + k[1].id).delete())); });
+    if (ok) { location.hash = 'events'; logA('hat das Event „' + (e.name || 'Event') + '“ gelöscht'); undoToast('Event gelöscht', async () => { await db.doc('events/' + id).set(roh(e)); await Promise.all(kids.map(k => db.doc(k[0] + '/' + k[1].id).set(roh(k[1])))); }); }
     return;
   }
   if (kind === 'floor') {
-    const L = S.lineup.filter(l => l.floorId === id);
-    if (await save(async () => { await db.doc('floors/' + id).delete(); for (const l of L) await db.doc('lineup/' + l.id).update({ floorId:'' }); }, 'Floor gelöscht')) closeSheet();
+    const f = S.floors.find(x => x.id === id), L = S.lineup.filter(l => l.floorId === id);
+    if (await save(async () => { await db.doc('floors/' + id).delete(); for (const l of L) await db.doc('lineup/' + l.id).update({ floorId:'' }); })) {
+      closeSheet(); if (f) undoToast('Floor gelöscht', async () => { await db.doc('floors/' + id).set(roh(f)); for (const l of L) await db.doc('lineup/' + l.id).update({ floorId:id }); });
+    }
     return;
   }
-  if (kind === 'techset') { if (await save(() => db.doc('techsets/' + id).delete(), 'Setup gelöscht')) techsetsSheet(); return; }
-  if (kind === 'person') { S.afterPeople = 'team'; if (!await save(() => db.doc('people/' + id).delete(), 'Aus dem Team entfernt')) S.afterPeople = null; return; }
-  const col = { lineup:'lineup', money:'money', task:'tasks', blocker:'blockers', phase:'phases', watch:'watch' }[kind];
-  if (col && await save(() => db.doc(col + '/' + id).delete(), kind === 'watch' ? 'Entfernt. Seine Partys verschwinden aus der Liste.' : 'Gelöscht')) closeSheet();
+  const col = { lineup:'lineup', money:'money', task:'tasks', blocker:'blockers', phase:'phases', watch:'watch', techset:'techsets', person:'people' }[kind];
+  if (!col) return;
+  const x = (S[col] || []).find(q => q.id === id);
+  if (kind === 'person') S.afterPeople = 'team';
+  const ok = await save(() => db.doc(col + '/' + id).delete());
+  if (!ok) { if (kind === 'person') S.afterPeople = null; return; }
+  if (kind === 'techset') techsetsSheet(); else if (kind !== 'person') closeSheet();
+  const msg = { watch:'Entfernt', person:'Aus dem Team entfernt', techset:'Setup gelöscht' }[kind] || 'Gelöscht';
+  if (x) undoToast(msg, () => db.doc(col + '/' + id).set(roh(x)));
+}
+// Hinweis mit „Rückgängig“-Knopf (7 Sekunden)
+function undoToast(msg, fn){
+  const t = $('#toast'); clearTimeout(tt);
+  t.innerHTML = esc(msg) + '<button type="button" class="undo">Rückgängig</button>'; t.hidden = false;
+  t.querySelector('.undo').onclick = async () => { t.hidden = true; try { await fn(); toast('Wiederhergestellt'); } catch (e) { toast('Wiederherstellen hat nicht geklappt.'); } };
+  tt = setTimeout(() => { t.hidden = true; }, 7000);
 }
 function arm(el, fn){
   if (el.dataset.armed === '1') { el.disabled = true; fn(); return; }
@@ -4738,6 +4832,92 @@ async function addStdPhases(evId){
 
 /* ---------- Ereignisse ---------- */
 let tt = 0;
+/* ===== Plus-Knopf, Suche, Wischen, Offline ===== */
+function fabEvents(){
+  const r = route(), cur = r.view === 'event' && S.events.find(e => e.id === r.id);
+  const U = upEvents();
+  return cur ? [cur].concat(U.filter(e => e.id !== cur.id)) : U;
+}
+function fabSheet(){
+  const a = ansicht();
+  const ALL = { event:['Event', 'Neues Event anlegen'], aufgabe:['Aufgabe', 'Zu einem Event'], act:['Act', 'DJ oder Act ins Line-up'], kosten:['Kosten', 'Ausgabe eintragen'], einnahme:['Einnahme', 'z. B. Bar-Beteiligung'], post:['Post', 'Für den Posting-Plan'] };
+  const R = a === 'marketing' ? ['post', 'event', 'aufgabe'] : a === 'booking' ? ['act', 'event', 'aufgabe'] : a === 'finanzen' ? ['kosten', 'einnahme', 'event'] : ['event', 'aufgabe', 'act', 'kosten', 'post'];
+  showSheet('<h2 id="sheet-title">Neu anlegen</h2><ul class="rows">' + R.map(k => '<li><button type="button" class="row" data-fab="' + k + '"><span class="row-main"><span class="row-title">' + ALL[k][0] + '</span><span class="row-sub">' + ALL[k][1] + '</span></span>' + I.right + '</button></li>').join('') + '</ul><div class="actions"><button class="btn" data-act="close-sheet">Abbrechen</button></div>');
+}
+function fabWahl(k){
+  if (k === 'event') { closeSheet(); eventForm(null); return; }
+  const L = fabEvents();
+  if (!L.length) { toast('Leg zuerst ein Event an.'); closeSheet(); eventForm(null); return; }
+  if (L.length === 1 || route().view === 'event') { fabFuer(k, L[0]); return; }
+  showSheet('<h2 id="sheet-title">Für welches Event?</h2><ul class="rows">' + L.slice(0, 15).map(e => '<li><button type="button" class="row" data-fab-ev="' + esc(e.id) + '" data-fab-k="' + k + '"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + '</span></span>' + I.right + '</button></li>').join('') + '</ul><div class="actions"><button class="btn" data-act="close-sheet">Abbrechen</button></div>');
+}
+function fabFuer(k, e){
+  closeSheet();
+  if (k === 'act') lineupForm(e.id);
+  else if (k === 'kosten') moneyForm(e.id, 'ausgabe', null);
+  else if (k === 'einnahme') moneyForm(e.id, 'einnahme', null);
+  else if (k === 'post') mkPostForm(null, e);
+  else if (k === 'aufgabe') { S.evTab = 'aufgaben'; if (location.hash !== '#ev-' + e.id) location.hash = '#ev-' + e.id; else render(); setTimeout(() => { const i = $('#quick-task'); if (i) { i.focus(); i.scrollIntoView({ block:'center' }); } }, 350); }
+}
+document.addEventListener('click', ev => {
+  if (ev.target.closest('#fab')) { fabSheet(); return; }
+  const f = ev.target.closest('[data-fab]'); if (f) { fabWahl(f.dataset.fab); return; }
+  const g = ev.target.closest('[data-fab-ev]'); if (g) { const e = S.events.find(x => x.id === g.dataset.fabEv); if (e) fabFuer(g.dataset.fabK, e); return; }
+  const z = ev.target.closest('[data-act^="ez-"]'); if (z) {
+    const a = z.dataset.act; closeSheet();
+    if (a === 'ez-profil') openProfil(); else if (a === 'ez-team') openTeam();
+    else if (a === 'ez-loc') { openProfil(); setTimeout(() => { const x = $('#pf-loc'); if (x) x.scrollIntoView({ block:'center' }); }, 200); }
+    else if (a === 'ez-einlass') { const e = S.events.find(x => istHeute(x)) || upEvents()[0]; if (e) { location.hash = '#abend-' + e.id; toast('Oben bei „Einlass & Kasse“: Einlass-Team einladen'); } else toast('Leg zuerst ein Event an.'); }
+  }
+});
+// Suche über alles
+function openSuche(){
+  showSheet('<h2 id="sheet-title">Suchen</h2><input class="inp" id="su-q" type="search" placeholder="Event, DJ, Location, Aufgabe …" autocomplete="off" aria-label="Suchbegriff" style="width:100%;font-family:var(--f-body);margin:0 0 12px"><div id="su-r"><p class="muted">Tipp etwas ein.</p></div>');
+  const q = $('#su-q'); q.focus(); q.oninput = () => sucheZeigen(q.value);
+}
+window.openSuche = openSuche;
+function sucheZeigen(roh){
+  const q = roh.trim().toLowerCase(), box = $('#su-r'); if (!box) return;
+  if (q.length < 2) { box.innerHTML = '<p class="muted">Tipp mindestens zwei Buchstaben ein.</p>'; return; }
+  const hat = (...t) => t.some(x => String(x || '').toLowerCase().indexOf(q) >= 0);
+  const G = [];
+  const E = S.events.filter(e => hat(e.name, e.venue, e.notes)).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 8);
+  if (E.length) G.push(['Events', E.map(e => ['#ev-' + e.id, e.name || 'Event', fmtD(e.date) + (e.venue ? ' · ' + e.venue : '')])]);
+  const L = S.lineup.filter(l => hat(l.name)).slice(0, 8);
+  if (L.length) G.push(['Line-up', L.map(l => ['#ev-' + l.eventId, l.name, evName(l.eventId) + ' · ' + ((LST[l.status] || LST.angefragt).label), 'lineup'])]);
+  const A = (S.artists || []).filter(a => hat(a.name, a.contact, a.ig)).slice(0, 6);
+  if (A.length) G.push(['DJ-Verzeichnis', A.map(a => ['#verzeichnis', a.name, a.role || 'DJ', 'vz-dj'])]);
+  const V = (S.venues || []).filter(v => hat(v.name, v.city, v.addr)).slice(0, 6);
+  if (V.length) G.push(['Locations', V.map(v => ['#verzeichnis', v.name, [v.city, v.addr].filter(Boolean).join(' · '), 'vz-loc'])]);
+  const T = S.tasks.filter(t => hat(t.title, t.who)).slice(0, 8);
+  if (T.length) G.push(['Aufgaben', T.map(t => ['task:' + t.id, t.title, evName(t.eventId) + (t.done ? ' · erledigt' : '')])]);
+  const K = (S.akt || []).filter(a => hat(a.text, a.wer)).slice(0, 6);
+  if (K.length) G.push(['Verlauf', K.map(a => [a.eventId ? '#ev-' + a.eventId : '#verlauf', a.wer + ' ' + a.text, wann(a.at)])]);
+  box.innerHTML = G.length ? G.map(g => '<h3 class="muted small" style="margin:12px 0 4px;text-transform:uppercase;letter-spacing:.06em">' + g[0] + '</h3><ul class="rows">' + g[1].map(x => '<li><button type="button" class="row" data-su="' + esc(x[0]) + '" data-su-t="' + esc(x[3] || '') + '"><span class="row-main"><span class="row-title">' + esc(x[1]) + '</span><span class="row-sub">' + esc(x[2]) + '</span></span>' + I.right + '</button></li>').join('') + '</ul>').join('') : '<p class="muted">Nichts gefunden.</p>';
+}
+document.addEventListener('click', ev => {
+  const r = ev.target.closest('[data-su]'); if (!r) return;
+  const z = r.dataset.su, t = r.dataset.suT;
+  closeSheet();
+  if (z.indexOf('task:') === 0) { const x = S.tasks.find(q => q.id === z.slice(5)); if (x) taskForm(x); return; }
+  if (t === 'lineup') S.evTab = 'lineup';
+  if (t === 'vz-dj' || t === 'vz-loc') { S.vzTab = t === 'vz-dj' ? 'dj' : 'loc'; LS.set('vzTab', S.vzTab); }
+  if (location.hash !== z) location.hash = z; else render();
+});
+// Wischen: nach rechts = abhaken, nach links = WhatsApp (bei Acts mit Nummer)
+(function(){
+  let x0 = 0, y0 = 0, el = null, dx = 0;
+  document.addEventListener('touchstart', ev => { const t = ev.target.closest('.task'); if (!t || ev.touches.length > 1) { el = null; return; } el = t; x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; dx = 0; }, { passive:true });
+  document.addEventListener('touchmove', ev => { if (!el) return; dx = ev.touches[0].clientX - x0; const dy = ev.touches[0].clientY - y0; if (Math.abs(dy) > Math.abs(dx)) { el.style.transform = ''; el = null; return; } el.style.transform = 'translateX(' + Math.max(-90, Math.min(90, dx)) + 'px)'; }, { passive:true });
+  document.addEventListener('touchend', () => {
+    if (!el) return; const t = el; el = null; t.classList.add('wisch'); t.style.transform = ''; setTimeout(() => t.classList.remove('wisch'), 200);
+    if (dx > 80) { const c = t.querySelector('.chk:not([disabled])'); if (c) c.click(); }
+    else if (dx < -80 && t.dataset.wa) window.open('https://wa.me/' + t.dataset.wa, '_blank', 'noopener');
+  });
+})();
+window.addEventListener('online', () => { toast('Wieder online – alles wird gespeichert.'); if (projekt) render(); });
+window.addEventListener('offline', () => { if (projekt) render(); });
+
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 2800); }
 
 document.addEventListener('click', ev => {
@@ -4877,7 +5057,7 @@ document.addEventListener('click', ev => {
     case 'unlink': { if (find('events')) save(() => db.doc('events/' + id).update(unlinkData()), 'Verknüpfung gelöst').then(ok => { if (ok) closeSheet(); }); break; }
     case 'link-date': { const x = find('events'), li = linkInfo(x); if (x && li && isDate(li.date)) save(() => db.doc('events/' + id).update({ date:li.date }), 'Datum übernommen'); break; }
     case 'rate': { const x = find('blockers'); if (x && rating(x) !== v) save(() => db.doc('blockers/' + id).update({ rating:v }), v === 'meiden' ? 'Zählt jetzt als Sperrtermin' : RATING[v].label); break; }
-    case 'del': arm(el, () => doDelete(el.dataset.kind, id)); break;
+    case 'del': el.disabled = true; doDelete(el.dataset.kind, id); break;
     case 'invite-ok': LS.set('invite-ok', '1'); render(); break;
     case 'fl-toggle': ferienToggle(el.dataset.k, v); break;
     case 'um-watch': {
