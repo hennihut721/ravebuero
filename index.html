@@ -610,6 +610,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 .pv-floor{margin:0 0 10px}.pv-floor-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 14px 2px;padding:6px 10px;border-radius:8px;background:var(--sunk);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
 .nm-l{display:grid;gap:8px;margin:0 0 12px}.nm{max-width:86%;justify-self:start;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--sunk);line-height:1.4;overflow-wrap:anywhere}.nm.ich{justify-self:end;border-radius:14px 14px 4px 14px;background:var(--blue-soft)}.nm.neu{box-shadow:inset 0 0 0 2px var(--pink)}.nm-w{font-size:12px;color:var(--ink-3);margin:0 0 2px}.nm-in{display:grid;gap:8px;justify-items:start}
 body.tut-on #view{padding-bottom:300px}body.tut-on #fab{display:none}#tut{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;width:min(520px,calc(100% - 24px));background:var(--surface);border:2px solid var(--pink);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.28);padding:10px 14px 12px}#tut h3{margin:6px 0 4px;font:800 20px/1.05 var(--f-display);text-transform:uppercase}#tut p{margin:0 0 10px;font-size:14.5px;line-height:1.45;max-height:32vh;overflow:auto}.tut-k{display:flex;justify-content:space-between;align-items:center}.tut-bar{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden}.tut-bar span{display:block;height:100%;background:var(--pink)}.tut-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.ad-m .row-main{flex:1 1 60%}.ad-m .row-title{overflow-wrap:anywhere}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -1149,6 +1150,134 @@ async function umzug(){
   await fs.collection('syncliste').doc('ravebuero').set({ name:'RaveBüro', at:Date.now() });
   await pref.update({ migriert:true });
 }
+/* ===== Admin-Bereich (nur henrik.ortkamp@gmail.com): alle Projekte, Nutzer, Zugänge, System ===== */
+const istAdmin = () => meineMail() === ABGLEICH_MAIL;
+const AD = { tab:'uebersicht', d:null, laeuft:false };
+const ADMIN_LOESCH_COLS = COLS.concat(['aktivitaet', 'mkbilder', 'meta', 'altdaten']);
+async function adminLaden(){
+  const g = async (q, f) => { try { return f(await q.get()); } catch (e) { console.warn('Admin', e); return null; } };
+  const docs = sn => sn.docs.map(d => Object.assign({ id:d.id }, d.data()));
+  const P = (await g(fs.collection('projects'), docs)) || [];
+  await Promise.all(P.map(async p => {
+    const r = fs.collection('projects').doc(p.id);
+    p.events = (await g(r.collection('events'), docs)) || [];
+    p.akt = (await g(r.collection('aktivitaet').orderBy('at', 'desc').limit(8), docs)) || [];
+    p.nLineup = (await g(r.collection('lineup'), sn => sn.size)) || 0;
+  }));
+  P.sort((a, b) => ((b.akt[0] || {}).at || 0) - ((a.akt[0] || {}).at || 0) || (a.name || '').localeCompare(b.name || '', 'de'));
+  const [F, PK, EL, ER, SY, FW] = await Promise.all([fs.collection('freigaben'), fs.collection('partnerkonten'), fs.collection('einlass'), fs.collection('ersteller'), fs.collection('syncliste'), fs.collection('ferienwissen')].map(q => g(q, docs)));
+  AD.d = { P, F:F || [], PK:PK || [], EL:EL || [], ER:ER || [], SY:SY || [], FW:FW || [], at:Date.now(), fehler:F === null || PK === null };
+}
+async function adminView(neu){
+  stopProjekt(); LS.set('adminOffen', '1');
+  $('#fb-prof').hidden = true; $('#fb-set').hidden = true; document.querySelector('.tabbar').hidden = true; $('#fab').hidden = true; $('#fb-such').hidden = true;
+  document.body.classList.remove('tut-on'); const tk = document.getElementById('tut'); if (tk) tk.remove();
+  $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Admin';
+  document.title = 'Admin – RaveBüro';
+  if (!AD.d || neu) { $('#view').innerHTML = '<section class="vh"><h1>Admin</h1></section>' + loading(); await adminLaden(); }
+  adminZeichnen();
+}
+function adminZeichnen(){
+  const v = $('#view'), d = AD.d, t = today(), me = meineMail();
+  if (!d) return;
+  $('#conn').className = 'conn live'; $('#conn-t').textContent = 'Admin';
+  const pName = id => (d.P.find(p => p.id === id) || {}).name || id;
+  const kommend = [].concat(...d.P.map(p => p.events.filter(e => isDate(e.date) && e.date >= t && e.status !== 'abgesagt').map(e => Object.assign({ p }, e)))).sort((a, b) => a.date.localeCompare(b.date));
+  const nutzer = {};
+  const rolle = (m, r) => { m = String(m || '').trim().toLowerCase(); if (!m) return; (nutzer[m] = nutzer[m] || []).push(r); };
+  d.P.forEach(p => (p.members || []).forEach(m => rolle(m, (m === p.owner ? 'Besitzer' : 'Mitglied') + ' · ' + (p.name || 'Projekt'))));
+  d.F.forEach(f => (f.emails || []).forEach(m => rolle(m, 'Betreiber · ' + (f.ort || 'Location') + ' (' + (f.projekt || pName(f.pid)) + ')')));
+  d.EL.forEach(f => (f.emails || []).forEach(m => rolle(m, 'Einlass · ' + ((f.event || {}).name || 'Event') + ' (' + pName(f.pid) + ')')));
+  d.ER.forEach(x => rolle(x.id, 'darf Projekte anlegen'));
+  rolle(ABGLEICH_MAIL, 'Admin');
+  const kpi2 = (k, n, s) => '<div class="kpi"><div class="k">' + k + '</div><div class="v">' + n + '</div><div class="s">' + s + '</div></div>';
+  const tabs = [['uebersicht', 'Übersicht'], ['projekte', 'Projekte ' + d.P.length], ['nutzer', 'Nutzer ' + Object.keys(nutzer).length], ['zugaenge', 'Zugänge ' + (d.F.length + d.EL.length)], ['system', 'System']];
+  let h = '<section class="vh"><h1>🛡 Admin</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-ad="neu">Neu laden</button><button class="btn btn-primary" data-ad="zurueck">Zurück zur App</button></div></section>' +
+    '<p class="muted" style="margin:-4px 0 12px">Alles über die ganze App – nur für ' + esc(me) + '. Stand ' + uhr(d.at) + ' Uhr.</p>' +
+    (d.fehler ? '<p class="err">Ein Teil konnte nicht geladen werden – die Datenbank-Regeln für den Admin fehlen vermutlich noch.</p>' : '') +
+    '<div class="chips" style="margin:0 0 14px;flex-wrap:wrap">' + tabs.map(x => '<button class="chip" data-ad-tab="' + x[0] + '" aria-pressed="' + (AD.tab === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
+  const pZeile = p => { const k = p.events.filter(e => isDate(e.date) && e.date >= t && e.status !== 'abgesagt'), a = p.akt[0];
+    return '<li><div class="row" style="cursor:default"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + '</span><span class="row-sub">' + (p.members || []).length + ' Mitglieder · ' + p.events.length + ' Events (' + k.length + ' kommend)' + (a ? ' · aktiv ' + wann(a.at) : '') + '</span></span><button class="btn btn-sm btn-primary" data-ad-open="' + esc(p.id) + '">Öffnen</button></div></li>'; };
+  if (AD.tab === 'uebersicht') {
+    h += '<div class="kpis">' + kpi2('Projekte', d.P.length, d.SY.length + ' mit Freitags-Abgleich') + kpi2('Nutzer', Object.keys(nutzer).length, d.ER.length + ' dürfen Projekte anlegen') + kpi2('Events kommend', kommend.length, 'in allen Projekten') + kpi2('Zugänge', d.F.length + d.EL.length, d.F.length + ' Locations · ' + d.EL.length + ' Einlass') + '</div>';
+    h += '<section class="panel"><div class="panel-h"><h2>Direkt in ein Projekt</h2></div><ul class="rows">' + (d.P.length ? d.P.map(pZeile).join('') : '<li><div class="row muted">Keine Projekte.</div></li>') + '</ul></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Kommende Events</h2></div><ul class="rows">' + (kommend.length ? kommend.slice(0, 12).map(e => '<li><button class="row" data-ad-open="' + esc(e.p.id) + '" data-ad-ev="' + esc(e.id) + '"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + ' · ' + esc(e.venue || 'Location offen') + ' · ' + esc(e.p.name || '') + '</span></span><span class="pill ' + (STATUS[e.status] || STATUS.idee).cls + '">' + (STATUS[e.status] || STATUS.idee).label + '</span></button></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
+    const A = [].concat(...d.P.map(p => p.akt.map(a => Object.assign({ p }, a)))).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 15);
+    h += '<section class="panel"><div class="panel-h"><h2>Zuletzt passiert</h2></div><ul class="rows">' + (A.length ? A.map(a => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title" style="font-weight:500"><strong>' + esc(a.wer || '') + '</strong> ' + esc(a.text || '') + '</span><span class="row-sub">' + wann(a.at) + ' · ' + esc(a.p.name || '') + '</span></span></div></li>').join('') : '<li><div class="row muted">Noch nichts.</div></li>') + '</ul></section>';
+  } else if (AD.tab === 'projekte') {
+    d.P.forEach(p => {
+      const sync = d.SY.some(x => x.id === p.id), k = p.events.filter(e => isDate(e.date) && e.date >= t && e.status !== 'abgesagt').sort((a, b) => a.date.localeCompare(b.date));
+      h += '<section class="panel"><div class="panel-h"><h2>' + esc(p.name || 'Projekt') + '</h2><button class="btn btn-sm btn-primary" data-ad-open="' + esc(p.id) + '">Öffnen</button></div><div style="padding:0 14px 14px">' +
+        '<p class="muted small" style="margin:0 0 10px">ID ' + esc(p.id) + ' · erstellt ' + (p.createdAt ? fmtDs(isoVon(p.createdAt)) : '–') + ' · ' + p.events.length + ' Events · ' + p.nLineup + ' Acts' + (k[0] ? ' · nächstes: ' + esc(k[0].name || 'Event') + ' am ' + fmtDs(k[0].date) : '') + (p.akt[0] ? ' · zuletzt aktiv ' + wann(p.akt[0].at) : '') + '</p>' +
+        '<h3 style="margin:0 0 6px;font-size:15px">Mitglieder</h3><ul class="rows" style="margin:0 0 8px">' + (p.members || []).map(m => '<li><div class="row ad-m" style="cursor:default;flex-wrap:wrap"><span class="av">' + esc(initial(m)) + '</span><span class="row-main"><span class="row-title">' + esc(m) + '</span>' + (m === p.owner ? '<span class="row-sub">Besitzer</span>' : '') + '</span>' + (m === p.owner ? '' : '<button class="btn btn-sm btn-ghost" data-ad-owner="' + esc(p.id) + '" data-m="' + esc(m) + '">Zum Besitzer</button><button class="btn btn-sm btn-ghost" data-ad-mdel="' + esc(p.id) + '" data-m="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
+        '<form class="ad-madd" data-pid="' + esc(p.id) + '" style="display:flex;gap:8px;margin:0 0 12px" novalidate><input class="inp" type="email" placeholder="E-Mail hinzufügen" aria-label="Mitglied hinzufügen" style="flex:1;min-width:0"><button class="btn btn-sm">Hinzufügen</button></form>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-ad-sync="' + esc(p.id) + '">' + (sync ? 'Freitags-Abgleich: an ✓' : 'Freitags-Abgleich: aus') + '</button><button class="btn btn-sm btn-ghost" data-ad-umb="' + esc(p.id) + '">Umbenennen</button><button class="btn btn-sm btn-danger" data-ad-pdel="' + esc(p.id) + '">Projekt löschen</button></div></div></section>';
+    });
+    if (!d.P.length) h += '<div class="empty"><h3>Keine Projekte</h3></div>';
+  } else if (AD.tab === 'nutzer') {
+    h += '<form id="ad-er" style="display:flex;gap:8px;margin:0 0 14px" novalidate><input class="inp" id="ad-er-m" type="email" placeholder="E-Mail: darf eigene Projekte anlegen" style="flex:1;min-width:0"><button class="btn btn-sm btn-primary">Freischalten</button></form>';
+    h += '<section class="panel"><ul class="rows">' + Object.keys(nutzer).sort().map(m => { const er = d.ER.some(x => x.id === m), pk = d.PK.some(x => x.id === m);
+      return '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="av">' + esc(initial(m)) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (pk ? ' <span class="pill st-warn">Betreiber-Konto</span>' : '') + '</span><span class="row-sub" style="white-space:normal">' + [...new Set(nutzer[m])].map(esc).join('<br>') + '</span></span>' +
+        (m === ABGLEICH_MAIL ? '' : '<button class="btn btn-sm ' + (er ? '' : 'btn-ghost') + '" data-ad-er="' + esc(m) + '">' + (er ? 'Darf anlegen ✓' : 'Anlegen erlauben') + '</button>') + '</div></li>'; }).join('') + '</ul></section>';
+  } else if (AD.tab === 'zugaenge') {
+    h += '<section class="panel"><div class="panel-h"><h2>Location-Betreiber</h2></div><ul class="rows">' + (d.F.length ? d.F.map(f => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + ' · ' + esc(f.projekt || pName(f.pid)) + '</span><span class="row-sub" style="white-space:normal">' + esc((f.emails || []).join(', ') || 'keine Adresse') + ' · ' + (f.events || []).length + ' Events' + (f.stand ? ' · Stand ' + wann(f.stand) : '') + '</span></span><button class="btn btn-sm btn-ghost" data-ad-fdel="' + esc(f.id) + '">Beenden</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Betreiber-Konten</h2></div><p class="hint" style="margin:0 14px 8px">Diese Konten können keine eigenen Projekte anlegen.</p><ul class="rows">' + (d.PK.length ? d.PK.map(x => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(x.id) + '</span><span class="row-sub">eingeladen von ' + esc(pName(x.pid)) + '</span></span><button class="btn btn-sm btn-ghost" data-ad-pkdel="' + esc(x.id) + '">Markierung entfernen</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Einlass-Teams</h2></div><ul class="rows">' + (d.EL.length ? d.EL.map(f => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + ' · ' + esc(pName(f.pid)) + '</span><span class="row-sub" style="white-space:normal">' + ((f.event || {}).date ? fmtDs(f.event.date) + ' · ' : '') + esc((f.emails || []).join(', ') || 'niemand eingeladen') + '</span></span><button class="btn btn-sm btn-ghost" data-ad-eldel="' + esc(f.id) + '">Beenden</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
+  } else {
+    h += '<section class="panel"><div class="panel-h"><h2>App</h2></div><dl class="dl"><dt>Stand</dt><dd>' + esc(NEUES[0].v) + ' · ' + esc(NEUES[0].titel) + '</dd><dt>Web-App</dt><dd><a href="' + APP_URL + '" target="_blank" rel="noopener">' + esc(APP_URL) + '</a></dd><dt>Code</dt><dd><a href="https://github.com/hennihut721/ravebuero" target="_blank" rel="noopener">GitHub</a></dd><dt>Datenbank</dt><dd><a href="https://console.firebase.google.com/project/ravebuero-1050d/firestore" target="_blank" rel="noopener">Firebase-Konsole</a></dd></dl></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Freitags-Abgleich</h2></div><div style="padding:0 14px 14px"><p style="margin:0 0 6px">' + d.SY.length + ' Projekte machen mit: ' + d.SY.map(x => esc(x.name || pName(x.id))).join(', ') + '</p><p class="muted small" style="margin:0">Ferienwissen: ' + d.FW.length + ' Einträge · Aufgabe ' + esc(CLAUDE_TRIGGER) + '</p></div></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Updates</h2></div><ul class="rows">' + NEUES.slice(0, 12).map(n => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(n.titel) + '</span><span class="row-sub" style="white-space:normal">' + esc(n.v) + ' · ' + n.punkte.map(esc).join(' · ') + '</span></span></div></li>').join('') + '</ul></section>';
+  }
+  v.innerHTML = h;
+}
+async function adminOeffne(pid, evId){
+  let p = AD.d && AD.d.P.find(x => x.id === pid);
+  if (!p) { try { const d = await fs.collection('projects').doc(pid).get(); if (d.exists) p = Object.assign({ id:d.id }, d.data()); } catch (e) {} }
+  if (!p) { toast('Projekt nicht gefunden.'); return; }
+  LS.set('adminOffen', '');
+  const q = Object.assign({}, p); delete q.events; delete q.akt; delete q.nLineup;
+  location.hash = evId ? '#ev-' + evId : '#events';
+  oeffneProjekt(q);
+}
+async function adminZurueck(){
+  LS.set('adminOffen', '');
+  const id = LS.get('projekt');
+  if (id) { await adminOeffne(id); return; }
+  projektWahl();
+}
+async function adminTun(fn, ok){ try { await fn(); if (ok) toast(ok); await adminLaden(); adminZeichnen(); } catch (e) { toast('Hat nicht geklappt: ' + (e && (e.code || e.message) || e)); } }
+document.addEventListener('click', ev => {
+  if (!ev.target.closest || !istAdmin()) return;
+  const t = ev.target.closest('[data-ad],[data-ad-tab],[data-ad-open],[data-ad-mdel],[data-ad-owner],[data-ad-sync],[data-ad-umb],[data-ad-pdel],[data-ad-er],[data-ad-fdel],[data-ad-pkdel],[data-ad-eldel]');
+  if (!t) return;
+  const D = t.dataset, FV = firebase.firestore.FieldValue, P = id => fs.collection('projects').doc(id);
+  if (D.ad === 'neu') adminView(true);
+  else if (D.ad === 'zurueck') adminZurueck();
+  else if (D.ad === 'start') { closeSheet(); adminView(true); }
+  else if (D.adTab) { AD.tab = D.adTab; adminZeichnen(); }
+  else if (D.adOpen) adminOeffne(D.adOpen, D.adEv);
+  else if (D.adMdel) adminTun(() => P(D.adMdel).update({ members:FV.arrayRemove(D.m) }), D.m + ' entfernt.');
+  else if (D.adOwner) adminTun(() => P(D.adOwner).update({ owner:D.m }), D.m + ' ist jetzt Besitzer.');
+  else if (D.adSync) { const p = AD.d.P.find(x => x.id === D.adSync), an = AD.d.SY.some(x => x.id === D.adSync); adminTun(() => an ? fs.collection('syncliste').doc(p.id).delete() : fs.collection('syncliste').doc(p.id).set({ name:p.name || '', at:Date.now() }), an ? 'Abgleich aus.' : 'Abgleich an.'); }
+  else if (D.adUmb) { const p = AD.d.P.find(x => x.id === D.adUmb);
+    showSheet('<h2 id="sheet-title">Projekt umbenennen</h2><form id="ad-umb-f" class="f" novalidate><input class="inp" id="ad-umb-n" maxlength="60" value="' + esc(p.name || '') + '" style="width:100%"><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary">Speichern</button></div></form>');
+    $('#ad-umb-f').onsubmit = e2 => { e2.preventDefault(); const n = $('#ad-umb-n').value.trim(); if (!n) return; closeSheet(); adminTun(() => P(p.id).update({ name:n }), 'Umbenannt.'); }; }
+  else if (D.adPdel) { const p = AD.d.P.find(x => x.id === D.adPdel);
+    showSheet('<h2 id="sheet-title">„' + esc(p.name || 'Projekt') + '“ löschen?</h2><p>Alle Events, Line-ups, Kosten, Aufgaben und Einstellungen dieses Projekts werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</p><p class="hint">Zur Sicherheit den Projektnamen eintippen:</p><form id="ad-pdel-f" class="f" novalidate><input class="inp" id="ad-pdel-n" autocomplete="off" style="width:100%"><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-danger">Endgültig löschen</button></div></form>');
+    $('#ad-pdel-f').onsubmit = e2 => { e2.preventDefault(); if ($('#ad-pdel-n').value.trim() !== (p.name || '').trim()) { toast('Der Name stimmt nicht.'); return; } closeSheet(); toast('Lösche …');
+      adminTun(async () => { for (const c of ADMIN_LOESCH_COLS) { const sn = await P(p.id).collection(c).get(); for (let i = 0; i < sn.docs.length; i += 400) { const b = fs.batch(); sn.docs.slice(i, i + 400).forEach(x => b.delete(x.ref)); await b.commit(); } }
+        try { await fs.collection('syncliste').doc(p.id).delete(); } catch (x) {} await P(p.id).delete(); if (LS.get('projekt') === p.id) LS.set('projekt', ''); }, '„' + (p.name || 'Projekt') + '“ gelöscht.'); }; }
+  else if (D.adEr) { const m = D.adEr, an = AD.d.ER.some(x => x.id === m); adminTun(() => an ? fs.collection('ersteller').doc(m).delete() : fs.collection('ersteller').doc(m).set({ at:Date.now() }), an ? m + ' darf keine Projekte mehr anlegen.' : m + ' darf jetzt Projekte anlegen.'); }
+  else if (D.adFdel) adminTun(() => fs.collection('freigaben').doc(D.adFdel).delete(), 'Zugang beendet.');
+  else if (D.adPkdel) adminTun(() => fs.collection('partnerkonten').doc(D.adPkdel).delete(), 'Markierung entfernt.');
+  else if (D.adEldel) adminTun(() => fs.collection('einlass').doc(D.adEldel).delete(), 'Einlass-Zugang beendet.');
+});
+document.addEventListener('submit', ev => {
+  if (!istAdmin()) return;
+  const f = ev.target;
+  if (f.classList && f.classList.contains('ad-madd')) { ev.preventDefault(); const m = f.querySelector('input').value.trim().toLowerCase(); if (!okMail(m)) { toast('Bitte eine gültige E-Mail-Adresse.'); return; } adminTun(() => fs.collection('projects').doc(f.dataset.pid).update({ members:firebase.firestore.FieldValue.arrayUnion(m) }), m + ' hinzugefügt.'); }
+  else if (f.id === 'ad-er') { ev.preventDefault(); const m = $('#ad-er-m').value.trim().toLowerCase(); if (!okMail(m)) { toast('Bitte eine gültige E-Mail-Adresse.'); return; } adminTun(() => fs.collection('ersteller').doc(m).set({ at:Date.now() }), m + ' darf jetzt Projekte anlegen.'); }
+});
 async function meineProjekte(){
   const sn = await fs.collection('projects').where('members', 'array-contains', meineMail()).get();
   return sn.docs.map(d => Object.assign({ id:d.id }, d.data())).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
@@ -1168,6 +1297,7 @@ async function projektWahl(msg, err){
   v.innerHTML = '<section class="vh"><h1>' + (nurPartner && !L.length ? 'Freigaben' : 'Projekte') + '</h1></section>' +
     '<p class="muted" style="margin:0 0 16px">Angemeldet als <strong>' + esc(me) + '</strong>.' + (nurPartner && !L.length ? ' Hier siehst du, welche Veranstalter Infos mit dir teilen.' : ' Jedes Projekt hat seine eigenen Events, Kosten, Line-ups und Mitglieder.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
+    (istAdmin() ? '<button class="btn btn-primary" data-ad="start" style="margin:0 0 14px">🛡 Admin-Bereich – alle Projekte</button>' : '') +
     (L.length ? '<section class="panel"><div class="panel-h"><h2>Deine Projekte</h2></div><ul class="rows">' + L.map(p => {
       const neu = p.owner !== me && seen.indexOf(p.id) < 0;
       return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
@@ -1203,7 +1333,8 @@ function stopProjekt(){
   if (PV.mUnsub) { try { PV.mUnsub(); } catch (e) {} PV.mUnsub = null; } PV.fid = null; PV.msgs = [];
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
-  projekt = null; db = null;
+  projekt = null; db = null; S.gast = false;
+  try { $('#fab').hidden = true; } catch (e) {}
 }
 function oeffneProjekt(p){
   if (!p) return;
@@ -1211,14 +1342,14 @@ function oeffneProjekt(p){
   projekt = p; db = projektDb(p.id);
   LS.set('projekt', p.id);
   const seen = gesehen(); if (seen.indexOf(p.id) < 0) { seen.push(p.id); LS.set('projGesehen', JSON.stringify(seen.slice(-50))); }
-  S.canWrite = true; S.owner = p.owner === meineMail(); S.ro = false;
+  S.canWrite = true; S.owner = p.owner === meineMail(); S.ro = false; S.gast = istAdmin() && (p.members || []).indexOf(meineMail()) < 0;
   document.querySelector('.tabbar').hidden = false; $('#fb-set').hidden = false;
   FG.bekannt = null; FG.letzt = '';
   const pb = $('#fb-prof'); if (pb) { pb.hidden = false; $('#fb-av').textContent = initial(p.name || 'P'); }
   document.title = (p.name || 'RaveBüro') + ' – RaveBüro';
   UNSUB.push(fs.collection('projects').doc(p.id).onSnapshot(d => {
-    if (!d.exists || ((d.data() || {}).members || []).indexOf(meineMail()) < 0) { LS.set('projekt', ''); projektWahl('Du bist nicht mehr Mitglied in „' + (p.name || 'Projekt') + '“.', true); return; }
-    projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail(); scheduleRender();
+    if (!d.exists || (!istAdmin() && ((d.data() || {}).members || []).indexOf(meineMail()) < 0)) { LS.set('projekt', ''); projektWahl('Du bist nicht mehr Mitglied in „' + (p.name || 'Projekt') + '“.', true); return; }
+    projekt = Object.assign({ id:d.id }, d.data()); S.owner = projekt.owner === meineMail(); S.gast = istAdmin() && (projekt.members || []).indexOf(meineMail()) < 0; scheduleRender();
   }, () => { LS.set('projekt', ''); projektWahl('Kein Zugriff mehr auf „' + (p.name || 'Projekt') + '“.', true); }));
   subscribe(); techSaat(); ferienStart(p.id); locSync(p.id);
   render();
@@ -1254,6 +1385,7 @@ function fgHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 3
 function fgPlan(){ clearTimeout(FG.t); FG.t = setTimeout(() => fgSync().catch(e => console.warn('Freigaben', e)), 2500); }
 // Baut für jede Location mit Betreiber-Zugang die freigegebene Kopie und schreibt sie, wenn sich etwas geändert hat
 async function fgSync(erzwingen){
+  if (S.gast) return; // Admin als Gast: keine Hintergrund-Abgleiche im fremden Projekt
   if (!projekt || !db || S.ro || (!erzwingen && !FG_COLS.every(c => S.fresh[c]))) return;
   if (FG.laeuft) { FG.nochmal = true; return; } // nie zwei Läufe gleichzeitig
   FG.laeuft = true;
@@ -1448,6 +1580,7 @@ const bereichsAnsicht = () => ['marketing', 'booking', 'finanzen'].indexOf(ansic
 
 /* ===== Aktivitätsverlauf ===== */
 async function logA(text, eventId, docId){
+  if (S.gast) return;
   if (!db || S.ro) return;
   try { await db.collection('aktivitaet').doc(docId || newId('a')).set({ text:String(text).slice(0, 240), wer:meinName(), mail:meineMail(), eventId:eventId || '', at:Date.now() }); } catch (e) { console.warn('Verlauf', e); }
 }
@@ -1909,6 +2042,7 @@ function einlassSheet(e){
 }
 // Kopie der Gästeliste für das Einlass-Team (nur Namen und Plätze)
 async function elSync(){
+  if (S.gast) return;
   for (const e of S.events.filter(x => Array.isArray(x.einlassEmails))) {
     const fid = projekt.id + '_' + e.id, emails = e.einlassEmails.map(x => String(x).toLowerCase());
     const body = { pid:projekt.id, emails, event:{ name:e.name || '', date:e.date || '', start:e.start || '', end:e.end || '', venue:e.venue || '', kapazitaet:int(e.capacity) || 0 }, gaeste:gaesteAus(e) };
@@ -2344,7 +2478,7 @@ function openEinstellungen(){
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   const nmN = nmUngelesen();
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px"><li><a class="row" href="#nachrichten" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">💬 Nachrichten' + (nmN ? ' <span class="pill st-warn">' + nmN + ' neu</span>' : '') + '</span><span class="row-sub">Was die Location-Betreiber zu euren Events schreiben</span></span>' + I.right + '</a></li><li><button type="button" class="row" data-tut="start"><span class="row-main"><span class="row-title">🎓 Tutorial</span><span class="row-sub">Einmal mit einem Beispiel-Event durch die ganze App</span></span>' + I.right + '</button></li></ul>' +
+    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px">' + (istAdmin() ? '<li><button type="button" class="row" data-ad="start"><span class="row-main"><span class="row-title">🛡 Admin-Bereich</span><span class="row-sub">Alle Projekte, Nutzer, Zugänge – und direkt in jedes Projekt springen</span></span>' + I.right + '</button></li>' : '') + '<li><a class="row" href="#nachrichten" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">💬 Nachrichten' + (nmN ? ' <span class="pill st-warn">' + nmN + ' neu</span>' : '') + '</span><span class="row-sub">Was die Location-Betreiber zu euren Events schreiben</span></span>' + I.right + '</a></li><li><button type="button" class="row" data-tut="start"><span class="row-main"><span class="row-title">🎓 Tutorial</span><span class="row-sub">Einmal mit einem Beispiel-Event durch die ganze App</span></span>' + I.right + '</button></li></ul>' +
     '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">1 · Bereiche</p><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
     '<p class="kicker" style="margin:0 0 10px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">2 · Ansicht & Aussehen</p><h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
@@ -2426,7 +2560,9 @@ async function init(){
     const ELa = EL.filter(f => (f.emails || []).indexOf(meineMail()) >= 0);
     if (!L.length && ELa.length === 1) { einlassView(ELa[0].id); return; }
     if (pErr) { projektWahl('Projekte konnten nicht geladen werden: ' + (pErr && pErr.message || pErr), true); return; }
-    const letztes = L.find(p => p.id === LS.get('projekt'));
+    if (istAdmin() && LS.get('adminOffen')) { adminView(true); return; }
+    let letztes = L.find(p => p.id === LS.get('projekt'));
+    if (!letztes && istAdmin() && LS.get('projekt')) { try { const d = await fs.collection('projects').doc(LS.get('projekt')).get(); if (d.exists) letztes = Object.assign({ id:d.id }, d.data()); } catch (e) {} }
     if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
   });
 }
@@ -2451,6 +2587,11 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08l', titel:'Admin-Bereich', punkte:[
+    'Nur für den Admin: 🛡 Admin-Bereich in den Einstellungen und in der Projektauswahl',
+    'Alle Projekte, Mitglieder, Nutzer, Location- und Einlass-Zugänge auf einen Blick – mit Verwaltung',
+    'Mit „Öffnen“ direkt in jedes Projekt springen'
+  ]},
   { v:'2026-11-08k', titel:'Tutorial', punkte:[
     'In den Einstellungen gibt es jetzt „🎓 Tutorial“: Es legt ein Beispiel-Event an und führt dich Schritt für Schritt durch alle Bereiche',
     'Am Ende kannst du das Beispiel-Event mit einem Knopf wieder löschen'
@@ -2512,6 +2653,7 @@ function hinweise(view){
   const start = ['events', 'marketing', 'booking', 'finanzen'].indexOf(view) >= 0;
   const ab = start && S.got.events ? S.events.find(x => istHeute(x) && x.status !== 'abgesagt') : null;
   if (ab) Z.push('<div class="hw-z"><span class="hw-i">🎉</span><span class="hw-t"><strong>' + (ab.date === today() ? 'Heute' : 'Läuft noch') + ':</strong> ' + esc(ab.name || 'Event') + '</span><a class="btn btn-sm btn-primary" href="#abend-' + esc(ab.id) + '">Abend-Modus</a></div>');
+  if (S.gast) Z.push('<div class="hw-z"><span class="hw-i">🛡</span><span class="hw-t"><strong>Admin-Modus:</strong> Du bist in „' + esc((projekt || {}).name || 'Projekt') + '“ kein Mitglied. Änderungen sind möglich, werden aber nicht im Verlauf festgehalten.</span><button class="btn btn-sm" data-ad="start">Admin</button></div>');
   const nmN = S.ro ? 0 : nmUngelesen();
   if (nmN && view !== 'nachrichten') Z.push('<div class="hw-z"><span class="hw-i">💬</span><span class="hw-t"><strong>' + nmN + (nmN === 1 ? ' neue Nachricht' : ' neue Nachrichten') + '</strong> von Location-Betreibern</span><a class="btn btn-sm btn-primary" href="#nachrichten">Lesen</a></div>');
   const g = LS.get('neuGesehen'), i = NEUES.findIndex(n => n.v === g), N = (i < 0 ? NEUES : NEUES.slice(0, i)).slice(0, 3);
