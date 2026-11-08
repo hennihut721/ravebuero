@@ -1148,13 +1148,19 @@ const fgZeit = z => { const m = /^(\d{1,2}):(\d{2})/.exec(z || ''); if (!m) retu
 function fgHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return String(h >>> 0); }
 function fgPlan(){ clearTimeout(FG.t); FG.t = setTimeout(() => fgSync().catch(e => console.warn('Freigaben', e)), 2500); }
 // Baut für jede Location mit Betreiber-Zugang die freigegebene Kopie und schreibt sie, wenn sich etwas geändert hat
-async function fgSync(){
-  if (!projekt || !db || S.ro || !FG_COLS.every(c => S.fresh[c])) return;
+async function fgSync(erzwingen){
+  if (!projekt || !db || S.ro || (!erzwingen && !FG_COLS.every(c => S.fresh[c]))) return;
+  if (FG.laeuft) { FG.nochmal = true; return; } // nie zwei Läufe gleichzeitig
+  FG.laeuft = true;
+  try { await fgLauf(); } finally { FG.laeuft = false; }
+  if (FG.nochmal) { FG.nochmal = false; fgPlan(); }
+}
+async function fgLauf(){
   const pid = projekt.id;
-  if (!FG.bekannt) FG.bekannt = {};
-  // Jede Location, die schon einmal einen Zugang hatte, einzeln prüfen
+  // Bei jedem Lauf den echten Stand aus der Datenbank holen – nichts aus einem alten Zwischenspeicher
+  FG.bekannt = {}; FG.fehler = FG.fehler || {};
   for (const v of (S.venues || []).filter(v => v.partnerFelder || fgMails(v).length)) {
-    const fid = fgId(v); if (fid in FG.bekannt) continue;
+    const fid = fgId(v);
     try { const d = await fs.collection('freigaben').doc(fid).get(); if (d.exists) FG.bekannt[fid] = d.data(); else if (fgMails(v).length) FG.bekannt[fid] = {}; } catch (e) { if (fgMails(v).length) FG.bekannt[fid] = {}; }
   }
   const t = today(), V = (S.venues || []).filter(v => fgMails(v).length);
@@ -1174,12 +1180,12 @@ async function fgSync(){
     });
     const body = { pid, projekt:projekt.name || '', ort:v.name || '', emails:fgMails(v), felder:fel, kontakt:v.partnerKontakt || '', events };
     const sig = fgHash(JSON.stringify(body));
-    if (alt.sig === sig) continue;
+    if (alt.sig === sig && Array.isArray(alt.events)) { delete FG.fehler[fid]; continue; }
     try {
       for (const ev of events) if (ev.flyer && ev.flyer !== altFly[ev.id]) { const d = await mkBild(ev.flyer.split(':')[0]); if (d) await fs.collection('freigaben').doc(fid).collection('flyer').doc(ev.id).set({ data:d, pid }); }
       const neu = Object.assign({}, body, { sig, stand:Date.now() });
-      await fs.collection('freigaben').doc(fid).set(neu); FG.bekannt[fid] = neu;
-    } catch (e) { console.warn('Freigabe', fid, e); }
+      await fs.collection('freigaben').doc(fid).set(neu); FG.bekannt[fid] = neu; delete FG.fehler[fid];
+    } catch (e) { console.warn('Freigabe', fid, e); FG.fehler[fid] = (e && (e.code || e.message)) || String(e); }
   }
   // Zugänge, die es nicht mehr gibt, entfernen
   for (const fid of Object.keys(FG.bekannt)) {
@@ -1199,11 +1205,24 @@ function partnerSheet(v){
     (function(){ const E = fgEvents(v), I = S.events.filter(e => fgOrt(e.venue, v.name) && e.status === 'idee' && isDate(e.date) && e.date >= today());
       return '<div class="field"><label>Das sieht der Betreiber gerade</label>' + (E.length ? '<p style="margin:0">' + E.map(e => esc(e.name || 'Event') + ' · ' + fmtDs(e.date)).join('<br>') + '</p>' : '<p class="hint" style="margin:0;color:var(--warn)">Noch kein Event. Trag bei einem Event als Location „' + esc(v.name) + '“ ein und setz den Status mindestens auf „In Planung“.</p>') +
         (I.length ? '<p class="hint" style="margin:6px 0 0">Noch nicht sichtbar (Status „Idee“): ' + I.map(e => esc(e.name || 'Event')).join(', ') + '</p>' : '') + '</div>'; })() +
+    (M.length ? '<div class="field"><label>Übertragung an den Betreiber</label><p class="hint" style="margin:0 0 8px" id="pz-stand">Prüfe …</p><button type="button" class="btn btn-sm" id="pz-sync">Jetzt übertragen</button></div>' : '') +
     '<p class="err" id="pz-err" hidden></p>' +
     '<div class="actions">' + (M.length ? '<button type="button" class="btn btn-ghost" id="pz-aus" style="margin-right:auto;color:var(--bad)">Zugang beenden</button>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>' +
     (M.length ? '<section class="panel" style="margin-top:18px"><div class="panel-h"><h2>Einladungslink</h2></div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px;word-break:break-all">' + esc(fgLink(v)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="pz-copy">Kopieren</button><button class="btn btn-sm" id="pz-wa">WhatsApp</button><button class="btn btn-sm" id="pz-mailto">E-Mail</button></div><p class="hint" style="margin:10px 0 0">Nur über diesen Link kommen Betreiber in die App. Sie melden sich mit der Google-Adresse von oben an.</p></div></section>' : ''));
   const txt = () => 'Hallo! Für unsere Events bei ' + v.name + ' haben wir dir einen Zugang zu unserer Planung eingerichtet. Dort siehst du immer den aktuellen Stand' + (fel.lineup ? ' von Line-up und Running Order' : '') + (fel.flyer ? ', die Flyer' : '') + (fel.technik ? ' und die Technik' : '') + '.\n\n' + fgLink(v) + '\n\nMelde dich dort einfach mit deinem Google-Konto (' + M.join(' oder ') + ') an.' + (v.partnerKontakt ? '\n\nBei Fragen: ' + v.partnerKontakt : '');
   if (M.length) {
+    const stand = async () => {
+      const el = $('#pz-stand'); if (!el) return;
+      let d = null; try { d = await fs.collection('freigaben').doc(fgId(v)).get(); } catch (e) {}
+      const x = d && d.exists ? d.data() : null, f = (FG.fehler || {})[fgId(v)];
+      if (!el.isConnected) return;
+      if (f) { el.innerHTML = '<span style="color:var(--bad)">Übertragung fehlgeschlagen (' + esc(f) + '). Tippe auf „Jetzt übertragen“.</span>'; return; }
+      if (!x || !Array.isArray(x.events)) { el.innerHTML = '<span style="color:var(--warn)">Noch nicht übertragen – der Betreiber sieht noch nichts.</span>'; return; }
+      const z = new Date(x.stand || 0);
+      el.textContent = 'Zuletzt übertragen: ' + pad(z.getDate()) + '.' + pad(z.getMonth() + 1) + '. ' + pad(z.getHours()) + ':' + pad(z.getMinutes()) + ' Uhr · ' + x.events.length + (x.events.length === 1 ? ' Event' : ' Events') + ' sichtbar';
+    };
+    stand();
+    $('#pz-sync').onclick = async () => { const b = $('#pz-sync'); b.disabled = true; b.textContent = 'Überträgt …'; await fgSync(true); b.disabled = false; b.textContent = 'Jetzt übertragen'; stand(); toast((FG.fehler || {})[fgId(v)] ? 'Übertragung hat nicht geklappt.' : 'Übertragen.'); };
     $('#pz-copy').onclick = async () => toast(await copyText(txt()) ? 'Einladung kopiert.' : 'Kopieren hat nicht geklappt.');
     $('#pz-wa').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(txt()), '_blank', 'noopener');
     $('#pz-mailto').onclick = () => { location.href = 'mailto:' + encodeURIComponent(M.join(',')) + '?subject=' + encodeURIComponent('Zugang: unsere Events bei ' + v.name) + '&body=' + encodeURIComponent(txt()); };
