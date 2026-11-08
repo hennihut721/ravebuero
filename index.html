@@ -2075,7 +2075,7 @@ function viewBkHeute(){
   const U = upEvents(), N = nachhakenListe();
   const A = S.lineup.filter(l => l.status === 'angefragt' && upEv(l.eventId)), Z = S.lineup.filter(l => l.status === 'zugesagt' && upEv(l.eventId));
   const leer = U.filter(e => !S.lineup.some(l => l.eventId === e.id && l.status !== 'abgesagt'));
-  let h = '<section class="vh"><h1>Booking</h1><p class="muted" style="margin:4px 0 0">' + fmtD(today()) + '</p></section><div class="kpis">' +
+  let h = '<section class="vh"><h1>Booking</h1><p class="muted" style="margin:4px 0 0">' + fmtD(today()) + '</p></section>' + bereichKnoepfe(['events', 'kalender', 'umfeld', 'verlauf']) + '<div class="kpis">' +
     kpi('Nachhaken', N.length, 'seit ' + NACHHAKEN_TAGE + '+ Tagen ohne Antwort', N.length ? 'neg' : '') + kpi('Angefragt', A.length, 'offene Anfragen') + kpi('Zugesagt', Z.length, 'für kommende Events') + kpi('Ohne Line-up', leer.length, leer.length === 1 ? 'Event' : 'Events') + '</div>';
   h += '<section class="panel"><div class="panel-h"><h2>Jetzt nachhaken</h2></div>' + (N.length ? '<ul class="rows">' + N.map(l => bkZeile(l, true)).join('') + '</ul>' : '<p class="pad">Gerade niemand, bei dem du nachhaken musst.</p>') + '</section>';
   h += '<section class="panel"><div class="panel-h"><h2>Line-up pro Event</h2></div><ul class="rows">' + (U.length ? U.slice(0, 12).map(e => {
@@ -2096,7 +2096,7 @@ function viewFiHeute(){
   const P = S.events.filter(e => isDate(e.date) && e.date < t && e.status !== 'abgesagt').sort((a, b) => b.date.localeCompare(a.date));
   const offen = S.events.reduce((s, e) => s + abrechnung(e).offenAus.reduce((a, x) => a + (x[1] || 0), 0), 0);
   const letzte = P.find(e => abrechnung(e).hatIst);
-  let h = '<section class="vh"><h1>Finanzen</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section><div class="kpis">' +
+  let h = '<section class="vh"><h1>Finanzen</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section>' + bereichKnoepfe(['events', 'kalender', 'verlauf']) + '<div class="kpis">' +
     kpi('Plan kommende', eurS(sum(C, x => x[1].result)), U.length + ' Events', sum(C, x => x[1].result) >= 0 ? 'pos' : 'neg') + kpi('Noch zu zahlen', eur(offen), 'Gagen und Kosten', offen > 0 ? 'neg' : '') +
     kpi('Letzte Abrechnung', letzte ? eurS(abrechnung(letzte).erg) : '–', letzte ? esc(letzte.name || 'Event') : 'noch keine') + kpi('Abrechnung fehlt', P.filter(e => !abrechnung(e).hatIst).length, 'vergangene Events') + '</div>';
   h += '<section class="panel"><div class="panel-h"><h2>Kommende Events</h2></div><ul class="rows">' + (C.length ? C.map(([e, c]) => '<li><a class="row" href="#ev-' + esc(e.id) + '" data-act="ev-tab" data-id="' + esc(e.id) + '" data-v="finanzen"><span class="row-main"><span class="row-title">' + esc(e.name || 'Event') + '</span><span class="row-sub">' + fmtD(e.date) + ' · Ein ' + eur(c.totalIn) + ' · Aus ' + eur(c.totalOut) + (c.breakEven != null ? ' · Break-even ' + c.breakEven + ' Gäste' : '') + '</span></span><span class="num ' + (c.result >= 0 ? 'pos' : 'neg') + '">' + eurS(c.result) + '</span></a></li>').join('') : '<li><p class="pad">Keine kommenden Events.</p></li>') + '</ul></section>';
@@ -2367,6 +2367,10 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08h', titel:'Bereiche direkt erreichbar', punkte:[
+    'Oben in den Reitern gibt es jetzt direkte Knöpfe zu den Bereichen – z. B. bei Events: Verzeichnis und Verlauf, im Kalender: Umfeld und Verzeichnis',
+    'In den Ansichten Marketing, Booking und Finanzen kommst du so direkt zu Events und Kalender'
+  ] },
   { v:'2026-11-08g', titel:'Aufgeräumt und schneller', punkte:[
     'Hinweise stehen jetzt in einer schmalen Leiste – die Startseite hat eine schlanke Auswahl an Kacheln (weitere über „Bearbeiten“)',
     'Event-Seite: oben der nächste offene Schritt, Ablauf, Rückblick und Rückmeldung zum Aufklappen',
@@ -2497,7 +2501,7 @@ function viewEvents(){
   const dated = S.events.filter(e => isDate(e.date));
   const nUp = dated.filter(e => e.date >= t).length, nPast = dated.length - nUp;
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
-  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>';
+  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>' + bereichKnoepfe(['verzeichnis', 'verlauf'].concat(istLight() ? ['marketing'] : []));
   if (false) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
 
   if (up && !waiting('events')) h += dashboard(nextEvent());
@@ -2831,6 +2835,9 @@ function tabOverview(e, c){
   if (!S.ro) h += '<div class="danger-zone"><button class="btn btn-danger" data-act="del" data-kind="event" data-id="' + esc(e.id) + '">Event löschen</button></div>';
   return h;
 }
+// Direkte Knöpfe zu den Bereichen aus den Einstellungen, passend zum Reiter
+const BEREICHE = { events:['Events', '#events'], kalender:['Kalender', '#kalender'], umfeld:['Umfeld', '#umfeld'], verzeichnis:['Verzeichnis', '#verzeichnis'], verlauf:['Verlauf', '#verlauf'], marketing:['Marketing', '#marketing'] };
+const bereichKnoepfe = L => '<div class="chips" style="margin:0 0 14px;gap:6px;flex-wrap:wrap" aria-label="Bereiche">' + L.map(k => '<a class="chip" href="' + BEREICHE[k][1] + '" style="text-decoration:none">' + BEREICHE[k][0] + ' ›</a>').join('') + '</div>';
 // Aufklappbarer Abschnitt; offen/zu merkt sich das Gerät
 function klapp(k, titel, info, inhalt, std){
   let m = {}; try { m = JSON.parse(LS.get('klapp') || '{}') || {}; } catch (x) {}
@@ -3265,7 +3272,7 @@ function dayMap(y){
 }
 function viewCal(){
   const y = S.year, t = today(), map = dayMap(y), heads = ['Mo','Di','Mi','Do','Fr','Sa','So'];
-  let h = calSwitch('kalender') + '<section class="vh"><h1>Kalender</h1><div class="year-nav"><button class="iconbtn" data-act="year" data-v="-1" aria-label="Vorheriges Jahr">' + I.left + '</button><span class="y">' + y + '</span><button class="iconbtn" data-act="year" data-v="1" aria-label="Nächstes Jahr">' + I.right + '</button></div></section>';
+  let h = calSwitch('kalender') + '<section class="vh"><h1>Kalender</h1><div class="year-nav"><button class="iconbtn" data-act="year" data-v="-1" aria-label="Vorheriges Jahr">' + I.left + '</button><span class="y">' + y + '</span><button class="iconbtn" data-act="year" data-v="1" aria-label="Nächstes Jahr">' + I.right + '</button></div></section>' + bereichKnoepfe(['umfeld', 'verzeichnis']);
   const nHid = S.hidden.length;
   h += '<div class="cal-bar"><p class="lead">Tippe auf einen Tag oder Monat.</p><button class="btn btn-ghost btn-sm" data-act="legend" aria-expanded="' + S.legendOpen + '">' + (S.legendOpen ? 'Legende zu' : 'Legende' + (nHid ? ' · ' + nHid + ' aus' : '')) + '</button></div>';
   if (S.legendOpen) h += '<div class="legend" role="group" aria-label="Arten ein- und ausblenden">' + Object.keys(BT).map(k => '<button class="lg" data-act="bt-toggle" data-v="' + k + '" aria-pressed="' + (S.hidden.indexOf(k) < 0) + '"><span class="sw t-' + BT[k].v + '"></span>' + BT[k].label + '</button>').join('') + '<button class="lg" data-act="bt-toggle" data-v="lokal" aria-pressed="' + (S.hidden.indexOf('lokal') < 0) + '"><span class="sw lp"></span>Partys in der Region</button><span class="lg"><span class="sw ev"></span>Event</span><span class="lg"><span class="sw-u"></span>Unterstrichen: zum Einschätzen</span></div>';
@@ -3585,7 +3592,7 @@ function viewMkHeute(){
   const arbeit = mkCol('mkmedia').filter(m => m.status !== 'fertig').length;
   const E = S.events.filter(e => isDate(e.date) && e.status !== 'abgesagt' && e.date >= t && e.date <= addDays(t, 84)).sort((a, b) => a.date.localeCompare(b.date));
   const nx = E[0];
-  let h = '<section class="vh"><h1>Heute</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section>' +
+  let h = '<section class="vh"><h1>Heute</h1><p class="muted" style="margin:4px 0 0">' + fmtD(t) + '</p></section>' + bereichKnoepfe(['events', 'kalender', 'verlauf']) +
     '<div class="kpis">' + kpi('Überfällig', od, 'Posts', od ? 'neg' : '') + kpi('Diese Woche', woche, 'Posts fällig') + kpi('In Arbeit', arbeit, 'Flyer & Medien') + kpi('Nächstes Event', nx ? dayDiff(t, nx.date) + ' T' : '–', nx ? esc(nx.name || 'Event') : 'keins geplant') + '</div>' +
     mkAnstehend(7);
   h += '<section class="panel"><div class="panel-h"><h2>Event-Check</h2><span class="muted small">nächste 12 Wochen</span></div>';
