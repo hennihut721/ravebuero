@@ -612,6 +612,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 body.tut-on #view{padding-bottom:300px}body.tut-on #fab{display:none}#tut{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;width:min(520px,calc(100% - 24px));background:var(--surface);border:2px solid var(--pink);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.28);padding:10px 14px 12px}#tut h3{margin:6px 0 4px;font:800 20px/1.05 var(--f-display);text-transform:uppercase}#tut p{margin:0 0 10px;font-size:14.5px;line-height:1.45;max-height:32vh;overflow:auto}.tut-k{display:flex;justify-content:space-between;align-items:center}.tut-bar{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden}.tut-bar span{display:block;height:100%;background:var(--pink)}.tut-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .ad-m .row-main{flex:1 1 60%}.ad-m .row-title{overflow-wrap:anywhere}
 .cr-chat{margin:4px 0 6px}.cr-in{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.cr-in .inp{font-family:var(--f-body);width:100%}.cr-l{display:grid;gap:8px;margin-top:12px;max-height:55vh;overflow:auto}.cr-m{padding:9px 12px;border-radius:12px;background:rgba(127,127,127,.14);line-height:1.4;overflow-wrap:anywhere;max-width:92%;justify-self:start}.cr-m.ich{justify-self:end;background:rgba(214,30,112,.18)}.cr-w{font-size:12.5px;opacity:.75;margin-bottom:2px}.cr-r{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:6px;background:rgba(214,30,112,.25)}
+.shop-w{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -2125,17 +2126,18 @@ function ekBlock(fid, x, mitglied, e){
       '<p style="margin:4px 0">Kasse: <strong>' + eur(z.bar) + '</strong> bar · <strong>' + eur(z.karte) + '</strong> Karte</p>' +
       '<h3 class="ab-k" style="margin:14px 0 4px">Ankunft (pro halbe Stunde)</h3>' + ekKurve(z.zeiten) + '</div>';
     if (mitglied && e) {
-      h += '<div class="ab-gl" style="margin-top:10px"><h3 class="ab-k" style="margin:0 0 8px">Ticketliste aus EVENTIM.Light</h3>' +
-        (z.nT ? '<p style="margin:0 0 8px"><strong>' + z.nT + ' Tickets</strong> · ' + eur(z.vvkSumme) + (x.ticketsStand ? ' · Stand ' + wann(x.ticketsStand) : '') + '</p>' : '<p class="muted" style="margin:0 0 8px">Noch keine Liste. In EVENTIM.Light beim Event „Download Einlassdaten“ wählen und die Excel-Datei hier importieren. Dann prüft der Scanner jedes Ticket.</p>') +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary" style="cursor:pointer">' + (z.nT ? 'Neue Liste importieren' : 'Eventim-Liste importieren') + '<input type="file" accept=".xlsx,.xls,.csv" data-ek="import" data-id="' + esc(e.id) + '" hidden></label>' +
+      const sh = shopInfo(), shUrl = safeUrl(e.shopUrl) || sh.url;
+      h += '<div class="ab-gl" style="margin-top:10px"><h3 class="ab-k" style="margin:0 0 8px">Ticketliste aus ' + esc(sh.name) + '</h3>' +
+        (z.nT ? '<p style="margin:0 0 8px"><strong>' + z.nT + ' Tickets</strong> · ' + eur(z.vvkSumme) + (x.ticketsStand ? ' · Stand ' + wann(x.ticketsStand) : '') + '</p>' : '<p class="muted" style="margin:0 0 8px">Noch keine Liste. ' + esc(sh.hinweis) + ' Dann prüft der Scanner jedes Ticket.</p>') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary" style="cursor:pointer">' + (z.nT ? 'Neue Liste importieren' : 'Ticketliste importieren') + '<input type="file" accept=".xlsx,.xls,.csv" data-ek="import" data-id="' + esc(e.id) + '" hidden></label>' +
         (z.nT ? '<button type="button" class="btn btn-sm" data-ek="liste-weg" data-id="' + esc(e.id) + '" style="color:#ff6b6b">Liste löschen</button>' : '') +
-        '<a class="btn btn-sm" href="' + esc(safeUrl(e.shopUrl) || 'https://www.eventim-light.de/') + '" target="_blank" rel="noopener">EVENTIM.Light öffnen</a><button type="button" class="btn btn-sm" data-ek="shop" data-id="' + esc(e.id) + '">Shop-Link</button>' +
+        (shUrl ? '<a class="btn btn-sm" href="' + esc(shUrl) + '" target="_blank" rel="noopener">' + esc(sh.name) + ' öffnen</a>' : '') + '<button type="button" class="btn btn-sm" data-ek="shop" data-id="' + esc(e.id) + '">Ticketshop wählen</button>' +
         '<button type="button" class="btn btn-sm" data-ek="arten" data-id="' + esc(e.id) + '">Kassenarten</button><button type="button" class="btn btn-sm" data-ek="abr" data-id="' + esc(e.id) + '">In Abrechnung übernehmen</button></div></div>';
     }
   } else if (EK.tab === 'scan') {
     h += '<div class="ab-gl"><button type="button" class="btn btn-primary" data-ek="kamera" style="width:100%;min-height:64px;font-size:20px">📷 Scanner starten</button>' +
       '<form data-ek="manuell" style="display:flex;gap:8px;margin:12px 0 0"><input class="inp" id="ek-code" placeholder="Barcode-Nummer eintippen" inputmode="numeric" autocomplete="off" style="flex:1;background:#0d0f17;color:#f5f6fa;border-color:#262a38"><button class="btn" type="submit">Prüfen</button></form>' +
-      '<p class="muted small" style="margin:10px 0 0">' + (z.nT ? z.nT + ' Tickets in der Liste · ' + z.vvk + ' gescannt.' : 'Keine Ticketliste importiert – jeder Scan wird nur gezählt, nicht geprüft.') + ' Bitte nur mit RaveBüro scannen, nicht parallel mit der Eventim-App.</p>' +
+      '<p class="muted small" style="margin:10px 0 0">' + (z.nT ? z.nT + ' Tickets in der Liste · ' + z.vvk + ' gescannt.' : 'Keine Ticketliste importiert – jeder Scan wird nur gezählt, nicht geprüft.') + ' Bitte nur mit RaveBüro scannen, nicht parallel mit der App von ' + esc(projekt ? shopInfo().name : 'eurem Ticketshop') + '.</p>' +
       (EK.scans.length ? '<h3 class="ab-k" style="margin:14px 0 6px">Zuletzt</h3>' + EK.scans.slice().sort((a, b) => b.at - a.at).slice(0, 5).map(s => '<div class="ab-row" style="padding:8px 0"><div class="ab-time" style="font-size:16px">' + uhr(s.at) + '</div><div class="ab-who"><div class="ab-name2" style="font-size:16px">' + esc(s.code || s.id) + '</div><div class="ab-meta">' + esc(s.kat || '') + '</div></div></div>').join('') : '') + '</div>';
   } else if (EK.tab === 'kasse') {
     const A = Array.isArray(x.kassenArten) ? x.kassenArten : [];
@@ -2158,10 +2160,41 @@ function ekArtenForm(e){
     if (await save(() => fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:(e.einlassEmails || []).map(q => String(q).toLowerCase()), kassenArten:L.slice(0, 8) }, { merge:true }), 'Gespeichert')) closeSheet();
   };
 }
+// Ticketshops: jedes Kollektiv wählt seinen eigenen (gilt fürs ganze Projekt)
+const TICKETSHOPS = [
+  ['eventim', 'EVENTIM.Light', 'https://www.eventim-light.com/', 'In EVENTIM.Light beim Event „Download Einlassdaten“ wählen und die Excel-Datei hier importieren.'],
+  ['pretix', 'pretix', 'https://pretix.eu/control/', 'In pretix die Ticket- bzw. Check-in-Liste des Events als Excel oder CSV exportieren und hier importieren.'],
+  ['eventbrite', 'Eventbrite', 'https://www.eventbrite.de/organizations/home', 'In Eventbrite die Teilnehmerliste des Events als CSV oder Excel exportieren und hier importieren.'],
+  ['tickettailor', 'Ticket Tailor', 'https://app.tickettailor.com/', 'In Ticket Tailor die ausgestellten Tickets des Events als CSV exportieren und hier importieren.'],
+  ['ra', 'Resident Advisor (RA)', 'https://ra.co/pro', 'In RA Pro die Ticket- bzw. Gästeliste des Events als CSV exportieren und hier importieren.'],
+  ['shotgun', 'Shotgun', 'https://smartboard.shotgun.live/', 'In Shotgun die Teilnehmer- bzw. Ticketliste des Events als CSV exportieren und hier importieren.'],
+  ['dice', 'DICE', 'https://mio.dice.fm/', 'In DICE (MIO) die Ticketliste des Events als CSV exportieren und hier importieren.'],
+  ['tixforgigs', 'tixforgigs', 'https://www.tixforgigs.com/', 'In tixforgigs die Ticketliste des Events als Excel oder CSV exportieren und hier importieren.'],
+  ['ticketino', 'TICKETINO', 'https://www.ticketino.com/', 'In TICKETINO die Ticketliste des Events als Excel oder CSV exportieren und hier importieren.'],
+  ['andere', 'Anderer Shop', '', 'Exportiere aus deinem Shop die Ticketliste als Excel oder CSV und importiere sie hier.']
+];
+const shopInfo = () => { const t = (projekt && projekt.ticketshop) || {}; const s0 = TICKETSHOPS.find(x => x[0] === t.art) || TICKETSHOPS[0];
+  return { art:s0[0], name:s0[0] === 'andere' ? (t.name || 'Ticketshop') : s0[1], url:s0[0] === 'andere' ? (t.url || '') : s0[2], hinweis:s0[3] }; };
 function ekShopForm(e){
-  showSheet('<h2 id="sheet-title">Link zum Ticketshop</h2><form class="f" id="sh-form" novalidate>' + field('sh-u', 'Adresse eures Events bei EVENTIM.Light', '<input id="sh-u" type="url" maxlength="400" placeholder="https://www.eventim-light.com/de/a/…" value="' + esc(e.shopUrl || '') + '">') +
-    '<p class="hint">Den Link findest du in EVENTIM.Light bei deinem Event. Anmelden musst du dich dort selbst – RaveBüro speichert keine Zugangsdaten.</p><p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
-  $('#sh-form').onsubmit = async ev => { ev.preventDefault(); const u = $('#sh-u').value.trim(); if (u && !safeUrl(u)) return formErr($('#sh-form'), 'Der Link muss mit https:// beginnen.'); if (await save(() => db.doc('events/' + e.id).update({ shopUrl:u }), 'Gespeichert')) closeSheet(); };
+  const t = (projekt && projekt.ticketshop) || {}; let art = (TICKETSHOPS.find(x => x[0] === t.art) || TICKETSHOPS[0])[0];
+  const zeichne = () => {
+    showSheet('<h2 id="sheet-title">Ticketshop</h2><p class="hint" style="margin:0 0 12px">Welchen Ticketshop nutzt ihr? Das gilt fürs ganze Projekt – andere Kollektive wählen ihren eigenen. RaveBüro speichert keine Zugangsdaten, anmelden musst du dich im Shop selbst.</p>' +
+      '<div class="shop-w" role="radiogroup">' + TICKETSHOPS.map(x => '<button type="button" class="chip" role="radio" data-shop="' + x[0] + '" aria-checked="' + (art === x[0]) + '" aria-pressed="' + (art === x[0]) + '">' + esc(x[1]) + '</button>').join('') + '</div>' +
+      '<form class="f" id="sh-form" novalidate>' + (art === 'andere' ? '<div class="two">' + field('sh-name', 'Name des Shops', '<input id="sh-name" maxlength="40" placeholder="z. B. Tickettoaster" value="' + esc(t.art === 'andere' ? t.name || '' : '') + '">') + field('sh-start', 'Link zum Shop', '<input id="sh-start" type="url" maxlength="300" placeholder="https://…" value="' + esc(t.art === 'andere' ? t.url || '' : '') + '">') + '</div>' : '') +
+      (e ? field('sh-u', 'Link zu diesem Event im Shop (optional)', '<input id="sh-u" type="url" maxlength="400" placeholder="https://…" value="' + esc(e.shopUrl || '') + '">') : '') +
+      '<p class="hint">' + esc((TICKETSHOPS.find(x => x[0] === art) || [])[3] || '') + ' RaveBüro sucht die Spalte mit Barcode bzw. Ticketcode automatisch.</p><p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+    document.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => { art = b.dataset.shop; zeichne(); });
+    $('#sh-form').onsubmit = async ev => {
+      ev.preventDefault();
+      const u = e ? $('#sh-u').value.trim() : '';
+      if (u && !safeUrl(u)) return formErr($('#sh-form'), 'Der Link muss mit https:// beginnen.');
+      const ts = { art };
+      if (art === 'andere') { ts.name = $('#sh-name').value.trim() || 'Ticketshop'; const su = $('#sh-start').value.trim(); if (su && !safeUrl(su)) return formErr($('#sh-form'), 'Der Link zum Shop muss mit https:// beginnen.'); ts.url = su; }
+      const ok = await save(async () => { await fs.collection('projects').doc(projekt.id).update({ ticketshop:ts }); if (e) await db.doc('events/' + e.id).update({ shopUrl:u }); }, 'Gespeichert');
+      if (ok) { projekt.ticketshop = ts; closeSheet(); render(); }
+    };
+  };
+  zeichne();
 }
 let XLSX_P = null;
 const ladeSkript = src => new Promise((ok, f) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = f; document.head.appendChild(s); });
@@ -2171,19 +2204,22 @@ async function ekImport(e, file){
     if (!window.XLSX) { XLSX_P = XLSX_P || ladeSkript('vendor/xlsx.mini.min.js'); await XLSX_P; }
     const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type:'array' });
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:false, defval:'' });
-    const hi = rows.findIndex(r => r.some(c => /barcode|ticketnummer|ticket-?nr/i.test(String(c))));
-    if (hi < 0) { toast('In der Datei wurde keine Spalte „Barcode“ gefunden.'); return; }
-    const H = rows[hi].map(c => String(c).toLowerCase()), col = re => H.findIndex(c => re.test(c));
-    const cB = col(/barcode|ticketnummer|ticket-?nr/), cS = col(/status/), cK = col(/bereich|kategorie|ticketart/), cK2 = col(/preisstufe/), cP = H.findIndex(c => /preis|price|betrag/.test(c) && !/stufe|kategorie/.test(c));
+    // Spalte mit dem Code – je nach Shop „Barcode“, „Ticketcode“, „Secret“, „Ticket ID“ …
+    const CODE_RE = [/barcode/i, /ticket.?code|ticketcode/i, /ticketnummer|ticket-?nr|ticket.?number/i, /^secret$|geheimnis/i, /ticket.?id/i, /^code$|^qr/i];
+    let hi = -1, cB = -1;
+    for (const re of CODE_RE) { hi = rows.slice(0, 30).findIndex(r => r.some(c => re.test(String(c).trim()))); if (hi >= 0) { cB = rows[hi].findIndex(c => re.test(String(c).trim())); break; } }
+    if (hi < 0) { toast('In der Datei wurde keine Spalte mit Barcode oder Ticketcode gefunden.'); return; }
+    const H = rows[hi].map(c => String(c).toLowerCase().trim()), col = re => H.findIndex(c => re.test(c));
+    const cS = col(/status/), cK = col(/bereich|kategorie|ticketart|ticket.?typ|ticket.?type|produkt|product|tarif|^item|artikel/), cK2 = col(/preisstufe/), cP = H.findIndex(c => /preis|price|betrag|amount|paid|bezahlt/.test(c) && !/stufe|kategorie|currency|währung/.test(c));
     const T = {}; let weg = 0;
     rows.slice(hi + 1).forEach(r => {
       const code = ekId(r[cB]); if (!code) return;
-      if (cS >= 0 && /storn|cancel|ungültig|invalid|erstatt|refund|gesperrt/i.test(String(r[cS]))) { weg++; return; }
+      if (cS >= 0 && /storn|cancel|ungültig|invalid|erstatt|refund|gesperrt|void|abgelehnt|declined/i.test(String(r[cS]))) { weg++; return; }
       T[code] = [[cK >= 0 ? r[cK] : '', cK2 >= 0 ? r[cK2] : ''].map(q => String(q).trim()).filter(Boolean).join(' · ').slice(0, 60), cP >= 0 ? (num(String(r[cP]).replace(/[^\d,.-]/g, '')) || 0) : 0];
     });
     const n = Object.keys(T).length;
     if (!n) { toast('Keine gültigen Tickets in der Datei.'); return; }
-    if (await save(() => fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:(e.einlassEmails || []).map(q => String(q).toLowerCase()), tickets:T, ticketsStand:Date.now() }, { merge:true }), n + ' Tickets importiert' + (weg ? ' (' + weg + ' storniert übersprungen)' : ''))) logA('hat die Eventim-Ticketliste importiert: ' + n + ' Tickets (' + (e.name || 'Event') + ')', e.id);
+    if (await save(() => fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:(e.einlassEmails || []).map(q => String(q).toLowerCase()), tickets:T, ticketsStand:Date.now() }, { merge:true }), n + ' Tickets importiert' + (weg ? ' (' + weg + ' storniert übersprungen)' : ''))) logA('hat die Ticketliste (' + shopInfo().name + ') importiert: ' + n + ' Tickets (' + (e.name || 'Event') + ')', e.id);
   } catch (x) { console.warn(x); toast('Die Datei konnte nicht gelesen werden.'); }
 }
 // Ticketliste beim Import komplett ersetzen (alte Barcodes raus)
@@ -2262,7 +2298,7 @@ document.addEventListener('click', ev => {
   else if (a === 'arten' && k.e) ekArtenForm(k.e);
   else if (a === 'liste-weg' && k.e) {
     const FV = firebase.firestore.FieldValue, alt = { tickets:k.x.tickets, ticketsStand:k.x.ticketsStand || Date.now() };
-    save(() => fs.collection('einlass').doc(k.fid).update({ tickets:FV.delete(), ticketsStand:FV.delete() })).then(ok => { if (ok) { logA('hat die Eventim-Ticketliste gelöscht (' + (k.e.name || 'Event') + ')', k.e.id); undoToast('Ticketliste gelöscht', () => fs.collection('einlass').doc(k.fid).update(alt)); } });
+    save(() => fs.collection('einlass').doc(k.fid).update({ tickets:FV.delete(), ticketsStand:FV.delete() })).then(ok => { if (ok) { logA('hat die Ticketliste gelöscht (' + (k.e.name || 'Event') + ')', k.e.id); undoToast('Ticketliste gelöscht', () => fs.collection('einlass').doc(k.fid).update(alt)); } });
   }
   else if (a === 'shop' && k.e) ekShopForm(k.e);
   else if (a === 'abr' && k.e) {
@@ -2628,7 +2664,7 @@ function openEinstellungen(){
     [['system', 'Wie das Gerät'], ['hell', 'Hell'], ['dunkel', 'Dunkel']].map(m => '<button type="button" role="radio" data-modus-w="' + m[0] + '" aria-checked="' + (modus === m[0]) + '" aria-pressed="' + (modus === m[0]) + '">' + m[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 22px">Ansicht und Aussehen gelten nur auf diesem Gerät.</p>' +
     '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">3 · Team & Zugänge</p><ul class="rows" style="margin:0 0 8px">' +
-    [['ez-profil', 'Mitglieder & Projekt', 'Wer im Projekt mitarbeitet, Projekt wechseln'], ['ez-team', 'Team für Aufgaben', 'Namen zum Zuweisen, „Wer bin ich?“'], ['ez-loc', 'Location-Zugang', 'Betreiber sehen Line-up, Flyer, Technik'], ['ez-einlass', 'Einlass-Team', 'Pro Event im Abend-Modus einladen']]
+    [['ez-profil', 'Mitglieder & Projekt', 'Wer im Projekt mitarbeitet, Projekt wechseln'], ['ez-team', 'Team für Aufgaben', 'Namen zum Zuweisen, „Wer bin ich?“'], ['ez-loc', 'Location-Zugang', 'Betreiber sehen Line-up, Flyer, Technik'], ['ez-einlass', 'Einlass-Team', 'Pro Event im Abend-Modus einladen'], ['ez-shop', 'Ticketshop', 'Welchen Shop ihr nutzt: EVENTIM.Light, pretix, Eventbrite, RA …']]
       .map(x => '<li><button type="button" class="row" data-act="' + x[0] + '"><span class="row-main"><span class="row-title">' + x[1] + '</span><span class="row-sub">' + x[2] + '</span></span>' + I.right + '</button></li>').join('') + '</ul>' +
     '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
   document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
@@ -2731,6 +2767,11 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08o', titel:'Ticketshop wählen', punkte:[
+    'Jedes Kollektiv wählt jetzt seinen Ticketshop: EVENTIM.Light, pretix, Eventbrite, Ticket Tailor, RA, Shotgun, DICE, tixforgigs, TICKETINO oder einen eigenen',
+    'Einstellungen → Ticketshop oder im Abend-Modus bei Einlass & Kasse → „Ticketshop wählen“',
+    'Der Ticketlisten-Import erkennt jetzt auch die Spalten anderer Shops (Barcode, Ticketcode, Secret, Ticket ID …)'
+  ]},
   { v:'2026-11-08n', titel:'Mitarbeiter und Team-Chat', punkte:[
     'Neues Profil „Mitarbeiter“: Bar, Technik, Awareness & Co. kommen nur per Einladung rein und sehen den Abend-Modus ihres Events – Running Order, wer gerade spielt, wichtige Nummern, Infos fürs Team',
     'Team-Chat für den Abend: Orga und Mitarbeiter:innen schreiben zusammen – im Abend-Modus unter „Team-Chat“',
@@ -5369,6 +5410,7 @@ document.addEventListener('click', ev => {
     const a = z.dataset.act; closeSheet();
     if (a === 'ez-profil') openProfil(); else if (a === 'ez-team') openTeam();
     else if (a === 'ez-loc') { openProfil(); setTimeout(() => { const x = $('#pf-loc'); if (x) x.scrollIntoView({ block:'center' }); }, 200); }
+    else if (a === 'ez-shop') ekShopForm(null);
     else if (a === 'ez-einlass') { const e = S.events.find(x => istHeute(x)) || upEvents()[0]; if (e) { location.hash = '#abend-' + e.id; toast('Oben bei „Einlass & Kasse“: Einlass-Team einladen'); } else toast('Leg zuerst ein Event an.'); }
   }
 });
