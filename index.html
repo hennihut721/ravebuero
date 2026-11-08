@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><script>try{var _m=localStorage.getItem('va:modus'),_f=localStorage.getItem('va:farbe');if(_m==='hell'||_m==='dunkel')document.documentElement.setAttribute('data-theme',_m==='hell'?'light':'dark');if(_f&&_f!=='pink')document.documentElement.setAttribute('data-farbe',_f);}catch(e){}</script><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>RaveBüro</title>
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#091C41"><meta name="apple-mobile-web-app-title" content="RaveBüro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,6 +61,22 @@
   color-scheme:dark;
 }
 
+/* Farbthemen (Einstellungen) */
+:root[data-farbe="lila"]{--pink:#7A3FD6; --pink-ink:#FFFFFF; --pink-soft:#EDE3FB;}
+@media (prefers-color-scheme: dark){:root[data-farbe="lila"]:not([data-theme="light"]){--pink:#B48CFF; --pink-ink:#160A2A; --pink-soft:#2B1F4A;}}
+:root[data-theme="dark"][data-farbe="lila"]{--pink:#B48CFF; --pink-ink:#160A2A; --pink-soft:#2B1F4A;}
+:root[data-farbe="gruen"]{--pink:#0E8A5F; --pink-ink:#FFFFFF; --pink-soft:#D7F2E6;}
+@media (prefers-color-scheme: dark){:root[data-farbe="gruen"]:not([data-theme="light"]){--pink:#39E6A0; --pink-ink:#04140D; --pink-soft:#0F3326;}}
+:root[data-theme="dark"][data-farbe="gruen"]{--pink:#39E6A0; --pink-ink:#04140D; --pink-soft:#0F3326;}
+:root[data-farbe="orange"]{--pink:#C9500C; --pink-ink:#FFFFFF; --pink-soft:#FCE3D3;}
+@media (prefers-color-scheme: dark){:root[data-farbe="orange"]:not([data-theme="light"]){--pink:#FF8A3D; --pink-ink:#1F0C02; --pink-soft:#3E220F;}}
+:root[data-theme="dark"][data-farbe="orange"]{--pink:#FF8A3D; --pink-ink:#1F0C02; --pink-soft:#3E220F;}
+:root[data-farbe="ozean"]{--pink:#0A7AA3; --pink-ink:#FFFFFF; --pink-soft:#D6EEF7;}
+@media (prefers-color-scheme: dark){:root[data-farbe="ozean"]:not([data-theme="light"]){--pink:#3CC8F0; --pink-ink:#021821; --pink-soft:#0E2F3B;}}
+:root[data-theme="dark"][data-farbe="ozean"]{--pink:#3CC8F0; --pink-ink:#021821; --pink-soft:#0E2F3B;}
+:root[data-farbe="rot"]{--pink:#C8102E; --pink-ink:#FFFFFF; --pink-soft:#F9DCE1;}
+@media (prefers-color-scheme: dark){:root[data-farbe="rot"]:not([data-theme="light"]){--pink:#FF5C70; --pink-ink:#22050A; --pink-soft:#3F1419;}}
+:root[data-theme="dark"][data-farbe="rot"]{--pink:#FF5C70; --pink-ink:#22050A; --pink-soft:#3F1419;}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
@@ -640,7 +656,7 @@ button.lg[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 
 <header class="top"><div class="top-in">
   <a class="mark" href="#events">RaveBüro</a>
-  <span style="display:flex;align-items:center;gap:10px"><span id="conn" class="conn wait"><span class="dot"></span><span id="conn-t">Verbinde …</span></span><button class="btn-ghost btn" id="fb-prof" title="Profil & Mitglieder" onclick="openProfil()" hidden><span class="av" id="fb-av" style="width:22px;height:22px;font-size:11px;line-height:22px;margin-right:6px">·</span>Profil</button></span>
+  <span style="display:flex;align-items:center;gap:10px"><span id="conn" class="conn wait"><span class="dot"></span><span id="conn-t">Verbinde …</span></span><button class="btn-ghost btn" id="fb-set" title="Einstellungen" aria-label="Einstellungen" onclick="openEinstellungen()" style="padding:6px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button><button class="btn-ghost btn" id="fb-prof" title="Profil & Mitglieder" onclick="openProfil()" hidden><span class="av" id="fb-av" style="width:22px;height:22px;font-size:11px;line-height:22px;margin-right:6px">·</span>Profil</button></span>
 </div></header>
 
 <main id="view" class="wrap"></main>
@@ -1148,6 +1164,29 @@ function renderProfil(msg, err){
   $('#pf-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
 }
 window.openProfil = openProfil;
+/* ---------- Einstellungen (Zahnrad) – gelten für dieses Gerät ---------- */
+const FARBEN = [['pink', 'Pink', '#D61E70', '#FF519C'], ['lila', 'Lila', '#7A3FD6', '#B48CFF'], ['gruen', 'Neon-Grün', '#0E8A5F', '#39E6A0'], ['orange', 'Sonnenuntergang', '#C9500C', '#FF8A3D'], ['ozean', 'Ozean', '#0A7AA3', '#3CC8F0'], ['rot', 'Rot', '#C8102E', '#FF5C70']];
+function themaSetzen(modus, farbe){
+  const r = document.documentElement;
+  if (modus === 'hell') r.setAttribute('data-theme', 'light'); else if (modus === 'dunkel') r.setAttribute('data-theme', 'dark'); else r.removeAttribute('data-theme');
+  if (farbe && farbe !== 'pink') r.setAttribute('data-farbe', farbe); else r.removeAttribute('data-farbe');
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', getComputedStyle(r).getPropertyValue('--paper').trim() || '#091C41');
+}
+function openEinstellungen(){
+  const modus = LS.get('modus') || 'system', farbe = LS.get('farbe') || 'pink';
+  const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+  showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
+    '<h3 style="margin:0 0 8px">Farbthema</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:0 0 18px">' +
+    FARBEN.map(f => '<button type="button" class="chip" data-farbe-w="' + f[0] + '" aria-pressed="' + (farbe === f[0]) + '" style="justify-content:flex-start;gap:8px;padding:10px 12px"><span style="width:18px;height:18px;border-radius:50%;background:' + (dunkel ? f[3] : f[2]) + ';flex:none"></span>' + f[1] + '</button>').join('') + '</div>' +
+    '<h3 style="margin:0 0 8px">Hell oder dunkel</h3><div class="seg" role="radiogroup" style="margin:0 0 18px">' +
+    [['system', 'Wie das Gerät'], ['hell', 'Hell'], ['dunkel', 'Dunkel']].map(m => '<button type="button" role="radio" data-modus-w="' + m[0] + '" aria-checked="' + (modus === m[0]) + '" aria-pressed="' + (modus === m[0]) + '">' + m[1] + '</button>').join('') + '</div>' +
+    '<p class="hint">Die Einstellungen gelten nur auf diesem Gerät.</p>' +
+    '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>');
+  document.querySelectorAll('[data-farbe-w]').forEach(b => b.onclick = () => { LS.set('farbe', b.dataset.farbeW); themaSetzen(LS.get('modus') || 'system', b.dataset.farbeW); openEinstellungen(); });
+  document.querySelectorAll('[data-modus-w]').forEach(b => b.onclick = () => { LS.set('modus', b.dataset.modusW); themaSetzen(b.dataset.modusW, LS.get('farbe') || 'pink'); openEinstellungen(); });
+}
+window.openEinstellungen = openEinstellungen;
+themaSetzen(LS.get('modus') || 'system', LS.get('farbe') || 'pink');
 // Die früheren Vorlagen einmalig als eigene Setups ins Verzeichnis legen (feste IDs, damit nichts doppelt entsteht)
 async function techSaat(){
   try {
