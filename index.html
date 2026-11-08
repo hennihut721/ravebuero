@@ -1285,6 +1285,15 @@ async function openProfil(){
   if (!db || !user || !projekt) return;
   renderProfil();
 }
+// Profil: Location-Betreiber einladen und verwalten (wie Mitglieder, aber nur mit freigegebenen Infos)
+function profilBetreiber(){
+  const V = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')), A = V.filter(v => fgMails(v).length);
+  let h = '<h3 style="margin:0 0 4px">Location-Betreiber</h3><p class="hint" style="margin:0 0 12px">Betreiber sind keine Mitglieder: Sie sehen nur eure Events an ihrer Location – Line-up, Flyer, Technik, je nachdem was du freigibst. Keine Kosten, keine Aufgaben, kein eigenes Projekt. Sie kommen nur über den Einladungslink rein.</p>';
+  if (V.length) h += '<div style="display:flex;gap:8px;margin:0 0 8px"><select class="inp" id="pf-loc" aria-label="Location wählen" style="flex:1;font-family:var(--f-body)"><option value="">Location wählen …</option>' + V.map(v => '<option value="' + esc(v.id) + '">' + esc(v.name) + (fgMails(v).length ? ' (Zugang aktiv)' : '') + '</option>').join('') + '</select><button type="button" class="btn btn-primary" id="pf-loc-go">' + I.plus + 'Einladen</button></div>';
+  else h += '<p class="muted" style="margin:0 0 8px">Leg zuerst eine Location im Verzeichnis an.</p><button type="button" class="btn" data-act="close-sheet" onclick="location.hash=\'#verzeichnis\'" style="margin:0 0 8px">Zum Verzeichnis</button>';
+  h += '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + (A.length ? A.map(v => '<li><div class="row" style="cursor:default"><span class="av">' + esc(initial(v.name)) + '</span><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + esc(fgMails(v).join(', ')) + ' · ' + fgEvents(v).length + (fgEvents(v).length === 1 ? ' Event' : ' Events') + ' sichtbar</span></span><button type="button" class="btn btn-ghost" data-vz="partner" data-id="' + esc(v.id) + '">Verwalten</button></div></li>').join('') : '<li><p class="muted" style="margin:10px 0">Noch keine Betreiber eingeladen.</p></li>') + '</ul>';
+  return h;
+}
 function renderProfil(msg, err){
   const me = meineMail(), M = (projekt.members || []).slice().sort();
   const pref = fs.collection('projects').doc(projekt.id);
@@ -1300,12 +1309,14 @@ function renderProfil(msg, err){
     '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + M.map(m =>
       '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span>' + (m === projekt.owner ? '<span class="row-sub">hat das Projekt erstellt</span>' : '') + '</span>' +
       (m === me || m === projekt.owner ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
+    profilBetreiber() +
     (me === ABGLEICH_MAIL ? '<h3 style="margin:0 0 4px">Sofort-Abgleich</h3><p class="hint" style="margin:0 0 8px">Für den Knopf „Abgleich“ auf der Startseite der Android-App, damit er den Abgleich direkt startet, ohne dass sich Claude öffnet: Unter <a href="https://claude.ai/code/routines" target="_blank" rel="noopener">claude.ai/code/routines</a> die Aufgabe „RaveBüro: Abgleich“ öffnen → „Add another trigger“ → „API“ → „Generate token“. Adresse und Schlüssel hier einfügen. Nur du kannst sie lesen.</p>' +
       '<form id="pf-key" novalidate style="display:grid;gap:8px;margin:0 0 18px"><input class="inp" id="pf-key-url" type="url" placeholder="https://api.anthropic.com/v1/claude_code/routines/…/fire" aria-label="Adresse des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><input class="inp" id="pf-key-tok" type="password" placeholder="sk-ant-oat01-…" aria-label="Schlüssel des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><div style="display:flex;gap:8px;align-items:center"><button class="btn" type="submit">Speichern</button><span class="hint" id="pf-key-st"></span></div></form>' : '') +
     (projekt.id === 'ravebuero' ? '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p><button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' : '') +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
   showSheet(h);
   const FV = firebase.firestore.FieldValue;
+  if ($('#pf-loc-go')) $('#pf-loc-go').onclick = () => { const v = (S.venues || []).find(x => x.id === $('#pf-loc').value); if (!v) { $('#pf-loc').focus(); return; } partnerSheet(v); };
   $('#pf-form').onsubmit = async ev => {
     ev.preventDefault();
     const m = $('#pf-mail').value.trim().toLowerCase();
