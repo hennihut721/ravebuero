@@ -1059,7 +1059,7 @@ async function projektWahl(msg, err){
   $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Projekte …';
   let L = [];
   try { L = await meineProjekte(); } catch (e) { msg = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); err = true; }
-  const F = await meineFreigaben(), nurPartner = await istPartnerKonto();
+  const F = await meineFreigaben(), nurPartner = await istPartnerKonto() || !!LS.get('zugang');
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
   v.innerHTML = '<section class="vh"><h1>' + (nurPartner && !L.length ? 'Freigaben' : 'Projekte') + '</h1></section>' +
@@ -1125,6 +1125,9 @@ const FG = { bekannt:null, letzt:'', t:0 };
 const PV = { unsub:null, doc:null, flyer:{} };
 (function(){ try { const z = new URLSearchParams(location.search).get('zugang'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('zugang', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
 const fgId = v => projekt.id + '_' + v.id;
+// Events an dieser Location (auch „Galerie Kurzweil, Darmstadt“ passt zu „Galerie Kurzweil“), ohne Ideen und Absagen
+const fgOrt = (ev, v) => { const a = (ev || '').trim().toLowerCase(), b = (v || '').trim().toLowerCase(); return !!a && !!b && a.indexOf(b) >= 0; };
+const fgEvents = v => S.events.filter(e => fgOrt(e.venue, v.name) && isDate(e.date) && e.date >= addDays(today(), -2) && e.status !== 'abgesagt' && e.status !== 'idee').sort((a, b) => a.date.localeCompare(b.date));
 const fgLink = v => APP_URL + '?zugang=' + encodeURIComponent(fgId(v));
 const fgMails = v => (Array.isArray(v.partnerEmails) ? v.partnerEmails : []).map(x => String(x).trim().toLowerCase()).filter(Boolean);
 const fgFelder = v => { const f = v.partnerFelder || {}; const o = {}; PARTNER_FELDER.forEach(x => { o[x[0]] = f[x[0]] === undefined ? x[2] : !!f[x[0]]; }); return o; };
@@ -1147,8 +1150,7 @@ async function fgSync(){
   for (const v of V) {
     const fid = fgId(v), fel = fgFelder(v), alt = FG.bekannt[fid] || {}, altFly = {};
     (alt.events || []).forEach(x => { altFly[x.id] = x.flyer || ''; });
-    const vn = (v.name || '').trim().toLowerCase();
-    const E = S.events.filter(e => (e.venue || '').trim().toLowerCase() === vn && isDate(e.date) && e.date >= addDays(t, -2) && e.status !== 'abgesagt' && e.status !== 'idee').sort((a, b) => a.date.localeCompare(b.date));
+    const E = fgEvents(v);
     const events = E.map(e => {
       const fl = S.floors.filter(f => f.eventId === e.id), flN = id => (fl.find(f => f.id === id) || {}).name || '';
       const L = S.lineup.filter(l => l.eventId === e.id && l.status === 'zugesagt').sort((a, b) => fgZeit(a.start) - fgZeit(b.start));
@@ -1180,8 +1182,12 @@ function partnerSheet(v){
     '<p class="muted" style="margin:0 0 14px">Der Betreiber bekommt ein eigenes, schlankes Profil: Er sieht nur eure Events in ' + esc(v.name) + ' mit den Infos, die du hier anhakst – keine Kosten, Aufgaben oder sonstigen Daten. Ein eigenes Projekt kann er nicht anlegen.</p>' +
     '<form class="f" id="pz-form" novalidate>' +
     field('pz-mail', 'Google-Adressen der Betreiber', '<textarea id="pz-mail" rows="2" maxlength="600" placeholder="eine Adresse pro Zeile, z. B. booking@club.de">' + esc(M.join('\n')) + '</textarea>') +
+    '<p class="hint" style="margin:-6px 0 12px">Genau die Adresse, mit der sich der Betreiber bei Google anmeldet – schon ein Tippfehler sperrt ihn aus.</p>' +
     '<div class="field"><label>Was sie sehen</label><p class="hint" style="margin:0 0 6px">Datum, Name und Uhrzeit der Events sehen sie immer.</p>' + PARTNER_FELDER.map(x => '<label class="check"><input type="checkbox" data-pzf="' + x[0] + '"' + (fel[x[0]] ? ' checked' : '') + '> ' + x[1] + '</label>').join('') + '</div>' +
     field('pz-kontakt', 'Euer Kontakt für die Location', '<input id="pz-kontakt" maxlength="200" autocomplete="off" placeholder="z. B. Henrik, 0170 …" value="' + esc(v.partnerKontakt || '') + '">') +
+    (function(){ const E = fgEvents(v), I = S.events.filter(e => fgOrt(e.venue, v.name) && e.status === 'idee' && isDate(e.date) && e.date >= today());
+      return '<div class="field"><label>Das sieht der Betreiber gerade</label>' + (E.length ? '<p style="margin:0">' + E.map(e => esc(e.name || 'Event') + ' · ' + fmtDs(e.date)).join('<br>') + '</p>' : '<p class="hint" style="margin:0;color:var(--warn)">Noch kein Event. Trag bei einem Event als Location „' + esc(v.name) + '“ ein und setz den Status mindestens auf „In Planung“.</p>') +
+        (I.length ? '<p class="hint" style="margin:6px 0 0">Noch nicht sichtbar (Status „Idee“): ' + I.map(e => esc(e.name || 'Event')).join(', ') + '</p>' : '') + '</div>'; })() +
     '<p class="err" id="pz-err" hidden></p>' +
     '<div class="actions">' + (M.length ? '<button type="button" class="btn btn-ghost" id="pz-aus" style="margin-right:auto;color:var(--bad)">Zugang beenden</button>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>' +
     (M.length ? '<section class="panel" style="margin-top:18px"><div class="panel-h"><h2>Einladungslink</h2></div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px;word-break:break-all">' + esc(fgLink(v)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="pz-copy">Kopieren</button><button class="btn btn-sm" id="pz-wa">WhatsApp</button><button class="btn btn-sm" id="pz-mailto">E-Mail</button></div><p class="hint" style="margin:10px 0 0">Nur über diesen Link kommen Betreiber in die App. Sie melden sich mit der Google-Adresse von oben an.</p></div></section>' : ''));
@@ -1217,6 +1223,17 @@ function partnerSheet(v){
       if (mails.length && !fgMails(v).length) partnerSheet(nv); else closeSheet();
     }
   };
+}
+// Einladungslink geöffnet, aber mit einem Konto, das für diese Location nicht eingetragen ist
+function zugangFalsch(hatProjekte){
+  stopProjekt();
+  document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
+  $('#conn').className = 'conn bad'; $('#conn-t').textContent = 'Kein Zugang';
+  $('#view').innerHTML = '<div class="empty" style="margin-top:30px"><h3>Diese Einladung passt nicht zu deinem Konto</h3><p>Du bist angemeldet als <strong>' + esc(meineMail()) + '</strong>. Für diese Adresse ist bei dieser Location nichts freigegeben.</p><p>Melde dich mit der Google-Adresse an, an die die Einladung ging – oder bitte den Veranstalter, genau <strong>' + esc(meineMail()) + '</strong> als Betreiber-Adresse einzutragen. Danach öffnest du den Link einfach noch einmal.</p>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-primary" id="zf-andere">Mit anderem Konto anmelden</button><button class="btn" id="zf-neu">Erneut prüfen</button>' + (hatProjekte ? '<button class="btn btn-ghost" id="zf-proj">Zu meinen Projekten</button>' : '') + '</div></div>';
+  $('#zf-andere').onclick = () => firebase.auth().signOut().then(() => location.reload());
+  $('#zf-neu').onclick = () => location.reload();
+  if (hatProjekte) $('#zf-proj').onclick = () => { LS.set('zugang', ''); projektWahl(); };
 }
 // Ansicht für Location-Betreiber – nur Lesen
 function partnerView(fid){
@@ -1420,9 +1437,10 @@ async function init(){
     try { await umzug(); } catch (e) { console.error('Umzug', e); }
     let L = [];
     try { L = await meineProjekte(); } catch (e) { projektWahl('Projekte konnten nicht geladen werden: ' + (e && e.message || e), true); return; }
-    const F = await meineFreigaben(), z = LS.get('zugang');
+    const F = await meineFreigaben(), z = LS.get('zugang'), partner = await istPartnerKonto();
     if (z && F.some(f => f.id === z)) { partnerView(z); return; }
-    if (!L.length && F.length) { partnerView((F.find(f => f.id === LS.get('pzuletzt')) || F[0]).id); return; }
+    if (z) { zugangFalsch(L.length > 0); return; } // Einladungslink, aber dieses Konto ist nicht eingeladen
+    if (F.length && (partner || !L.length)) { partnerView((F.find(f => f.id === LS.get('pzuletzt')) || F[0]).id); return; }
     const letztes = L.find(p => p.id === LS.get('projekt'));
     if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
   });
