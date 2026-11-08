@@ -608,6 +608,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 .preset{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}
 
 .pv-floor{margin:0 0 10px}.pv-floor-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 14px 2px;padding:6px 10px;border-radius:8px;background:var(--sunk);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+.nm-l{display:grid;gap:8px;margin:0 0 12px}.nm{max-width:86%;justify-self:start;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--sunk);line-height:1.4;overflow-wrap:anywhere}.nm.ich{justify-self:end;border-radius:14px 14px 4px 14px;background:var(--blue-soft)}.nm.neu{box-shadow:inset 0 0 0 2px var(--pink)}.nm-w{font-size:12px;color:var(--ink-3);margin:0 0 2px}.nm-in{display:grid;gap:8px;justify-items:start}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -1198,6 +1199,7 @@ function stopProjekt(){
   try { FG_STOP(); } catch (e) {}
   try { ekStop(); } catch (e) {}
   if (PV.unsub) { try { PV.unsub(); } catch (e) {} PV.unsub = null; }
+  if (PV.mUnsub) { try { PV.mUnsub(); } catch (e) {} PV.mUnsub = null; } PV.fid = null; PV.msgs = [];
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
   projekt = null; db = null;
@@ -1226,7 +1228,7 @@ function oeffneProjekt(p){
 const APP_URL = 'https://hennihut721.github.io/ravebuero/';
 const PARTNER_FELDER = [['lineup', 'Line-up & Running Order', true], ['flyer', 'Flyer', true], ['technik', 'Technik & Floors', true], ['gaeste', 'Gästeliste', false]];
 const FG_COLS = ['events', 'lineup', 'floors', 'mkmedia', 'venues'];
-const FG_STOP = () => { (FG.hoer || []).forEach(u => { try { u(); } catch (e) {} }); FG.hoer = []; FG.hoerIds = null; S.rm = {}; if (S.elUnsub) { try { S.elUnsub(); } catch (e) {} S.elUnsub = null; S.elFid = null; } };
+const FG_STOP = () => { (FG.hoer || []).forEach(u => { try { u(); } catch (e) {} }); FG.hoer = []; FG.hoerIds = null; S.rm = {}; FG.msgDocs = {}; if (S.elUnsub) { try { S.elUnsub(); } catch (e) {} S.elUnsub = null; S.elFid = null; } };
 const FG = { bekannt:null, letzt:'', t:0 };
 const PV = { unsub:null, doc:null, flyer:{} };
 (function(){ try { const z = new URLSearchParams(location.search).get('zugang'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('zugang', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
@@ -1377,7 +1379,8 @@ function partnerView(fid){
   stopProjekt(); LS.set('pzuletzt', fid);
   document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
   $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Lädt …';
-  PV.doc = null; PV.flyer = {};
+  PV.doc = null; PV.flyer = {}; PV.fid = fid; PV.msgs = [];
+  PV.mUnsub = fs.collection('freigaben').doc(fid).collection('nachrichten').onSnapshot(sn => { PV.msgs = sn.docs.map(d => Object.assign({ id:d.id }, d.data())).sort((a, b) => (a.at || 0) - (b.at || 0)); if (PV.doc) partnerRender(fid); }, () => {});
   PV.unsub = fs.collection('freigaben').doc(fid).onSnapshot(d => {
     if (!d.exists) { PV.doc = null; partnerRender(fid, 'Dieser Zugang wurde beendet.'); return; }
     PV.doc = d.data(); partnerRender(fid);
@@ -1408,9 +1411,10 @@ function partnerRender(fid, fehler){
       if (fel.gaeste) { const G = e.gaeste || [], n = G.reduce((s, g) => s + g.n, 0); h += '<h3 style="margin:14px 14px 6px">Gästeliste' + (n ? ' · ' + n + ' Plätze' : '') + '</h3>' + (G.length ? G.map(g => '<p style="margin:0 14px 10px"><strong>' + esc(g.dj) + '</strong> · ' + g.n + ' Plätze' + (g.namen.length ? '<br>' + g.namen.map(esc).join(', ') : '') + '</p>').join('') : '<p class="muted" style="margin:0 14px 12px">Noch keine Einträge.</p>'); }
       // Rückmeldung an die Veranstalter
       const r = (x.rm || {})[e.id] || {}, sig = roSig(e), best = r.ok && r.okSig === sig;
-      h += '<div style="border-top:1px solid var(--line);margin:8px 0 0;padding:12px 14px 4px"><h3 style="margin:0 0 8px">Eure Rückmeldung</h3>' +
+      const ML = (r.text && r.textAt ? [{ von:'location', wer:x.ort || 'Ihr', text:r.text, at:r.textAt }] : []).concat((PV.msgs || []).filter(m => m.eventId === e.id));
+      h += '<div style="border-top:1px solid var(--line);margin:8px 0 0;padding:12px 14px 4px"><h3 style="margin:0 0 8px">Running Order</h3>' +
         (best ? '<p class="ok-t" style="margin:0 0 10px">✓ Ihr habt Running Order und Technik am ' + fmtDs(isoVon(r.ok)) + ' bestätigt.</p>' : (r.ok ? '<p class="due-soon" style="margin:0 0 8px">Seit eurer Bestätigung hat sich etwas geändert.</p>' : '') + '<button class="btn btn-primary btn-sm" data-pv-ok="' + esc(e.id) + '" style="margin:0 0 10px">Passt so – Running Order und Technik bestätigen</button>') +
-        '<textarea class="inp" id="pv-t-' + esc(e.id) + '" rows="2" maxlength="1000" placeholder="Anmerkung an die Veranstalter, z. B. zur Technik" style="width:100%;font-family:var(--f-body)">' + esc(r.text || '') + '</textarea><button class="btn btn-sm" data-pv-txt="' + esc(e.id) + '" style="margin:8px 0 6px">Senden</button>' + (r.textAt ? '<span class="muted small" style="margin-left:8px">zuletzt gesendet ' + wann(r.textAt) + '</span>' : '') + '</div>';
+        '<h3 style="margin:10px 0 8px">Nachrichten mit ' + esc(x.projekt || 'den Veranstaltern') + '</h3>' + nmThread(ML, 'location') + nmEingabe(fid, e.id, e.name, 'Nachricht an die Veranstalter, z. B. zur Technik') + '</div>';
       h += '<div style="height:6px"></div></section>';
     });
     if (x.stand) { const d = new Date(x.stand); h += '<p class="muted small">Stand: ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '. ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' Uhr</p>'; }
@@ -1424,7 +1428,7 @@ function partnerRender(fid, fehler){
   if (!x) return;
   const ref = fs.collection('freigaben').doc(fid);
   v.querySelectorAll('[data-pv-ok]').forEach(b => b.onclick = async () => { const eid = b.getAttribute('data-pv-ok'), ev = (x.events || []).find(q => q.id === eid); if (!ev) return; b.disabled = true; try { await ref.update({ ['rm.' + eid + '.ok']:Date.now(), ['rm.' + eid + '.okSig']:roSig(ev) }); toast('Danke! Die Veranstalter sehen eure Bestätigung.'); } catch (e) { b.disabled = false; toast('Hat nicht geklappt.'); } });
-  v.querySelectorAll('[data-pv-txt]').forEach(b => b.onclick = async () => { const eid = b.getAttribute('data-pv-txt'), t = (document.getElementById('pv-t-' + eid) || {}).value || ''; b.disabled = true; try { await ref.update({ ['rm.' + eid + '.text']:t.trim().slice(0, 1000), ['rm.' + eid + '.textAt']:Date.now() }); toast('Gesendet.'); } catch (e) { toast('Hat nicht geklappt.'); } b.disabled = false; });
+  // Nachrichten: siehe nmSenden
 }
 /* ---------- Organisation: Ablauf, Booking, Abend-Modus, Einlass, Abrechnung, Rückblick, Aufgaben, Verlauf, Ansichten ---------- */
 // Wer bin ich im Team? (Person, deren Google-Adresse zu meinem Konto passt)
@@ -1580,10 +1584,11 @@ function fgHoeren(){
   const V = (S.venues || []).filter(v => fgMails(v).length), ids = V.map(fgId).sort().join(',');
   if (FG.hoerIds === ids) return;
   (FG.hoer || []).forEach(u => { try { u(); } catch (e) {} });
-  FG.hoer = []; FG.hoerIds = ids; FG.rmDocs = {};
+  FG.hoer = []; FG.hoerIds = ids; FG.rmDocs = {}; FG.msgDocs = {};
   V.forEach(v => {
     const fid = fgId(v);
     try { FG.hoer.push(fs.collection('freigaben').doc(fid).onSnapshot(d => { FG.rmDocs[fid] = d.exists ? d.data() : null; rmAufbauen(); }, () => {})); } catch (e) {}
+    try { FG.hoer.push(fs.collection('freigaben').doc(fid).collection('nachrichten').onSnapshot(sn => { FG.msgDocs[fid] = sn.docs.map(d => Object.assign({ id:d.id, fid }, d.data())); nmLog(fid); scheduleRender(); }, () => {})); } catch (e) {}
   });
 }
 function rmAufbauen(){
@@ -1606,15 +1611,81 @@ async function logOnce(id, text, eventId, at){
   if (LOG_GESEHEN[id] || !db || S.ro) return; LOG_GESEHEN[id] = 1;
   try { const ref = db.collection('aktivitaet').doc(id); const d = await ref.get(); if (!d.exists) await ref.set({ text, wer:'Location', mail:'', eventId, at:at || Date.now() }); } catch (e) {}
 }
+/* ===== Nachrichten mit den Location-Betreibern =====
+   freigaben/{fid}/nachrichten/{id}: { eventId, event, text, von:'location'|'team', wer, mail, at }
+   Alte Anmerkungen (rm.{event}.text) erscheinen als erste Nachricht. */
+const NM_ENTWURF = {};
+function nmAlle(){
+  const R = [];
+  Object.keys(FG.msgDocs || {}).forEach(fid => (FG.msgDocs[fid] || []).forEach(m => R.push(Object.assign({ ort:((FG.rmDocs || {})[fid] || {}).ort || '' }, m))));
+  Object.keys(FG.rmDocs || {}).forEach(fid => { const x = FG.rmDocs[fid]; if (!x) return; Object.keys(x.rm || {}).forEach(eid => { const r = x.rm[eid]; if (r && r.text && r.textAt) R.push({ id:'rm_' + eid, fid, ort:x.ort || '', eventId:eid, event:((x.events || []).find(q => q.id === eid) || {}).name || '', text:r.text, von:'location', wer:x.ort || 'Location', at:r.textAt }); }); });
+  return R.sort((a, b) => (a.at || 0) - (b.at || 0));
+}
+const nmGes = () => { try { return JSON.parse(LS.get('nachrG') || '{}') || {}; } catch (e) { return {}; } };
+const nmKey = eid => (projekt ? projekt.id : '') + '|' + eid;
+function nmGesehen(eids){ const g = nmGes(), t = Date.now(); eids.forEach(eid => { g[nmKey(eid)] = t; }); LS.set('nachrG', JSON.stringify(g)); }
+const nmNeu = m => m.von === 'location' && (m.at || 0) > (nmGes()[nmKey(m.eventId)] || 0);
+const nmUngelesen = eid => nmAlle().filter(m => nmNeu(m) && (!eid || m.eventId === eid)).length;
+function nmLog(fid){ (FG.msgDocs[fid] || []).forEach(m => { if (m.von === 'location' && m.at) logOnce('nm_' + m.id, (m.wer || 'Die Location') + ' schreibt: „' + String(m.text || '').slice(0, 120) + '“', m.eventId, m.at); }); }
+function nmThread(L, ich){
+  if (!L.length) return '<p class="muted small" style="margin:0 0 10px">Noch keine Nachrichten.</p>';
+  return '<div class="nm-l">' + L.map(m => '<div class="nm' + (m.von === ich ? ' ich' : '') + (m.neu ? ' neu' : '') + '"><div class="nm-w">' + esc(m.von === 'team' ? (m.wer || 'Team') : (m.wer || m.ort || 'Location')) + ' · ' + wann(m.at) + '</div>' + esc(m.text).replace(/\n/g, '<br>') + '</div>').join('') + '</div>';
+}
+function nmEingabe(fid, eid, ev, ph){
+  const k = fid + '|' + eid;
+  return '<div class="nm-in"><textarea class="inp" data-nm-k="' + esc(k) + '" rows="2" maxlength="2000" placeholder="' + esc(ph) + '" style="width:100%;font-family:var(--f-body)">' + esc(NM_ENTWURF[k] || '') + '</textarea><button class="btn btn-sm btn-primary" data-nm-send="' + esc(k) + '" data-nm-ev="' + esc(ev || '') + '">Senden</button></div>';
+}
+async function nmSenden(k, evName, von, wer, btn){
+  const [fid, eid] = k.split('|'), t = String(NM_ENTWURF[k] || '').trim();
+  if (!t) { toast('Schreib erst eine Nachricht.'); return; }
+  if (btn) btn.disabled = true;
+  try {
+    await fs.collection('freigaben').doc(fid).collection('nachrichten').add({ eventId:eid, event:evName || '', text:t.slice(0, 2000), von, wer:wer || '', mail:meineMail(), at:Date.now() });
+    delete NM_ENTWURF[k]; const ta = document.querySelector('[data-nm-k="' + CSS.escape(k) + '"]'); if (ta) ta.value = '';
+    toast('Gesendet.');
+    if (von === 'team') logA('hat der Location geschrieben: „' + t.slice(0, 80) + '“', eid);
+  } catch (e) { toast('Hat nicht geklappt' + (e && e.code === 'permission-denied' ? ' – keine Berechtigung.' : '.')); }
+  if (btn) btn.disabled = false;
+}
+document.addEventListener('input', ev => { const ta = ev.target.closest && ev.target.closest('[data-nm-k]'); if (ta) NM_ENTWURF[ta.getAttribute('data-nm-k')] = ta.value; });
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-nm-send]'); if (!b) return;
+  const k = b.getAttribute('data-nm-send');
+  if (PV.fid) nmSenden(k, b.getAttribute('data-nm-ev'), 'location', (PV.doc && PV.doc.ort) || 'Location', b);
+  else nmSenden(k, b.getAttribute('data-nm-ev'), 'team', meinName(), b);
+});
+const nmVenue = e => (S.venues || []).find(x => fgOrt(e.venue, x.name) && fgMails(x).length);
 function rmPanel(e){
-  const v = (S.venues || []).find(x => fgOrt(e.venue, x.name) && fgMails(x).length);
+  const v = nmVenue(e);
   if (!v) return '';
-  const r = rmStand(e);
+  const r = rmStand(e), fid = fgId(v), L = nmAlle().filter(m => m.eventId === e.id).map(m => Object.assign({ neu:nmNeu(m) }, m));
+  if (L.some(m => m.neu)) nmGesehen([e.id]);
   const st = r.ok === 'aktuell' ? '<span class="pill st-ok">✓ Running Order bestätigt</span> <span class="muted small">' + wann(r.at) + '</span>'
     : r.ok === 'alt' ? '<span class="pill st-planung">Bestätigt, aber seitdem geändert</span> <span class="muted small">Die Location sieht den neuen Stand und kann erneut bestätigen.</span>'
-    : '<span class="muted">Noch keine Bestätigung.</span>';
-  return '<section class="panel"><div class="panel-h"><h2>Rückmeldung von ' + esc(v.name) + '</h2><button class="btn btn-ghost" data-o="partner" data-id="' + esc(v.id) + '">Zugang</button></div><div style="padding:0 14px 14px">' + st +
-    (r.text ? '<blockquote style="margin:10px 0 0;padding:10px 12px;border-left:3px solid var(--pink);background:var(--sunk);border-radius:8px">' + esc(r.text) + '<div class="muted small" style="margin-top:4px">' + wann(r.textAt) + '</div></blockquote>' : '') + '</div></section>';
+    : '<span class="muted">Running Order noch nicht bestätigt.</span>';
+  return '<section class="panel" id="nachrichten-ev"><div class="panel-h"><h2>Nachrichten · ' + esc(v.name) + '</h2><button class="btn btn-ghost" data-o="partner" data-id="' + esc(v.id) + '">Zugang</button></div><div style="padding:0 14px 14px"><p style="margin:0 0 12px">' + st + '</p>' +
+    nmThread(L, 'team') + (S.ro ? '' : nmEingabe(fid, e.id, e.name, 'Nachricht an ' + v.name)) + '</div></section>';
+}
+function viewNachrichten(){
+  let h = '<section class="vh"><h1>Nachrichten</h1><p class="muted" style="margin:4px 0 0">Was die Location-Betreiber zu euren Events schreiben – und eure Antworten.</p></section>';
+  const V = (S.venues || []).filter(v => fgMails(v).length);
+  if (!V.length) return h + '<div class="empty"><h3>Noch kein Betreiber-Zugang</h3><p>Lade unter Einstellungen → Location-Zugang einen Betreiber ein. Dann kann er euch hier zu jedem Event schreiben.</p><button class="btn btn-primary" data-act="ez-loc">Location-Zugang</button></div>';
+  const A = nmAlle().map(m => Object.assign({ neu:nmNeu(m) }, m)), G = {};
+  A.forEach(m => { (G[m.eventId] = G[m.eventId] || []).push(m); });
+  // auch Events mit Betreiber-Zugang ohne Nachrichten, damit man anfangen kann zu schreiben
+  V.forEach(v => fgEvents(v).forEach(e => { if (!G[e.id]) G[e.id] = []; }));
+  const ids = Object.keys(G).sort((a, b) => { const la = G[a].length ? G[a][G[a].length - 1].at : 0, lb = G[b].length ? G[b][G[b].length - 1].at : 0; return lb - la || ((S.events.find(e => e.id === a) || {}).date || '').localeCompare((S.events.find(e => e.id === b) || {}).date || ''); });
+  const neu = A.filter(m => m.neu).length;
+  if (neu) h += '<p style="margin:0 0 12px"><span class="pill st-warn">' + neu + (neu === 1 ? ' neue Nachricht' : ' neue Nachrichten') + '</span></p>';
+  if (!ids.length) h += '<div class="empty"><h3>Noch nichts</h3><p>Sobald ein Event an einer Location mit Betreiber-Zugang ansteht, könnt ihr euch hier schreiben.</p></div>';
+  ids.forEach(eid => {
+    const e = S.events.find(x => x.id === eid), L = G[eid], m0 = L[0] || {};
+    const v = e ? nmVenue(e) : null, fid = m0.fid || (v ? fgId(v) : ''), ort = m0.ort || (v ? v.name : ''), n = L.filter(m => m.neu).length;
+    h += '<section class="panel"><div class="panel-h"><h2>' + esc((e && e.name) || m0.event || 'Event') + (n ? ' <span class="pill st-warn">' + n + ' neu</span>' : '') + '</h2>' + (e ? '<a class="btn btn-ghost" href="#ev-' + esc(eid) + '">Zum Event</a>' : '') + '</div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px">' + [e && isDate(e.date) ? fmtD(e.date) : '', ort].filter(Boolean).map(esc).join(' · ') + '</p>' +
+      nmThread(L, 'team') + (S.ro || !fid ? '' : nmEingabe(fid, eid, (e && e.name) || m0.event, 'Antwort an ' + (ort || 'die Location'))) + '</div></section>';
+  });
+  if (neu) nmGesehen(A.filter(m => m.neu).map(m => m.eventId));
+  return h;
 }
 
 /* ===== (6) Abrechnung ===== */
@@ -2270,7 +2341,9 @@ function openEinstellungen(){
   const modus = LS.get('modus') || 'system', farbe = LS.get('farbe') || 'pink';
   const dunkel = document.documentElement.getAttribute('data-theme') === 'dark' || (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
+  const nmN = nmUngelesen();
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
+    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px"><li><a class="row" href="#nachrichten" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">💬 Nachrichten' + (nmN ? ' <span class="pill st-warn">' + nmN + ' neu</span>' : '') + '</span><span class="row-sub">Was die Location-Betreiber zu euren Events schreiben</span></span>' + I.right + '</a></li></ul>' +
     '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">1 · Bereiche</p><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
     '<p class="kicker" style="margin:0 0 10px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">2 · Ansicht & Aussehen</p><h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
@@ -2368,7 +2441,7 @@ function route(){
   if (h === 'sperrtermine' || h === 'einschaetzen') { if (h === 'sperrtermine') { S.asView = 'sperr'; LS.set('asView', 'sperr'); } try { history.replaceState(null, '', '#umfeld'); } catch (e) {} return { view:'umfeld' }; }
   if (h === 'veranstalter') { S.vzTab = 'veranst'; LS.set('vzTab', 'veranst'); history.replaceState(null, '', '#verzeichnis'); return { view:'verzeichnis' }; } // Veranstalter sind jetzt im Verzeichnis
   if (h === 'kalender' || h === 'umfeld' || h === 'marketing' || h === 'verzeichnis' || h === 'finden' || h === 'mk-kalender' || h === 'mk-inhalte' || h === 'mk-kanaele' ||
-    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend', 'verlauf'].indexOf(h) >= 0) return { view:h };
+    ['booking', 'bk-anfragen', 'bk-djs', 'bk-locs', 'finanzen', 'fi-offen', 'fi-abrechnung', 'abend', 'verlauf', 'nachrichten'].indexOf(h) >= 0) return { view:h };
   if (h.indexOf('abend-') === 0) return { view:'abend', id:h.slice(6) };
   const mm = /^monat-(\d{4})-(\d{2})$/.exec(h); if (mm) return { view:'monat', y:Number(mm[1]), m:Number(mm[2]) };
   return { view:h === '' ? startHash().slice(1) : 'events' };
@@ -2377,6 +2450,11 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08j', titel:'Nachrichten mit den Locations', punkte:[
+    'Neu in den Einstellungen ganz oben: 💬 Nachrichten – alles, was die Location-Betreiber zu euren Events schreiben, mit Antwortfeld',
+    'Im Event steht die Unterhaltung mit der Location jetzt direkt sichtbar, inklusive Bestätigung der Running Order',
+    'Neue Nachrichten erscheinen oben in der Hinweisleiste und im Verlauf'
+  ]},
   { v:'2026-11-08i', titel:'Line-up nach Floors', punkte:[
     'In der Betreiber-Ansicht ist das Line-up jetzt nach Floors unterteilt – jeder Floor mit seinen DJs und Zeiten',
     'Acts ohne Floor stehen unter „Floor folgt“'
@@ -2429,6 +2507,8 @@ function hinweise(view){
   const start = ['events', 'marketing', 'booking', 'finanzen'].indexOf(view) >= 0;
   const ab = start && S.got.events ? S.events.find(x => istHeute(x) && x.status !== 'abgesagt') : null;
   if (ab) Z.push('<div class="hw-z"><span class="hw-i">🎉</span><span class="hw-t"><strong>' + (ab.date === today() ? 'Heute' : 'Läuft noch') + ':</strong> ' + esc(ab.name || 'Event') + '</span><a class="btn btn-sm btn-primary" href="#abend-' + esc(ab.id) + '">Abend-Modus</a></div>');
+  const nmN = S.ro ? 0 : nmUngelesen();
+  if (nmN && view !== 'nachrichten') Z.push('<div class="hw-z"><span class="hw-i">💬</span><span class="hw-t"><strong>' + nmN + (nmN === 1 ? ' neue Nachricht' : ' neue Nachrichten') + '</strong> von Location-Betreibern</span><a class="btn btn-sm btn-primary" href="#nachrichten">Lesen</a></div>');
   const g = LS.get('neuGesehen'), i = NEUES.findIndex(n => n.v === g), N = (i < 0 ? NEUES : NEUES.slice(0, i)).slice(0, 3);
   if (N.length) Z.push('<div class="hw-z hw-neu" id="neu-hinweis" style="flex-wrap:wrap"><span class="hw-i">✨</span><span class="hw-t"><strong>' + esc(N[0].titel) + '</strong>' + (N.length > 1 ? ' <span class="muted">+ ' + (N.length - 1) + ' weitere</span>' : '') + '</span>' +
     '<button class="btn btn-sm" data-act="neu-auf" aria-expanded="' + !!S.neuAuf + '">' + (S.neuAuf ? 'Weniger' : 'Ansehen') + '</button><button class="hw-x" data-act="neu-weg" aria-label="Hinweis schließen">✕</button>' +
@@ -2475,6 +2555,7 @@ function render(){
   else if (r.view === 'verzeichnis') h += viewVerzeichnis();
   else if (r.view === 'abend') h += viewAbend(r.id);
   else if (r.view === 'verlauf') h += viewVerlauf();
+  else if (r.view === 'nachrichten') h += viewNachrichten();
   else if (r.view === 'booking') h += viewBkHeute();
   else if (r.view === 'bk-anfragen') h += viewBkAnfragen();
   else if (r.view === 'bk-djs' || r.view === 'bk-locs') { const t = r.view === 'bk-djs' ? 'dj' : 'loc'; if (S.vzTab !== t) { S.vzTab = t; LS.set('vzTab', t); } h += viewVerzeichnis(); }
@@ -2515,7 +2596,7 @@ function viewEvents(){
   const dated = S.events.filter(e => isDate(e.date));
   const nUp = dated.filter(e => e.date >= t).length, nPast = dated.length - nUp;
   const list = dated.filter(e => up ? e.date >= t : e.date < t).sort((a, b) => up ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
-  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>' + bereichKnoepfe(['verzeichnis', 'verlauf'].concat(istLight() ? ['marketing'] : []));
+  let h = '<section class="vh"><h1>Events</h1><div style="display:flex;gap:8px;flex-wrap:wrap">' + '<a class="btn" href="#finden">Termin finden</a>' + (S.ro ? '' : '<button class="btn btn-primary" data-act="new-event">' + I.plus + 'Event</button>') + '</div></section>' + bereichKnoepfe(['verzeichnis', 'verlauf', 'nachrichten'].concat(istLight() ? ['marketing'] : []));
   if (false) h += '<div class="banner"><strong>Leute einladen:</strong> Trag unter <em>Profil → Mitglieder</em> die Google-Adressen der anderen ein. Sie melden sich mit Google an und finden das Projekt dann unter ihren Projekten. <button class="btn-ghost btn" data-act="invite-ok">Verstanden</button></div>';
 
   if (up && !waiting('events')) h += dashboard(nextEvent());
@@ -2839,7 +2920,7 @@ function tabOverview(e, c){
   const A = ablauf(e), aOk = A.filter(x => x.done).length;
   if (vorbei) h += klapp('rb', 'Rückblick', '', rbPanel(e), true);
   else { h += klapp('ablauf', 'Ablauf', aOk + ' von ' + A.length + ' erledigt', ablaufPanel(e), false); const fr = rbFrueher(e); if (fr) h += klapp('frueher', 'Letztes Mal in ' + esc(e.venue), '', fr, false); }
-  const rmP = rmPanel(e); if (rmP) { const r = rmStand(e); h += klapp('rm', 'Rückmeldung der Location', r.ok === 'aktuell' ? '✓ bestätigt' : r.ok === 'alt' ? 'seitdem geändert' : 'offen', rmP, false); }
+  h += rmPanel(e);
   const li = linkInfo(e);
   if (li) h += klapp('extern', 'Extern dabei', '', linkPanel(e, li), false);
   h += '<section class="panel"><div class="panel-h"><h2>Details</h2>' + (S.ro ? '' : '<button class="btn btn-ghost" data-act="edit-event" data-id="' + esc(e.id) + '">Bearbeiten</button>') + '</div>' +
@@ -2850,7 +2931,7 @@ function tabOverview(e, c){
   return h;
 }
 // Direkte Knöpfe zu den Bereichen aus den Einstellungen, passend zum Reiter
-const BEREICHE = { events:['Events', '#events'], kalender:['Kalender', '#kalender'], umfeld:['Umfeld', '#umfeld'], verzeichnis:['Verzeichnis', '#verzeichnis'], verlauf:['Verlauf', '#verlauf'], marketing:['Marketing', '#marketing'] };
+const BEREICHE = { events:['Events', '#events'], kalender:['Kalender', '#kalender'], umfeld:['Umfeld', '#umfeld'], verzeichnis:['Verzeichnis', '#verzeichnis'], verlauf:['Verlauf', '#verlauf'], marketing:['Marketing', '#marketing'], nachrichten:['Nachrichten', '#nachrichten'] };
 const bereichKnoepfe = L => '<div class="chips" style="margin:0 0 14px;gap:6px;flex-wrap:wrap" aria-label="Bereiche">' + L.map(k => '<a class="chip" href="' + BEREICHE[k][1] + '" style="text-decoration:none">' + BEREICHE[k][0] + ' ›</a>').join('') + '</div>';
 // Aufklappbarer Abschnitt; offen/zu merkt sich das Gerät
 function klapp(k, titel, info, inhalt, std){
