@@ -1490,7 +1490,9 @@ function bkPanel(e){
 }
 
 /* ===== (11) Rückmeldungen der Location-Betreiber ===== */
-const roSig = ev => fgHash(JSON.stringify({ lineup:ev.lineup || [], technik:ev.technik || [] }));
+// Prüfsumme mit sortierten Schlüsseln – damit Web und Android denselben Wert bilden
+const kanon = v => Array.isArray(v) ? '[' + v.map(kanon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + kanon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v);
+const roSig = ev => fgHash(kanon({ lineup:ev.lineup || [], technik:ev.technik || [] }));
 function rmStand(e){
   const x = (S.rm || {})[e.id];
   if (!x) return { ok:'', text:'' };
