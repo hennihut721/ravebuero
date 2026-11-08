@@ -1058,8 +1058,10 @@ async function projektWahl(msg, err){
   $('#fb-prof').hidden = true; document.querySelector('.tabbar').hidden = true;
   $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Projekte …';
   let L = [];
-  try { L = await meineProjekte(); } catch (e) { msg = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); err = true; }
+  let pFehler = '';
+  try { L = await meineProjekte(); } catch (e) { pFehler = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); }
   const F = await meineFreigaben(), nurPartner = await istPartnerKonto() || !!LS.get('zugang');
+  if (pFehler && !nurPartner) { msg = pFehler; err = true; }
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
   v.innerHTML = '<section class="vh"><h1>' + (nurPartner && !L.length ? 'Freigaben' : 'Projekte') + '</h1></section>' +
@@ -1132,7 +1134,11 @@ const fgLink = v => APP_URL + '?zugang=' + encodeURIComponent(fgId(v));
 const fgMails = v => (Array.isArray(v.partnerEmails) ? v.partnerEmails : []).map(x => String(x).trim().toLowerCase()).filter(Boolean);
 const fgFelder = v => { const f = v.partnerFelder || {}; const o = {}; PARTNER_FELDER.forEach(x => { o[x[0]] = f[x[0]] === undefined ? x[2] : !!f[x[0]]; }); return o; };
 async function meineFreigaben(){
-  try { const sn = await fs.collection('freigaben').where('emails', 'array-contains', meineMail()).get(); return sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { return []; }
+  let L = [];
+  try { const sn = await fs.collection('freigaben').where('emails', 'array-contains', meineMail()).get(); L = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { console.warn('Freigaben', e); }
+  const z = LS.get('zugang');
+  if (z && !L.some(f => f.id === z)) { try { const d = await fs.collection('freigaben').doc(z).get(); if (d.exists) L.push(Object.assign({ id:d.id }, d.data())); } catch (e) {} }
+  return L;
 }
 async function istPartnerKonto(){ try { return (await fs.collection('partnerkonten').doc(meineMail()).get()).exists; } catch (e) { return false; } }
 // Nachtlogik: 01:00 kommt nach 23:00
@@ -1143,8 +1149,11 @@ function fgPlan(){ clearTimeout(FG.t); FG.t = setTimeout(() => fgSync().catch(e 
 async function fgSync(){
   if (!projekt || !db || S.ro || !FG_COLS.every(c => S.fresh[c])) return;
   const pid = projekt.id;
-  if (!FG.bekannt) {
-    try { const sn = await fs.collection('freigaben').where('pid', '==', pid).get(); FG.bekannt = {}; sn.docs.forEach(d => { FG.bekannt[d.id] = d.data(); }); } catch (e) { return; }
+  if (!FG.bekannt) FG.bekannt = {};
+  // Jede Location, die schon einmal einen Zugang hatte, einzeln prüfen
+  for (const v of (S.venues || []).filter(v => v.partnerFelder || fgMails(v).length)) {
+    const fid = fgId(v); if (fid in FG.bekannt) continue;
+    try { const d = await fs.collection('freigaben').doc(fid).get(); if (d.exists) FG.bekannt[fid] = d.data(); else if (fgMails(v).length) FG.bekannt[fid] = {}; } catch (e) { if (fgMails(v).length) FG.bekannt[fid] = {}; }
   }
   const t = today(), V = (S.venues || []).filter(v => fgMails(v).length);
   for (const v of V) {
@@ -1201,6 +1210,9 @@ function partnerSheet(v){
     const alt = fgMails(v), pid = projekt.id;
     const b = fs.batch();
     b.update(db.collection('venues').doc(v.id), { partnerEmails:mails, partnerFelder:felder, partnerKontakt:kontakt, updatedAt:Date.now() });
+    // Adressen sofort in der Freigabe ändern – der Inhalt folgt automatisch
+    const fref = fs.collection('freigaben').doc(fgId(v));
+    if (mails.length) b.set(fref, { pid, emails:mails, ort:v.name || '', projekt:projekt.name || '' }, { merge:true }); else b.delete(fref);
     mails.filter(m => alt.indexOf(m) < 0).forEach(m => b.set(fs.collection('partnerkonten').doc(m), { pid, at:Date.now() }));
     // Adressen, die in diesem Projekt bei keiner Location mehr Zugang haben, wieder freigeben
     alt.filter(m => mails.indexOf(m) < 0 && !(S.venues || []).some(o => o.id !== v.id && fgMails(o).indexOf(m) >= 0)).forEach(m => b.delete(fs.collection('partnerkonten').doc(m)));
@@ -1446,12 +1458,13 @@ async function init(){
       schreiben: async (ops) => { const d = RB._db || db; let n = 0; for (let i = 0; i < ops.length; i += 400) { const b = fs.batch(); ops.slice(i, i + 400).forEach(o => { const r = d.collection(o.col).doc(o.id); if (o.op === 'delete') b.delete(r); else if (o.op === 'update') b.update(r, o.data); else b.set(r, o.data); }); await b.commit(); n += Math.min(400, ops.length - i); } return n; }
     };
     try { await umzug(); } catch (e) { console.error('Umzug', e); }
-    let L = [];
-    try { L = await meineProjekte(); } catch (e) { projektWahl('Projekte konnten nicht geladen werden: ' + (e && e.message || e), true); return; }
+    let L = [], pErr = null;
+    try { L = await meineProjekte(); } catch (e) { pErr = e; console.warn('Projekte', e); }
     const F = await meineFreigaben(), z = LS.get('zugang'), partner = await istPartnerKonto();
     if (z && F.some(f => f.id === z)) { partnerView(z); return; }
     if (z) { zugangFalsch(L.length > 0); return; } // Einladungslink, aber dieses Konto ist nicht eingeladen
     if (F.length && (partner || !L.length)) { partnerView((F.find(f => f.id === LS.get('pzuletzt')) || F[0]).id); return; }
+    if (pErr) { projektWahl('Projekte konnten nicht geladen werden: ' + (pErr && pErr.message || pErr), true); return; }
     const letztes = L.find(p => p.id === LS.get('projekt'));
     if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
   });
