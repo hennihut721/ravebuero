@@ -978,6 +978,7 @@ function subscribe(){
       if (c === 'local' || c === 'watch' || c === 'events') deriveLocal();
       if (c === 'watch' && S.fresh.watch && projekt) { clearTimeout(S.locT); S.locT = setTimeout(() => projekt && locSync(projekt.id), 1500); }
       if (c === 'people' && S.afterPeople === 'team') { S.afterPeople = null; openTeam(); }
+      if (FG_COLS.indexOf(c) >= 0) fgPlan();
       S.got[c] = true;
       if (!snap.metadata.fromCache) S.fresh[c] = true;
       if (COLS.every(x => S.fresh[x])) { clearTimeout(timer); if (S.conn !== 'revoked' && S.conn !== 'error') S.conn = 'live'; }
@@ -1001,7 +1002,7 @@ const FB_CONFIG = {
 let fbStarted = false;
 function loginView(msg, err){
   const v = $('#view');
-  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Melde dich mit Google an. Danach trittst du einem Projekt bei, zu dem du eingeladen wurdest, oder erstellst ein eigenes.</p>' +
+  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Melde dich mit Google an. Danach trittst du einem Projekt bei, zu dem du eingeladen wurdest, oder erstellst ein eigenes.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="fb-login">Mit Google anmelden</button>' + (firebase.auth().currentUser ? '<button class="btn" id="fb-logout">Abmelden</button>' : '') + '</div></div>';
   const b = $('#fb-login'); if (b) b.onclick = () => {
@@ -1058,23 +1059,26 @@ async function projektWahl(msg, err){
   $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Projekte …';
   let L = [];
   try { L = await meineProjekte(); } catch (e) { msg = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); err = true; }
+  const F = await meineFreigaben(), nurPartner = await istPartnerKonto();
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
-  v.innerHTML = '<section class="vh"><h1>Projekte</h1></section>' +
-    '<p class="muted" style="margin:0 0 16px">Angemeldet als <strong>' + esc(me) + '</strong>. Jedes Projekt hat seine eigenen Events, Kosten, Line-ups und Mitglieder.</p>' +
+  v.innerHTML = '<section class="vh"><h1>' + (nurPartner && !L.length ? 'Freigaben' : 'Projekte') + '</h1></section>' +
+    '<p class="muted" style="margin:0 0 16px">Angemeldet als <strong>' + esc(me) + '</strong>.' + (nurPartner && !L.length ? ' Hier siehst du, welche Veranstalter Infos mit dir teilen.' : ' Jedes Projekt hat seine eigenen Events, Kosten, Line-ups und Mitglieder.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     (L.length ? '<section class="panel"><div class="panel-h"><h2>Deine Projekte</h2></div><ul class="rows">' + L.map(p => {
       const neu = p.owner !== me && seen.indexOf(p.id) < 0;
       return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>'
-      : '<div class="empty"><h3>Noch kein Projekt</h3><p>Wurdest du eingeladen? Dann bitte die Person, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und lade danach diese Seite neu. Oder leg unten dein eigenes Projekt an.</p></div>') +
-    '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>' +
+      : F.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : 'Wurdest du eingeladen? Dann bitte die Person, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und lade danach diese Seite neu. Oder leg unten dein eigenes Projekt an.') + '</p></div>') +
+    (F.length ? '<section class="panel"><div class="panel-h"><h2>Für dich freigegeben</h2></div><ul class="rows">' + F.map(f => '<li><button type="button" class="row" data-pf="' + esc(f.id) + '"><span class="av">' + esc(initial(f.ort)) + '</span><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + '</span><span class="row-sub">von ' + esc(f.projekt || 'Veranstalter') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
+    (nurPartner ? '' : '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>') +
     '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pj-reload">Neu laden</button><button class="btn btn-ghost" id="pj-out">Abmelden</button></div>';
   $('#conn').className = 'conn'; $('#conn-t').textContent = 'Projekt wählen';
   v.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => oeffneProjekt(L.find(p => p.id === b.getAttribute('data-pj'))));
+  v.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => partnerView(b.getAttribute('data-pf')));
   $('#pj-reload').onclick = () => projektWahl();
   $('#pj-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
-  $('#pj-form').onsubmit = async ev => {
+  if ($('#pj-form')) $('#pj-form').onsubmit = async ev => {
     ev.preventDefault();
     const name = $('#pj-name').value.trim();
     if (!name) { projektWahl('Gib dem Projekt einen Namen.', true); return; }
@@ -1088,6 +1092,7 @@ async function projektWahl(msg, err){
   };
 }
 function stopProjekt(){
+  if (PV.unsub) { try { PV.unsub(); } catch (e) {} PV.unsub = null; }
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
   projekt = null; db = null;
@@ -1099,7 +1104,8 @@ function oeffneProjekt(p){
   LS.set('projekt', p.id);
   const seen = gesehen(); if (seen.indexOf(p.id) < 0) { seen.push(p.id); LS.set('projGesehen', JSON.stringify(seen.slice(-50))); }
   S.canWrite = true; S.owner = p.owner === meineMail(); S.ro = false;
-  document.querySelector('.tabbar').hidden = false;
+  document.querySelector('.tabbar').hidden = false; $('#fb-set').hidden = false;
+  FG.bekannt = null; FG.letzt = '';
   const pb = $('#fb-prof'); if (pb) { pb.hidden = false; $('#fb-av').textContent = initial(p.name || 'P'); }
   document.title = (p.name || 'RaveBüro') + ' – RaveBüro';
   UNSUB.push(fs.collection('projects').doc(p.id).onSnapshot(d => {
@@ -1108,6 +1114,154 @@ function oeffneProjekt(p){
   }, () => { LS.set('projekt', ''); projektWahl('Kein Zugriff mehr auf „' + (p.name || 'Projekt') + '“.', true); }));
   subscribe(); techSaat(); ferienStart(p.id); locSync(p.id);
   render();
+}
+/* ---------- Location-Zugang: eingeschränkte Freigaben für Location-Betreiber ----------
+   Betreiber sind keine Mitglieder. Sie sehen nur eine Kopie der freigegebenen Infos in freigaben/{projekt}_{location}
+   (Line-up, Flyer, Technik …) – nie Kosten, Aufgaben oder andere Daten. Eigene Projekte können sie nicht anlegen. */
+const APP_URL = 'https://hennihut721.github.io/ravebuero/';
+const PARTNER_FELDER = [['lineup', 'Line-up & Running Order', true], ['flyer', 'Flyer', true], ['technik', 'Technik & Floors', true], ['gaeste', 'Gästeliste', false]];
+const FG_COLS = ['events', 'lineup', 'floors', 'mkmedia', 'venues'];
+const FG = { bekannt:null, letzt:'', t:0 };
+const PV = { unsub:null, doc:null, flyer:{} };
+(function(){ try { const z = new URLSearchParams(location.search).get('zugang'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('zugang', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
+const fgId = v => projekt.id + '_' + v.id;
+const fgLink = v => APP_URL + '?zugang=' + encodeURIComponent(fgId(v));
+const fgMails = v => (Array.isArray(v.partnerEmails) ? v.partnerEmails : []).map(x => String(x).trim().toLowerCase()).filter(Boolean);
+const fgFelder = v => { const f = v.partnerFelder || {}; const o = {}; PARTNER_FELDER.forEach(x => { o[x[0]] = f[x[0]] === undefined ? x[2] : !!f[x[0]]; }); return o; };
+async function meineFreigaben(){
+  try { const sn = await fs.collection('freigaben').where('emails', 'array-contains', meineMail()).get(); return sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { return []; }
+}
+async function istPartnerKonto(){ try { return (await fs.collection('partnerkonten').doc(meineMail()).get()).exists; } catch (e) { return false; } }
+// Nachtlogik: 01:00 kommt nach 23:00
+const fgZeit = z => { const m = /^(\d{1,2}):(\d{2})/.exec(z || ''); if (!m) return 9999; const h = +m[1]; return (h < 12 ? h + 24 : h) * 60 + +m[2]; };
+function fgHash(str){ let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return String(h >>> 0); }
+function fgPlan(){ clearTimeout(FG.t); FG.t = setTimeout(() => fgSync().catch(e => console.warn('Freigaben', e)), 2500); }
+// Baut für jede Location mit Betreiber-Zugang die freigegebene Kopie und schreibt sie, wenn sich etwas geändert hat
+async function fgSync(){
+  if (!projekt || !db || S.ro || !FG_COLS.every(c => S.fresh[c])) return;
+  const pid = projekt.id;
+  if (!FG.bekannt) {
+    try { const sn = await fs.collection('freigaben').where('pid', '==', pid).get(); FG.bekannt = {}; sn.docs.forEach(d => { FG.bekannt[d.id] = d.data(); }); } catch (e) { return; }
+  }
+  const t = today(), V = (S.venues || []).filter(v => fgMails(v).length);
+  for (const v of V) {
+    const fid = fgId(v), fel = fgFelder(v), alt = FG.bekannt[fid] || {}, altFly = {};
+    (alt.events || []).forEach(x => { altFly[x.id] = x.flyer || ''; });
+    const vn = (v.name || '').trim().toLowerCase();
+    const E = S.events.filter(e => (e.venue || '').trim().toLowerCase() === vn && isDate(e.date) && e.date >= addDays(t, -2) && e.status !== 'abgesagt' && e.status !== 'idee').sort((a, b) => a.date.localeCompare(b.date));
+    const events = E.map(e => {
+      const fl = S.floors.filter(f => f.eventId === e.id), flN = id => (fl.find(f => f.id === id) || {}).name || '';
+      const L = S.lineup.filter(l => l.eventId === e.id && l.status === 'zugesagt').sort((a, b) => fgZeit(a.start) - fgZeit(b.start));
+      const o = { id:e.id, name:e.name || '', date:e.date, start:e.start || '', end:e.end || '', status:e.status || '' };
+      if (fel.lineup) o.lineup = L.map(l => ({ name:l.name || '', start:l.start || '', end:l.end || '', floor:flN(l.floorId) }));
+      if (fel.technik) o.technik = fl.map(f => ({ name:f.name || 'Floor', tech:techLines(f.tech) }));
+      if (fel.gaeste) o.gaeste = L.filter(l => (int(l.gl) || 0) > 0).map(l => ({ dj:l.name || '', n:int(l.gl) || 0, namen:String(l.glNames || '').split('\n').map(x => x.trim()).filter(Boolean) }));
+      if (fel.flyer) { const m = mkCol('mkmedia').filter(m => m.eventId === e.id && m.kind === 'flyer' && m.bild && m.status === 'fertig').sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))[0]; o.flyer = m ? m.id + ':' + (m.updatedAt || m.createdAt || 0) : ''; }
+      return o;
+    });
+    const body = { pid, projekt:projekt.name || '', ort:v.name || '', emails:fgMails(v), felder:fel, kontakt:v.partnerKontakt || '', events };
+    const sig = fgHash(JSON.stringify(body));
+    if (alt.sig === sig) continue;
+    try {
+      for (const ev of events) if (ev.flyer && ev.flyer !== altFly[ev.id]) { const d = await mkBild(ev.flyer.split(':')[0]); if (d) await fs.collection('freigaben').doc(fid).collection('flyer').doc(ev.id).set({ data:d, pid }); }
+      const neu = Object.assign({}, body, { sig, stand:Date.now() });
+      await fs.collection('freigaben').doc(fid).set(neu); FG.bekannt[fid] = neu;
+    } catch (e) { console.warn('Freigabe', fid, e); }
+  }
+  // Zugänge, die es nicht mehr gibt, entfernen
+  for (const fid of Object.keys(FG.bekannt)) {
+    if (V.some(v => fgId(v) === fid)) continue;
+    try { await fs.collection('freigaben').doc(fid).delete(); delete FG.bekannt[fid]; } catch (e) {}
+  }
+}
+function partnerSheet(v){
+  const fel = fgFelder(v), M = fgMails(v);
+  showSheet('<h2 id="sheet-title">Zugang für ' + esc(v.name) + '</h2>' +
+    '<p class="muted" style="margin:0 0 14px">Der Betreiber bekommt ein eigenes, schlankes Profil: Er sieht nur eure Events in ' + esc(v.name) + ' mit den Infos, die du hier anhakst – keine Kosten, Aufgaben oder sonstigen Daten. Ein eigenes Projekt kann er nicht anlegen.</p>' +
+    '<form class="f" id="pz-form" novalidate>' +
+    field('pz-mail', 'Google-Adressen der Betreiber', '<textarea id="pz-mail" rows="2" maxlength="600" placeholder="eine Adresse pro Zeile, z. B. booking@club.de">' + esc(M.join('\n')) + '</textarea>') +
+    '<div class="field"><label>Was sie sehen</label><p class="hint" style="margin:0 0 6px">Datum, Name und Uhrzeit der Events sehen sie immer.</p>' + PARTNER_FELDER.map(x => '<label class="check"><input type="checkbox" data-pzf="' + x[0] + '"' + (fel[x[0]] ? ' checked' : '') + '> ' + x[1] + '</label>').join('') + '</div>' +
+    field('pz-kontakt', 'Euer Kontakt für die Location', '<input id="pz-kontakt" maxlength="200" autocomplete="off" placeholder="z. B. Henrik, 0170 …" value="' + esc(v.partnerKontakt || '') + '">') +
+    '<p class="err" id="pz-err" hidden></p>' +
+    '<div class="actions">' + (M.length ? '<button type="button" class="btn btn-ghost" id="pz-aus" style="margin-right:auto;color:var(--bad)">Zugang beenden</button>' : '') + '<button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>' +
+    (M.length ? '<section class="panel" style="margin-top:18px"><div class="panel-h"><h2>Einladungslink</h2></div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px;word-break:break-all">' + esc(fgLink(v)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="pz-copy">Kopieren</button><button class="btn btn-sm" id="pz-wa">WhatsApp</button><button class="btn btn-sm" id="pz-mailto">E-Mail</button></div><p class="hint" style="margin:10px 0 0">Nur über diesen Link kommen Betreiber in die App. Sie melden sich mit der Google-Adresse von oben an.</p></div></section>' : ''));
+  const txt = () => 'Hallo! Für unsere Events bei ' + v.name + ' haben wir dir einen Zugang zu unserer Planung eingerichtet. Dort siehst du immer den aktuellen Stand' + (fel.lineup ? ' von Line-up und Running Order' : '') + (fel.flyer ? ', die Flyer' : '') + (fel.technik ? ' und die Technik' : '') + '.\n\n' + fgLink(v) + '\n\nMelde dich dort einfach mit deinem Google-Konto (' + M.join(' oder ') + ') an.' + (v.partnerKontakt ? '\n\nBei Fragen: ' + v.partnerKontakt : '');
+  if (M.length) {
+    $('#pz-copy').onclick = async () => toast(await copyText(txt()) ? 'Einladung kopiert.' : 'Kopieren hat nicht geklappt.');
+    $('#pz-wa').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(txt()), '_blank', 'noopener');
+    $('#pz-mailto').onclick = () => { location.href = 'mailto:' + encodeURIComponent(M.join(',')) + '?subject=' + encodeURIComponent('Zugang: unsere Events bei ' + v.name) + '&body=' + encodeURIComponent(txt()); };
+  }
+  const speichern = async (mails, felder, kontakt) => {
+    const alt = fgMails(v), pid = projekt.id;
+    const b = fs.batch();
+    b.update(db.collection('venues').doc(v.id), { partnerEmails:mails, partnerFelder:felder, partnerKontakt:kontakt, updatedAt:Date.now() });
+    mails.filter(m => alt.indexOf(m) < 0).forEach(m => b.set(fs.collection('partnerkonten').doc(m), { pid, at:Date.now() }));
+    // Adressen, die in diesem Projekt bei keiner Location mehr Zugang haben, wieder freigeben
+    alt.filter(m => mails.indexOf(m) < 0 && !(S.venues || []).some(o => o.id !== v.id && fgMails(o).indexOf(m) >= 0)).forEach(m => b.delete(fs.collection('partnerkonten').doc(m)));
+    await b.commit();
+  };
+  if (M.length) $('#pz-aus').onclick = async () => {
+    if (!confirm('Zugang für ' + v.name + ' beenden? Die Betreiber sehen danach nichts mehr.')) return;
+    if (await save(() => speichern([], fgFelder(v), v.partnerKontakt || ''), 'Zugang beendet.')) { closeSheet(); fgPlan(); }
+  };
+  $('#pz-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const mails = [...new Set($('#pz-mail').value.split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean))];
+    const bad = mails.filter(m => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m));
+    const e = $('#pz-err');
+    if (bad.length) { e.textContent = 'Das sieht nicht wie eine E-Mail-Adresse aus: ' + bad.join(', '); e.hidden = false; return; }
+    if ((projekt.members || []).some(m => mails.indexOf(m) >= 0)) { e.textContent = 'Diese Adresse ist schon Mitglied im Projekt.'; e.hidden = false; return; }
+    const felder = {}; document.querySelectorAll('[data-pzf]').forEach(c => { felder[c.dataset.pzf] = c.checked; });
+    if (await save(() => speichern(mails, felder, $('#pz-kontakt').value.trim()), mails.length ? 'Zugang gespeichert.' : 'Gespeichert.')) {
+      fgPlan(); const nv = Object.assign({}, v, { partnerEmails:mails, partnerFelder:felder, partnerKontakt:$('#pz-kontakt').value.trim() });
+      if (mails.length && !fgMails(v).length) partnerSheet(nv); else closeSheet();
+    }
+  };
+}
+// Ansicht für Location-Betreiber – nur Lesen
+function partnerView(fid){
+  stopProjekt(); LS.set('pzuletzt', fid);
+  document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
+  $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Lädt …';
+  PV.doc = null; PV.flyer = {};
+  PV.unsub = fs.collection('freigaben').doc(fid).onSnapshot(d => {
+    if (!d.exists) { PV.doc = null; partnerRender(fid, 'Dieser Zugang wurde beendet.'); return; }
+    PV.doc = d.data(); partnerRender(fid);
+  }, () => partnerRender(fid, 'Kein Zugriff. Melde dich mit der Google-Adresse an, an die die Einladung ging.'));
+}
+async function pvFlyer(fid, eid){
+  if (PV.flyer[eid] !== undefined) return;
+  PV.flyer[eid] = null;
+  try { const d = await fs.collection('freigaben').doc(fid).collection('flyer').doc(eid).get(); PV.flyer[eid] = d.exists ? d.data().data || '' : ''; } catch (e) { PV.flyer[eid] = ''; }
+  const im = document.getElementById('pv-fl-' + eid); if (im && PV.flyer[eid]) { im.src = PV.flyer[eid]; im.closest('.pv-fl').hidden = false; const a = document.getElementById('pv-dl-' + eid); if (a) a.href = PV.flyer[eid]; }
+}
+function partnerRender(fid, fehler){
+  const v = $('#view'), x = PV.doc, me = meineMail();
+  $('#conn').className = 'conn ' + (fehler ? 'bad' : 'live'); $('#conn-t').textContent = fehler ? 'Kein Zugang' : 'Nur lesen';
+  const fuss = '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-wahl">Übersicht</button><button class="btn btn-ghost" id="pv-out">Abmelden</button></div><p class="muted small" style="margin-top:10px">Angemeldet als ' + esc(me) + '</p>';
+  if (!x) { v.innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>' + esc(fehler || '') + '</p></div>' + fuss; }
+  else {
+    const t = today(), E = (x.events || []).filter(e => e.date >= addDays(t, -1)), fel = x.felder || {};
+    let h = '<section class="vh"><h1>' + esc(x.ort || 'Location') + '</h1><p class="muted" style="margin:4px 0 0">Eure Events mit ' + esc(x.projekt || 'uns') + ' · immer aktuell</p></section>';
+    if (x.kontakt) h += '<p style="margin:0 0 14px">Kontakt: <strong>' + esc(x.kontakt) + '</strong></p>';
+    if (!E.length) h += '<div class="empty"><h3>Gerade nichts geplant</h3><p>Sobald ein neues Event bei euch feststeht, erscheint es hier.</p></div>';
+    E.forEach(e => {
+      h += '<section class="panel"><div class="panel-h"><h2>' + esc(e.name || 'Event') + '</h2>' + (e.status === 'bestaetigt' ? '<span class="pill st-ok">Bestätigt</span>' : '<span class="pill st-planung">In Planung</span>') + '</div>' +
+        '<p style="margin:0 14px 12px"><strong>' + fmtD(e.date) + '</strong>' + (e.start ? ' · ' + esc(e.start) + (e.end ? '–' + esc(e.end) : '') + ' Uhr' : '') + ' · in ' + Math.max(0, dayDiff(t, e.date)) + ' Tagen</p>';
+      if (fel.flyer && e.flyer) h += '<div class="pv-fl" hidden style="padding:0 14px 12px"><img id="pv-fl-' + esc(e.id) + '" alt="Flyer ' + esc(e.name) + '" style="width:100%;border-radius:10px;background:var(--sunk)"><a class="btn btn-sm" id="pv-dl-' + esc(e.id) + '" download="Flyer ' + esc(e.name) + '.jpg" style="margin-top:8px">Flyer speichern</a></div>';
+      if (fel.lineup) h += '<h3 style="margin:4px 14px 6px">Line-up</h3>' + ((e.lineup || []).length ? '<ul class="rows">' + e.lineup.map(l => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(l.name) + '</span><span class="row-sub">' + [l.start ? l.start + (l.end ? '–' + l.end : '') : 'Zeit folgt', l.floor].filter(Boolean).map(esc).join(' · ') + '</span></span></div></li>').join('') + '</ul>' : '<p class="muted" style="margin:0 14px 12px">Folgt bald.</p>');
+      if (fel.technik && (e.technik || []).length) h += '<h3 style="margin:14px 14px 6px">Technik</h3>' + e.technik.map(f => '<p style="margin:0 14px 10px"><strong>' + esc(f.name) + '</strong><br>' + ((f.tech || []).length ? f.tech.map(esc).join('<br>') : '<span class="muted">keine Angaben</span>') + '</p>').join('');
+      if (fel.gaeste) { const G = e.gaeste || [], n = G.reduce((s, g) => s + g.n, 0); h += '<h3 style="margin:14px 14px 6px">Gästeliste' + (n ? ' · ' + n + ' Plätze' : '') + '</h3>' + (G.length ? G.map(g => '<p style="margin:0 14px 10px"><strong>' + esc(g.dj) + '</strong> · ' + g.n + ' Plätze' + (g.namen.length ? '<br>' + g.namen.map(esc).join(', ') : '') + '</p>').join('') : '<p class="muted" style="margin:0 14px 12px">Noch keine Einträge.</p>'); }
+      h += '<div style="height:6px"></div></section>';
+    });
+    if (x.stand) { const d = new Date(x.stand); h += '<p class="muted small">Stand: ' + pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '. ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' Uhr</p>'; }
+    v.innerHTML = h + fuss;
+    E.forEach(e => { if (fel.flyer && e.flyer) { if (PV.flyer[e.id]) { const im = document.getElementById('pv-fl-' + e.id); im.src = PV.flyer[e.id]; im.closest('.pv-fl').hidden = false; document.getElementById('pv-dl-' + e.id).href = PV.flyer[e.id]; } else pvFlyer(fid, e.id); } });
+    // neuer Flyer → neu laden
+    (x.events || []).forEach(e => { if (PV.sig && PV.sig[e.id] !== e.flyer) delete PV.flyer[e.id]; }); PV.sig = {}; (x.events || []).forEach(e => { PV.sig[e.id] = e.flyer; });
+  }
+  $('#pv-wahl').onclick = () => projektWahl();
+  $('#pv-out').onclick = () => { LS.set('zugang', ''); firebase.auth().signOut().then(() => location.reload()); };
 }
 /* ---------- Profil, Mitglieder & Projekt ---------- */
 async function openProfil(){
@@ -1266,6 +1420,9 @@ async function init(){
     try { await umzug(); } catch (e) { console.error('Umzug', e); }
     let L = [];
     try { L = await meineProjekte(); } catch (e) { projektWahl('Projekte konnten nicht geladen werden: ' + (e && e.message || e), true); return; }
+    const F = await meineFreigaben(), z = LS.get('zugang');
+    if (z && F.some(f => f.id === z)) { partnerView(z); return; }
+    if (!L.length && F.length) { partnerView((F.find(f => f.id === LS.get('pzuletzt')) || F[0]).id); return; }
     const letztes = L.find(p => p.id === LS.get('projekt'));
     if (letztes) oeffneProjekt(letztes); else if (L.length === 1 && gesehen().indexOf(L[0].id) >= 0) oeffneProjekt(L[0]); else projektWahl();
   });
@@ -3162,7 +3319,7 @@ function viewVerzeichnis(){
     if (!L.length) return h + '<div class="empty"><h3>' + (S.vzQ ? 'Nicht im Verzeichnis' : 'Noch keine Locations') + '</h3><p>Speichere Clubs und Locations mit Adresse, Kapazität, Ansprechpartner und Miete. Beim Event wählst du sie dann einfach aus.</p></div>' + vorschlH + netz();
     return h + '<section class="panel"><ul class="rows">' + L.map(v => {
       const n = S.events.filter(e => (e.venue || '').trim().toLowerCase() === (v.name || '').trim().toLowerCase()).length;
-      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + (beobachtet(v.name) ? ' <span class="pill st-ok">Partys beobachtet</span>' : '') + '</span></span>' + I.right + '</button></li>';
+      return '<li><button type="button" class="row" data-vz="loc" data-id="' + esc(v.id) + '"><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + [v.city, num(v.capacity) ? int(v.capacity) + ' Pers.' : '', num(v.rent) ? 'Miete ' + eur(v.rent) : '', n ? n + (n === 1 ? ' Event' : ' Events') : ''].filter(Boolean).map(esc).join(' · ') + (beobachtet(v.name) ? ' <span class="pill st-ok">Partys beobachtet</span>' : '') + (fgMails(v).length ? ' <span class="pill st-planung">Betreiber-Zugang</span>' : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>' + vorschlH + netz();
   }
   if (S.vzTab === 'tech') {
@@ -3188,6 +3345,7 @@ function venueDirForm(v){
     field('vl-notes', 'Notizen', '<textarea id="vl-notes" rows="3" maxlength="2000" placeholder="Zugang, Aufbauzeiten, Parken, Deal …">' + esc(x.notes || '') + '</textarea>') +
     field('vl-url', 'Website', '<input id="vl-url" type="url" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://…" value="' + esc(x.url || (watchVon(x.name) || {}).url || '') + '">') +
     '<label class="check"><input type="checkbox" id="vl-watch"' + (v ? (beobachtet(x.name) ? ' checked' : '') : '') + '> Partys dieser Location beobachten – der Abgleich holt ihre Termine</label>' +
+    (v && !S.ro ? '<div class="field"><label>Zugang für Betreiber</label><p class="hint" style="margin:0 0 8px">' + (fgMails(x).length ? 'Aktiv für ' + esc(fgMails(x).join(', ')) : 'Lade die Betreiber ein – sie sehen nur Line-up, Flyer und was du freigibst.') + '</p><button type="button" class="btn btn-sm" data-vz="partner" data-id="' + esc(v.id) + '">' + (fgMails(x).length ? 'Zugang verwalten' : 'Betreiber einladen') + '</button></div>' : '') +
     vzEnd(!!v) + '</form>');
   vzWire('venues', v, 'Diese Location', () => {
     const name = $('#vl-name').value.trim(); if (!name) return 'Gib einen Namen ein.';
@@ -3242,6 +3400,7 @@ document.addEventListener('click', ev => {
   if (a === 'dj') { const x = (S.artists || []).find(q => q.id === id); if (x) artistForm(x); }
   else if (a === 'loc') { const x = (S.venues || []).find(q => q.id === id); if (x) venueDirForm(x); }
   else if (a === 'tech') { const x = S.techsets.find(q => q.id === id); if (x) techDirForm(x); }
+  else if (a === 'partner') { const x = (S.venues || []).find(q => q.id === id); if (x) partnerSheet(x); }
   else if (a === 'vz-new-dj') artistForm(null);
   else if (a === 'vz-new-loc') venueDirForm(null);
   else if (a === 'vz-new-tech') techDirForm(null);
