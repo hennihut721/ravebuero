@@ -2091,6 +2091,27 @@ function route(){
   return { view:h === '' ? startHash().slice(1) : 'events' };
 }
 const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['Keine Verbindung','bad'], stale:['Evtl. veraltet','wait'], error:['Verbindung weg','bad'], revoked:['Kein Zugriff','bad'], nodb:['Offline','bad'] };
+/* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
+// Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
+const NEUES = [
+  { v:'2026-11-08c', titel:'Neu in RaveBüro', punkte:[
+    'Ablauf pro Event mit Fristen – vieles hakt sich selbst ab',
+    'Booking: „Anfragen“ und „Nachhaken“ öffnen WhatsApp mit fertigem Text',
+    'Abend-Modus am Eventtag: Running Order, „Da?“-Knopf, Nummern, Gästeliste',
+    'Einlass-Zugang: die Tür hakt die Gästeliste ab, ihr seht live, wer drin ist',
+    'Abrechnung mit Ist-Zahlen und Anteil pro Person, Rückblick nach dem Event',
+    '„Deine Aufgaben“ und „Was ist passiert“ auf der Startseite',
+    'Neue Ansichten Booking und Finanzen (Zahnrad → Ansicht)',
+    'Locations können die Running Order bestätigen',
+    'Sofort-Abgleich aus dem Profil entfernt'
+  ] }
+];
+function neuHinweis(){
+  const n = NEUES[0]; if (!n || LS.get('neuGesehen') === n.v) return '';
+  return '<section class="panel" id="neu-hinweis" style="border:2px solid var(--pink)"><div class="panel-h"><h2>' + esc(n.titel) + '</h2><button class="btn btn-ghost" data-act="neu-weg" aria-label="Hinweis schließen">✕</button></div>' +
+    '<ul style="margin:0;padding:0 14px 14px 32px;line-height:1.55">' + n.punkte.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul></section>';
+}
+document.addEventListener('click', ev => { if (ev.target.closest('[data-act="neu-weg"]')) { LS.set('neuGesehen', NEUES[0].v); const x = $('#neu-hinweis'); if (x) x.remove(); } });
 function render(){
   if (window.firebase && !projekt) return; // Anmeldung oder Projektauswahl wird angezeigt
   const a = document.activeElement, view = $('#view');
@@ -2105,7 +2126,7 @@ function render(){
   const label = S.ro && S.conn === 'live' ? 'Nur lesen' : cn[0];
   $('#conn').className = 'conn ' + (S.ro && S.conn === 'live' ? '' : cn[1]);
   $('#conn-t').textContent = label;
-  let h = banners();
+  let h = neuHinweis() + banners();
   if (r.view === 'event') h += viewEvent(r.id);
   else if (r.view === 'kalender') h += viewCal();
   else if (r.view === 'finden') h += viewFinder();
