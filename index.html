@@ -611,6 +611,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 .nm-l{display:grid;gap:8px;margin:0 0 12px}.nm{max-width:86%;justify-self:start;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--sunk);line-height:1.4;overflow-wrap:anywhere}.nm.ich{justify-self:end;border-radius:14px 14px 4px 14px;background:var(--blue-soft)}.nm.neu{box-shadow:inset 0 0 0 2px var(--pink)}.nm-w{font-size:12px;color:var(--ink-3);margin:0 0 2px}.nm-in{display:grid;gap:8px;justify-items:start}
 body.tut-on #view{padding-bottom:300px}body.tut-on #fab{display:none}#tut{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;width:min(520px,calc(100% - 24px));background:var(--surface);border:2px solid var(--pink);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.28);padding:10px 14px 12px}#tut h3{margin:6px 0 4px;font:800 20px/1.05 var(--f-display);text-transform:uppercase}#tut p{margin:0 0 10px;font-size:14.5px;line-height:1.45;max-height:32vh;overflow:auto}.tut-k{display:flex;justify-content:space-between;align-items:center}.tut-bar{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden}.tut-bar span{display:block;height:100%;background:var(--pink)}.tut-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .ad-m .row-main{flex:1 1 60%}.ad-m .row-title{overflow-wrap:anywhere}
+.cr-chat{margin:4px 0 6px}.cr-in{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.cr-in .inp{font-family:var(--f-body);width:100%}.cr-l{display:grid;gap:8px;margin-top:12px;max-height:55vh;overflow:auto}.cr-m{padding:9px 12px;border-radius:12px;background:rgba(127,127,127,.14);line-height:1.4;overflow-wrap:anywhere;max-width:92%;justify-self:start}.cr-m.ich{justify-self:end;background:rgba(214,30,112,.18)}.cr-w{font-size:12.5px;opacity:.75;margin-bottom:2px}.cr-r{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:6px;background:rgba(214,30,112,.25)}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -1103,7 +1104,7 @@ const FB_CONFIG = {
 let fbStarted = false;
 function loginView(msg, err){
   const v = $('#view');
-  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('einlass') ? 'Du wurdest fürs Einlass-Team eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du die Gästeliste zum Abhaken.' : LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Nutzbar nur mit Einladung: Melde dich mit dem Google-Konto an, das in einem Projekt eingetragen ist.') + '</p>' +
+  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('crew') ? 'Du wurdest als Mitarbeiter:in für ein Event eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Running Order, wichtige Nummern und den Team-Chat.' : LS.get('einlass') ? 'Du wurdest fürs Einlass-Team eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du die Gästeliste zum Abhaken.' : LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Nutzbar nur mit Einladung: Melde dich mit dem Google-Konto an, das in einem Projekt eingetragen ist.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="fb-login">Mit Google anmelden</button>' + (firebase.auth().currentUser ? '<button class="btn" id="fb-logout">Abmelden</button>' : '') + '</div></div>';
   const b = $('#fb-login'); if (b) b.onclick = () => {
@@ -1166,8 +1167,8 @@ async function adminLaden(){
     p.nLineup = (await g(r.collection('lineup'), sn => sn.size)) || 0;
   }));
   P.sort((a, b) => ((b.akt[0] || {}).at || 0) - ((a.akt[0] || {}).at || 0) || (a.name || '').localeCompare(b.name || '', 'de'));
-  const [F, PK, EL, ER, SY, FW] = await Promise.all([fs.collection('freigaben'), fs.collection('partnerkonten'), fs.collection('einlass'), fs.collection('ersteller'), fs.collection('syncliste'), fs.collection('ferienwissen')].map(q => g(q, docs)));
-  AD.d = { P, F:F || [], PK:PK || [], EL:EL || [], ER:ER || [], SY:SY || [], FW:FW || [], at:Date.now(), fehler:F === null || PK === null };
+  const [F, PK, EL, ER, SY, FW, CW] = await Promise.all([fs.collection('freigaben'), fs.collection('partnerkonten'), fs.collection('einlass'), fs.collection('ersteller'), fs.collection('syncliste'), fs.collection('ferienwissen'), fs.collection('crew')].map(q => g(q, docs)));
+  AD.d = { P, F:F || [], PK:PK || [], EL:EL || [], ER:ER || [], SY:SY || [], FW:FW || [], CW:CW || [], at:Date.now(), fehler:F === null || PK === null };
 }
 async function adminView(neu){
   stopProjekt(); LS.set('adminOffen', '1');
@@ -1189,10 +1190,11 @@ function adminZeichnen(){
   d.P.forEach(p => (p.members || []).forEach(m => rolle(m, (m === p.owner ? 'Besitzer' : 'Mitglied') + ' · ' + (p.name || 'Projekt'))));
   d.F.forEach(f => (f.emails || []).forEach(m => rolle(m, 'Betreiber · ' + (f.ort || 'Location') + ' (' + (f.projekt || pName(f.pid)) + ')')));
   d.EL.forEach(f => (f.emails || []).forEach(m => rolle(m, 'Einlass · ' + ((f.event || {}).name || 'Event') + ' (' + pName(f.pid) + ')')));
+  d.CW.forEach(f => (f.emails || []).forEach(m => rolle(m, 'Mitarbeiter · ' + ((f.event || {}).name || 'Event') + ' (' + pName(f.pid) + ')')));
   d.ER.forEach(x => rolle(x.id, 'darf Projekte anlegen'));
   rolle(ABGLEICH_MAIL, 'Admin');
   const kpi2 = (k, n, s) => '<div class="kpi"><div class="k">' + k + '</div><div class="v">' + n + '</div><div class="s">' + s + '</div></div>';
-  const tabs = [['uebersicht', 'Übersicht'], ['projekte', 'Projekte ' + d.P.length], ['nutzer', 'Nutzer ' + Object.keys(nutzer).length], ['zugaenge', 'Zugänge ' + (d.F.length + d.EL.length)], ['system', 'System']];
+  const tabs = [['uebersicht', 'Übersicht'], ['projekte', 'Projekte ' + d.P.length], ['nutzer', 'Nutzer ' + Object.keys(nutzer).length], ['zugaenge', 'Zugänge ' + (d.F.length + d.EL.length + d.CW.length)], ['system', 'System']];
   let h = '<section class="vh"><h1>🛡 Admin</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-ad="neu">Neu laden</button><button class="btn btn-primary" data-ad="zurueck">Zurück zur App</button></div></section>' +
     '<p class="muted" style="margin:-4px 0 12px">Alles über die ganze App – nur für ' + esc(me) + '. Stand ' + uhr(d.at) + ' Uhr.</p>' +
     (d.fehler ? '<p class="err">Ein Teil konnte nicht geladen werden – die Datenbank-Regeln für den Admin fehlen vermutlich noch.</p>' : '') +
@@ -1223,6 +1225,7 @@ function adminZeichnen(){
   } else if (AD.tab === 'zugaenge') {
     h += '<section class="panel"><div class="panel-h"><h2>Location-Betreiber</h2></div><ul class="rows">' + (d.F.length ? d.F.map(f => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + ' · ' + esc(f.projekt || pName(f.pid)) + '</span><span class="row-sub" style="white-space:normal">' + esc((f.emails || []).join(', ') || 'keine Adresse') + ' · ' + (f.events || []).length + ' Events' + (f.stand ? ' · Stand ' + wann(f.stand) : '') + '</span></span><button class="btn btn-sm btn-ghost" data-ad-fdel="' + esc(f.id) + '">Beenden</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
     h += '<section class="panel"><div class="panel-h"><h2>Betreiber-Konten</h2></div><p class="hint" style="margin:0 14px 8px">Diese Konten können keine eigenen Projekte anlegen.</p><ul class="rows">' + (d.PK.length ? d.PK.map(x => '<li><div class="row" style="cursor:default"><span class="row-main"><span class="row-title">' + esc(x.id) + '</span><span class="row-sub">eingeladen von ' + esc(pName(x.pid)) + '</span></span><button class="btn btn-sm btn-ghost" data-ad-pkdel="' + esc(x.id) + '">Markierung entfernen</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
+    h += '<section class="panel"><div class="panel-h"><h2>Mitarbeiter</h2></div><ul class="rows">' + (d.CW.length ? d.CW.map(f => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + ' · ' + esc(pName(f.pid)) + '</span><span class="row-sub" style="white-space:normal">' + ((f.event || {}).date ? fmtDs(f.event.date) + ' · ' : '') + esc((f.emails || []).join(', ') || 'niemand eingeladen') + '</span></span><button class="btn btn-sm btn-ghost" data-ad-crdel="' + esc(f.id) + '">Beenden</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
     h += '<section class="panel"><div class="panel-h"><h2>Einlass-Teams</h2></div><ul class="rows">' + (d.EL.length ? d.EL.map(f => '<li><div class="row" style="cursor:default;align-items:flex-start"><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + ' · ' + esc(pName(f.pid)) + '</span><span class="row-sub" style="white-space:normal">' + ((f.event || {}).date ? fmtDs(f.event.date) + ' · ' : '') + esc((f.emails || []).join(', ') || 'niemand eingeladen') + '</span></span><button class="btn btn-sm btn-ghost" data-ad-eldel="' + esc(f.id) + '">Beenden</button></div></li>').join('') : '<li><div class="row muted">Keine.</div></li>') + '</ul></section>';
   } else {
     h += '<section class="panel"><div class="panel-h"><h2>App</h2></div><dl class="dl"><dt>Stand</dt><dd>' + esc(NEUES[0].v) + ' · ' + esc(NEUES[0].titel) + '</dd><dt>Web-App</dt><dd><a href="' + APP_URL + '" target="_blank" rel="noopener">' + esc(APP_URL) + '</a></dd><dt>Code</dt><dd><a href="https://github.com/hennihut721/ravebuero" target="_blank" rel="noopener">GitHub</a></dd><dt>Datenbank</dt><dd><a href="https://console.firebase.google.com/project/ravebuero-1050d/firestore" target="_blank" rel="noopener">Firebase-Konsole</a></dd></dl></section>';
@@ -1249,7 +1252,7 @@ async function adminZurueck(){
 async function adminTun(fn, ok){ try { await fn(); if (ok) toast(ok); await adminLaden(); adminZeichnen(); } catch (e) { toast('Hat nicht geklappt: ' + (e && (e.code || e.message) || e)); } }
 document.addEventListener('click', ev => {
   if (!ev.target.closest || !istAdmin()) return;
-  const t = ev.target.closest('[data-ad],[data-ad-tab],[data-ad-open],[data-ad-mdel],[data-ad-owner],[data-ad-sync],[data-ad-umb],[data-ad-pdel],[data-ad-er],[data-ad-fdel],[data-ad-pkdel],[data-ad-eldel]');
+  const t = ev.target.closest('[data-ad],[data-ad-tab],[data-ad-open],[data-ad-mdel],[data-ad-owner],[data-ad-sync],[data-ad-umb],[data-ad-pdel],[data-ad-er],[data-ad-fdel],[data-ad-pkdel],[data-ad-eldel],[data-ad-crdel]');
   if (!t) return;
   const D = t.dataset, FV = firebase.firestore.FieldValue, P = id => fs.collection('projects').doc(id);
   if (D.ad === 'neu') adminView(true);
@@ -1271,6 +1274,7 @@ document.addEventListener('click', ev => {
   else if (D.adEr) { const m = D.adEr, an = AD.d.ER.some(x => x.id === m); adminTun(() => an ? fs.collection('ersteller').doc(m).delete() : fs.collection('ersteller').doc(m).set({ at:Date.now() }), an ? m + ' darf keine Projekte mehr anlegen.' : m + ' darf jetzt Projekte anlegen.'); }
   else if (D.adFdel) adminTun(() => fs.collection('freigaben').doc(D.adFdel).delete(), 'Zugang beendet.');
   else if (D.adPkdel) adminTun(() => fs.collection('partnerkonten').doc(D.adPkdel).delete(), 'Markierung entfernt.');
+  else if (D.adCrdel) adminTun(() => fs.collection('crew').doc(D.adCrdel).delete(), 'Mitarbeiter-Zugang beendet.');
   else if (D.adEldel) adminTun(() => fs.collection('einlass').doc(D.adEldel).delete(), 'Einlass-Zugang beendet.');
 });
 document.addEventListener('submit', ev => {
@@ -1291,7 +1295,8 @@ async function projektWahl(msg, err){
   let L = [];
   let pFehler = '';
   try { L = await meineProjekte(); } catch (e) { pFehler = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); }
-  const F = await meineFreigaben(), EL = (await meineEinlaesse()).filter(f => (f.emails || []).indexOf(meineMail()) >= 0), nurPartner = await istPartnerKonto() || !!LS.get('zugang') || !!LS.get('einlass'), darf = !nurPartner && await istErsteller();
+  const CW = await meineCrews();
+  const F = await meineFreigaben(), EL = (await meineEinlaesse()).filter(f => (f.emails || []).indexOf(meineMail()) >= 0), nurPartner = await istPartnerKonto() || !!LS.get('zugang') || !!LS.get('einlass') || !!LS.get('crew'), darf = !nurPartner && await istErsteller();
   if (pFehler && !nurPartner) { msg = pFehler; err = true; }
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
@@ -1303,7 +1308,8 @@ async function projektWahl(msg, err){
       const neu = p.owner !== me && seen.indexOf(p.id) < 0;
       return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>'
-      : F.length || EL.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : (darf ? 'Leg unten dein erstes Projekt an – oder lass dich in ein bestehendes einladen.' : 'RaveBüro ist nur mit Einladung nutzbar. Bitte jemanden aus eurem Kollektiv, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und tippe danach auf „Neu laden“.')) + '</p></div>') +
+      : F.length || EL.length || CW.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : (darf ? 'Leg unten dein erstes Projekt an – oder lass dich in ein bestehendes einladen.' : 'RaveBüro ist nur mit Einladung nutzbar. Bitte jemanden aus eurem Kollektiv, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und tippe danach auf „Neu laden“.')) + '</p></div>') +
+    (CW.length ? '<section class="panel"><div class="panel-h"><h2>Mitarbeiter</h2></div><ul class="rows">' + CW.map(f => '<li><button type="button" class="row" data-pc="' + esc(f.id) + '"><span class="av">M</span><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + '</span><span class="row-sub">' + ((f.event || {}).date ? fmtD(f.event.date) + ' · ' : '') + 'Abend-Modus und Team-Chat</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
     (EL.length ? '<section class="panel"><div class="panel-h"><h2>Einlass</h2></div><ul class="rows">' + EL.map(f => '<li><button type="button" class="row" data-pe="' + esc(f.id) + '"><span class="av">E</span><span class="row-main"><span class="row-title">' + esc((f.event || {}).name || 'Event') + '</span><span class="row-sub">Gästeliste · ' + fmtD((f.event || {}).date) + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
     (F.length ? '<section class="panel"><div class="panel-h"><h2>Für dich freigegeben</h2></div><ul class="rows">' + F.map(f => '<li><button type="button" class="row" data-pf="' + esc(f.id) + '"><span class="av">' + esc(initial(f.ort)) + '</span><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + '</span><span class="row-sub">von ' + esc(f.projekt || 'Veranstalter') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
     (!darf ? '' : '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>') +
@@ -1312,6 +1318,7 @@ async function projektWahl(msg, err){
   v.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => oeffneProjekt(L.find(p => p.id === b.getAttribute('data-pj'))));
   v.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => partnerView(b.getAttribute('data-pf')));
   v.querySelectorAll('[data-pe]').forEach(b => b.onclick = () => einlassView(b.getAttribute('data-pe')));
+  v.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => crewView(b.getAttribute('data-pc')));
   $('#pj-reload').onclick = () => projektWahl();
   $('#pj-out').onclick = () => firebase.auth().signOut().then(() => location.reload());
   if ($('#pj-form')) $('#pj-form').onsubmit = async ev => {
@@ -1334,6 +1341,7 @@ function stopProjekt(){
   if (PV.mUnsub) { try { PV.mUnsub(); } catch (e) {} PV.mUnsub = null; } PV.fid = null; PV.msgs = [];
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
+  try { crewStop(); } catch (e) {}
   projekt = null; db = null; S.gast = false;
   try { $('#fab').hidden = true; } catch (e) {}
 }
@@ -1432,6 +1440,7 @@ async function fgLauf(){
   }
   fgHoeren();
   await elSync();
+  await crewSync();
 }
 function partnerSheet(v){
   const fel = fgFelder(v), M = fgMails(v);
@@ -2010,6 +2019,11 @@ function viewAbend(id){
   S.abendEv = e; ekHoeren(projekt.id + '_' + e.id, () => scheduleRender());
   h += '<h2 class="ab-sec">Einlass & Kasse' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="einlass" data-id="' + esc(e.id) + '" style="margin-left:auto">' + (M.length ? 'Einlass-Team' : 'Einlass-Team einladen') + '</button>') + '</h2>' +
     ekBlock(projekt.id + '_' + e.id, S.el, !S.ro, e) + (EK.tab === 'gaeste' ? '<div class="ab-gl">' + glBlock(G, S.el, !S.ro, 'm') + '</div>' : '') + '</div>';
+  const CM = e.crewEmails || [], crFid = projekt.id + '_' + e.id;
+  crChatHoeren(crFid, () => { if (route().view === 'abend') scheduleRender(); });
+  h = h.replace(/<\/div>$/, '');
+  h += '<h2 class="ab-sec">Team-Chat' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="crew" data-id="' + esc(e.id) + '" style="margin-left:auto">' + (CM.length ? 'Mitarbeiter (' + CM.length + ')' : 'Mitarbeiter einladen') + '</button>') + '</h2>' +
+    (S.gast ? '<p class="ab-meta">Im Admin-Modus kannst du hier nicht schreiben.</p>' : crChatBlock(crFid, 'team')) + '</div>';
   S.abendEv = e;
   if (!S.abendT) S.abendT = setInterval(() => { if (route().view === 'abend' && !document.querySelector('.sheet-open, #sheet:not([hidden])')) render(); else if (route().view !== 'abend') { clearInterval(S.abendT); S.abendT = 0; } }, 60000);
   return h;
@@ -2287,6 +2301,130 @@ function elZeichnen(){
 }
 (function(){ try { const z = new URLSearchParams(location.search).get('einlass'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('einlass', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
 
+/* ===== Mitarbeiter (Crew): nur per Einladung, sehen den Abend-Modus eines Events und haben einen Chat ===== */
+// crew/{projekt}_{event}: { pid, emails, event, ro:[Running Order], nums:[[Wer, Nummer]], info }
+// crew/{fid}/chat/{id}: { text, wer, mail, rolle:'team'|'crew', at }
+const crLink = e => APP_URL + '?crew=' + encodeURIComponent(projekt.id + '_' + e.id);
+const CR = { fid:'', chat:[], unsub:null, cb:null, doc:null, docUnsub:null, t:0 };
+const CR_ENTWURF = {};
+function crewSheet(e){
+  const M = (e.crewEmails || []).map(x => String(x).toLowerCase());
+  const txt = () => 'Hi! Für „' + (e.name || 'unser Event') + '“ am ' + fmtD(e.date) + ' bist du als Mitarbeiter:in eingetragen. Hier siehst du Running Order, wichtige Nummern und den Chat fürs Team am Abend:\n\n' + crLink(e) + '\n\nMelde dich dort mit deinem Google-Konto (' + M.join(' oder ') + ') an.';
+  showSheet('<h2 id="sheet-title">Mitarbeiter · ' + esc(e.name || 'Event') + '</h2><p class="muted" style="margin:0 0 14px">Mitarbeiter:innen (Bar, Technik, Awareness, Garderobe …) kommen nur über diese Einladung rein. Sie sehen den Abend-Modus dieses Events – Running Order, wer gerade spielt, wichtige Nummern – und schreiben im Chat mit euch. Keine Kosten, keine Gästeliste, kein eigenes Projekt.</p>' +
+    '<form class="f" id="cr-form" novalidate>' + field('cr-mail', 'Google-Adressen der Mitarbeiter:innen', '<textarea id="cr-mail" rows="3" maxlength="1500" placeholder="eine Adresse pro Zeile">' + esc(M.join('\n')) + '</textarea>') +
+    field('cr-info', 'Infos fürs Team (optional)', '<textarea id="cr-info" rows="3" maxlength="1500" placeholder="z. B. Treffpunkt 21 Uhr Hintereingang, Getränke für Crew an der Bar">' + esc(e.crewInfo || '') + '</textarea>') +
+    '<p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>' +
+    (M.length ? '<section class="panel" style="margin-top:18px"><div class="panel-h"><h2>Einladungslink</h2></div><div style="padding:0 14px 14px"><p class="muted small" style="margin:0 0 10px;word-break:break-all">' + esc(crLink(e)) + '</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" id="cr-copy">Einladung kopieren</button><button class="btn btn-sm" id="cr-wa">Per WhatsApp</button></div></div></section>' : ''));
+  if (M.length) { $('#cr-copy').onclick = async () => toast(await copyText(txt()) ? 'Einladung kopiert.' : 'Kopieren hat nicht geklappt.'); $('#cr-wa').onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(txt()), '_blank', 'noopener'); }
+  $('#cr-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const mails = [...new Set($('#cr-mail').value.split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean))];
+    const bad = mails.filter(m => !okMail(m));
+    if (bad.length) return formErr($('#cr-form'), 'Das sieht nicht wie eine E-Mail-Adresse aus: ' + bad.join(', '));
+    if (mails.length > 30) return formErr($('#cr-form'), 'Höchstens 30 Mitarbeiter:innen pro Event.');
+    const info = $('#cr-info').value.trim();
+    const ok = await save(async () => {
+      await db.doc('events/' + e.id).update({ crewEmails:mails, crewInfo:info });
+      await fs.collection('crew').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:mails }, { merge:true });
+    }, mails.length ? 'Mitarbeiter gespeichert' : 'Mitarbeiter-Zugang beendet');
+    if (ok) { fgPlan(); if (mails.length && !M.length) crewSheet(Object.assign({}, e, { crewEmails:mails, crewInfo:info })); else closeSheet(); }
+  };
+}
+function crewBody(e){
+  const fl = id => (S.floors.find(f => f.id === id) || {}).name || '';
+  const L = S.lineup.filter(l => l.eventId === e.id && l.status !== 'abgesagt').sort((a, b) => timeKey(a.start) - timeKey(b.start));
+  const nums = [];
+  if (e.venueContact) nums.push(['Location' + (e.venue ? ' (' + e.venue + ')' : ''), e.venueContact]);
+  String(e.kontakte || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(z => { const i = z.indexOf(':'); nums.push(i > 0 ? [z.slice(0, i).trim(), z.slice(i + 1).trim()] : ['', z]); });
+  return { pid:projekt.id, emails:(e.crewEmails || []).map(x => String(x).toLowerCase()), event:{ name:e.name || '', date:e.date || '', start:e.start || '', end:e.end || '', venue:e.venue || '' },
+    ro:L.map(l => ({ name:l.name || '', start:l.start || '', end:l.end || '', floor:fl(l.floorId), ankunft:l.ankunft || '', da:!!l.da })), nums:nums.map(n => ({ wer:n[0], nr:n[1] })), info:e.crewInfo || '' };
+}
+// Kopie für die Mitarbeiter (nur Running Order, Nummern, Infos)
+async function crewSync(){
+  if (S.gast) return;
+  for (const e of S.events.filter(x => Array.isArray(x.crewEmails))) {
+    const fid = projekt.id + '_' + e.id, body = crewBody(e), sig = fgHash(JSON.stringify(body));
+    try {
+      const ref = fs.collection('crew').doc(fid), d = await ref.get();
+      if (d.exists && d.data().sig === sig) continue;
+      if (!body.emails.length && !d.exists) continue;
+      await ref.set(Object.assign(body, { sig, stand:Date.now() }), { merge:true });
+    } catch (x) { console.warn('Crew', fid, x); }
+  }
+}
+async function meineCrews(){
+  let L = [];
+  try { const sn = await fs.collection('crew').where('emails', 'array-contains', meineMail()).get(); L = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); } catch (e) { console.warn('Crew', e); }
+  const z = LS.get('crew');
+  if (z && !L.some(f => f.id === z)) { try { const d = await fs.collection('crew').doc(z).get(); if (d.exists) L.push(Object.assign({ id:d.id }, d.data())); } catch (e) {} }
+  return L.filter(f => (f.emails || []).indexOf(meineMail()) >= 0);
+}
+function crChatHoeren(fid, cb){
+  CR.cb = cb;
+  if (CR.fid === fid && CR.unsub) return;
+  crChatStop(); CR.fid = fid; CR.chat = [];
+  try { CR.unsub = fs.collection('crew').doc(fid).collection('chat').orderBy('at').onSnapshot(sn => { CR.chat = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); if (CR.cb) CR.cb(); }, () => {}); } catch (e) {}
+}
+function crChatStop(){ if (CR.unsub) { try { CR.unsub(); } catch (e) {} } CR.unsub = null; CR.fid = ''; CR.chat = []; }
+function crChatBlock(fid, ich){
+  const k = fid, me = meineMail();
+  const L = CR.fid === fid ? CR.chat.slice(-80).reverse() : [];
+  return '<div class="cr-chat"><div class="cr-in"><textarea class="inp" id="cr-t-' + esc(k.replace(/[^\w-]/g, '')) + '" data-cr-k="' + esc(k) + '" rows="2" maxlength="1000" placeholder="Nachricht ans Team, z. B. „Bar braucht Eis“">' + esc(CR_ENTWURF[k] || '') + '</textarea><button class="btn btn-primary btn-sm" data-cr-send="' + esc(k) + '" data-cr-rolle="' + ich + '">Senden</button></div>' +
+    (L.length ? '<div class="cr-l">' + L.map(m => '<div class="cr-m' + (m.mail === me ? ' ich' : '') + '"><div class="cr-w"><strong>' + esc(m.wer || (m.mail || '').split('@')[0]) + '</strong>' + (m.rolle === 'team' ? ' <span class="cr-r">Orga</span>' : '') + ' · ' + uhr(m.at) + (isoVon(m.at) !== today() ? ' · ' + fmtDs(isoVon(m.at)) : '') + '</div>' + esc(m.text).replace(/\n/g, '<br>') + '</div>').join('') + '</div>' : '<p class="ab-meta" style="margin:8px 0 0">Noch keine Nachrichten. Hier schreiben Orga und Mitarbeiter:innen am Abend zusammen.</p>') + '</div>';
+}
+document.addEventListener('input', ev => { const t = ev.target.closest && ev.target.closest('[data-cr-k]'); if (t) CR_ENTWURF[t.getAttribute('data-cr-k')] = t.value; });
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest && ev.target.closest('[data-cr-send]'); if (!b) return;
+  const k = b.getAttribute('data-cr-send'), t = String(CR_ENTWURF[k] || '').trim(), rolle = b.getAttribute('data-cr-rolle');
+  if (!t) { toast('Schreib erst eine Nachricht.'); return; }
+  b.disabled = true;
+  try {
+    const wer = rolle === 'team' ? meinName() : (CR.meinName || meineMail().split('@')[0]);
+    await fs.collection('crew').doc(k).collection('chat').add({ text:t.slice(0, 1000), wer, mail:meineMail(), rolle, at:Date.now() });
+    delete CR_ENTWURF[k]; const ta = document.querySelector('[data-cr-k="' + CSS.escape(k) + '"]'); if (ta) ta.value = '';
+  } catch (e) { toast('Senden hat nicht geklappt' + (e && e.code === 'permission-denied' ? ' – keine Berechtigung.' : '.')); }
+  b.disabled = false;
+});
+function crewView(fid){
+  stopProjekt(); LS.set('crzuletzt', fid);
+  document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
+  $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Lädt …';
+  CR.doc = null; CR.meinName = LS.get('crName') || '';
+  CR.docUnsub = fs.collection('crew').doc(fid).onSnapshot(d => { CR.doc = d.exists ? d.data() : null; crZeichnen(fid); },
+    () => { $('#view').innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Melde dich mit der Google-Adresse an, an die die Einladung ging.</p></div>'; });
+  crChatHoeren(fid, () => crZeichnen(fid));
+  clearInterval(CR.t); CR.t = setInterval(() => { if (CR.docUnsub) crZeichnen(fid); else clearInterval(CR.t); }, 60000);
+}
+function crZeichnen(fid){
+  if (projekt) return;
+  const v = $('#view'), x = CR.doc, me = meineMail();
+  $('#conn').className = 'conn ' + (x ? 'live' : 'bad'); $('#conn-t').textContent = x ? 'Mitarbeiter' : 'Kein Zugang';
+  const fuss = '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-wahl">Übersicht</button><button class="btn btn-ghost" id="pv-out">Abmelden</button></div><p class="muted small" style="margin-top:10px">Angemeldet als ' + esc(me) + '</p>';
+  if (!x || (x.emails || []).indexOf(me) < 0) { v.innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Für dieses Event ist deine Adresse nicht (mehr) eingetragen.</p></div>' + fuss; }
+  else {
+    const a = document.activeElement, keep = a && a.id && /^(cr-t-|cr-name)/.test(a.id) ? [a.id, a.value, a.selectionStart] : null;
+    const ev = x.event || {}, L = x.ro || [], heute = istHeute(ev), nowM = jetztMin(), m = t => timeKey(t) === 99999 ? null : timeKey(t);
+    const lauf = heute ? L.filter(l => m(l.start) != null && m(l.start) <= nowM && (m(l.end) == null || nowM < m(l.end))) : [];
+    const naechst = heute ? L.filter(l => m(l.start) != null && m(l.start) > nowM)[0] : L[0];
+    let h = '<div class="abend"><div class="ab-top"><span>Mitarbeiter</span><span class="ab-live">' + (heute ? '● Heute' : fmtD(ev.date)) + '</span></div><h1 class="ab-h1">' + esc(ev.name || 'Event') + '</h1><p class="ab-sub">' + [ev.start ? ev.start + (ev.end ? '–' + ev.end : '') + ' Uhr' : '', ev.venue].filter(Boolean).map(esc).join(' · ') + '</p>';
+    if (x.info) h += '<div class="ab-card"><div class="ab-k">Infos fürs Team</div><div style="font-size:16px;line-height:1.45;margin-top:4px">' + esc(x.info).replace(/\n/g, '<br>') + '</div></div>';
+    h += lauf.map(l => '<div class="ab-card now"><div class="ab-k">Läuft gerade' + (l.floor ? ' · ' + esc(l.floor) : '') + '</div><div class="ab-name">' + esc(l.name) + '</div><div class="ab-t">' + esc(l.start) + '–' + esc(l.end || '?') + '</div></div>').join('');
+    if (naechst) { const dm = heute && m(naechst.start) != null ? m(naechst.start) - nowM : null; h += '<div class="ab-card"><div class="ab-k">Als Nächstes' + (naechst.floor ? ' · ' + esc(naechst.floor) : '') + '</div><div class="ab-name">' + esc(naechst.name) + '</div><div class="ab-t">' + esc(naechst.start || 'Zeit offen') + (dm != null ? ' · in ' + (dm >= 60 ? Math.floor(dm / 60) + ' Std ' + (dm % 60) + ' Min' : dm + ' Min') : '') + '</div></div>'; }
+    h += '<h2 class="ab-sec">Team-Chat</h2>' + (CR.meinName ? '' : '<div class="ab-row" style="flex-wrap:wrap;gap:8px"><input class="inp" id="cr-name" placeholder="Dein Name im Chat, z. B. Lea (Bar)" maxlength="40" style="flex:1;min-width:160px"><button class="btn btn-sm" id="cr-name-ok">Speichern</button></div>') + crChatBlock(fid, 'crew');
+    h += '<h2 class="ab-sec">Running Order</h2><div class="ab-list">' + (L.length ? L.map(l => { const jetzt = lauf.indexOf(l) >= 0, vorbei = heute && m(l.end) != null && m(l.end) <= nowM;
+      return '<div class="ab-row' + (jetzt ? ' now' : '') + (vorbei ? ' past' : '') + '"><div class="ab-time">' + esc(l.start || '–') + '</div><div class="ab-who"><div class="ab-name2">' + esc(l.name) + '</div><div class="ab-meta">' + [l.floor, l.end ? 'bis ' + l.end : '', l.da ? '✓ ist da' : ''].filter(Boolean).map(esc).join(' · ') + '</div></div></div>'; }).join('') : '<p class="muted">Noch kein Line-up.</p>') + '</div>';
+    const N = x.nums || [];
+    h += '<h2 class="ab-sec">Wichtige Nummern</h2><div class="ab-list">' + (N.length ? N.map(n => '<div class="ab-row"><div class="ab-who"><div class="ab-name2">' + esc(n.wer || 'Nummer') + '</div><div class="ab-meta">' + esc(n.nr) + '</div></div>' + (telLink(n.nr) ? '<a class="ab-tel" href="' + telLink(n.nr) + '" aria-label="' + esc(n.wer || 'Nummer') + ' anrufen">📞</a>' : '') + '</div>').join('') : '<p class="muted">Noch keine Nummern.</p>') + '</div></div>';
+    v.innerHTML = h + fuss;
+    if (keep) { const q = document.getElementById(keep[0]); if (q) { q.value = keep[1]; q.focus(); try { q.setSelectionRange(keep[2], keep[2]); } catch (e) {} } }
+    const nb = $('#cr-name-ok'); if (nb) nb.onclick = () => { const n = $('#cr-name').value.trim(); if (!n) return; CR.meinName = n; LS.set('crName', n); crZeichnen(fid); };
+  }
+  $('#pv-wahl').onclick = () => { crewStop(); projektWahl(); };
+  $('#pv-out').onclick = () => { LS.set('crew', ''); crewStop(); firebase.auth().signOut().then(() => location.reload()); };
+}
+function crewStop(){ if (CR.docUnsub) { try { CR.docUnsub(); } catch (e) {} } CR.docUnsub = null; clearInterval(CR.t); crChatStop(); }
+(function(){ try { const z = new URLSearchParams(location.search).get('crew'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('crew', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
+
 /* ===== (10) Ansichten Booking und Finanzen ===== */
 function viewBkHeute(){
   const U = upEvents(), N = nachhakenListe();
@@ -2368,6 +2506,7 @@ document.addEventListener('click', ev => {
   else if (o === 'ich-bin-p') ichBin(id);
   else if (o === 'kontakte') { if (e) kontakteForm(e); }
   else if (o === 'einlass') { if (e) einlassSheet(e); }
+  else if (o === 'crew') { if (e) crewSheet(e); }
   else if (o === 'da') { const l = S.lineup.find(x => x.id === id); if (l && !S.ro) { save(() => db.doc('lineup/' + id).update({ da:!l.da })); if (!l.da) logA(l.name + ' ist da (' + evName(l.eventId) + ')', l.eventId); } }
   else if (o === 'fi-paid') { if (S.ro) return; const c = v === 'lineup' ? 'lineup' : 'money'; save(() => db.doc(c + '/' + id).update({ paid:true }), 'Abgehakt'); const x = (S[c] || []).find(q => q.id === id); if (x) logA('hat „' + (x.label || x.name || x.category || 'Posten') + '“ als bezahlt markiert', x.eventId); }
   else if (o === 'gl-tog' || o === 'gl-frei') {
@@ -2554,6 +2693,10 @@ async function init(){
     try { L = await meineProjekte(); } catch (e) { pErr = e; console.warn('Projekte', e); }
     const F = await meineFreigaben(), z = LS.get('zugang'), partner = await istPartnerKonto(), EL = await meineEinlaesse(), ez = LS.get('einlass');
     if (ez && EL.some(f => f.id === ez && (f.emails || []).indexOf(meineMail()) >= 0)) { einlassView(ez); return; }
+    const CW = await meineCrews(), cz = LS.get('crew');
+    if (cz && CW.some(f => f.id === cz)) { crewView(cz); return; }
+    if (cz && !L.length) { zugangFalsch(false); return; }
+    if (!L.length && !F.length && CW.length === 1) { crewView(CW[0].id); return; }
     if (z && F.some(f => f.id === z)) { partnerView(z); return; }
     if (ez && !L.length) { zugangFalsch(false); return; }
     if (z) { zugangFalsch(L.length > 0); return; } // Einladungslink, aber dieses Konto ist nicht eingeladen
@@ -2588,6 +2731,11 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08n', titel:'Mitarbeiter und Team-Chat', punkte:[
+    'Neues Profil „Mitarbeiter“: Bar, Technik, Awareness & Co. kommen nur per Einladung rein und sehen den Abend-Modus ihres Events – Running Order, wer gerade spielt, wichtige Nummern, Infos fürs Team',
+    'Team-Chat für den Abend: Orga und Mitarbeiter:innen schreiben zusammen – im Abend-Modus unter „Team-Chat“',
+    'Einladen im Abend-Modus über „Mitarbeiter einladen“'
+  ]},
   { v:'2026-11-08m', titel:'Dashboard als eigener Reiter', punkte:[
     'Die Übersicht mit den Kacheln hat jetzt einen eigenen Reiter „Dashboard“ ganz links – dort startet die App',
     'Im Reiter Events steht das nächste Event groß mit allen Infos, darunter die folgenden Events klein'
