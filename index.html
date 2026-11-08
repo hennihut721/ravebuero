@@ -1002,7 +1002,7 @@ const FB_CONFIG = {
 let fbStarted = false;
 function loginView(msg, err){
   const v = $('#view');
-  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Melde dich mit Google an. Danach trittst du einem Projekt bei, zu dem du eingeladen wurdest, oder erstellst ein eigenes.') + '</p>' +
+  v.innerHTML = '<div class="empty" style="margin-top:40px"><h3>RaveBüro</h3><p>' + (LS.get('zugang') ? 'Du wurdest als Location eingeladen. Melde dich mit dem Google-Konto an, an das die Einladung ging – danach siehst du Line-up, Flyer und alles, was für eure gemeinsamen Events freigegeben ist.' : 'Planung fürs Kollektiv – Termine, Kosten, Line-up, Aufgaben. Nutzbar nur mit Einladung: Melde dich mit dem Google-Konto an, das in einem Projekt eingetragen ist.') + '</p>' +
     (msg ? '<p class="' + (err ? 'err' : 'muted') + '">' + esc(msg) + '</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="fb-login">Mit Google anmelden</button>' + (firebase.auth().currentUser ? '<button class="btn" id="fb-logout">Abmelden</button>' : '') + '</div></div>';
   const b = $('#fb-login'); if (b) b.onclick = () => {
@@ -1016,6 +1016,8 @@ function loginView(msg, err){
 // Jedes Projekt hat seine Daten unter projects/{id}/{sammlung}. `db` zeigt immer auf das gewählte Projekt.
 let fs = null, projekt = null, UNSUB = [];
 const meineMail = () => String((user && user.email) || '').trim().toLowerCase();
+// Eigene Projekte anlegen darf nur, wer freigeschaltet ist (Admin: ABGLEICH_MAIL) – alle anderen kommen nur per Einladung rein
+async function istErsteller(){ if (meineMail() === ABGLEICH_MAIL) return true; try { return (await fs.collection('ersteller').doc(meineMail()).get()).exists; } catch (e) { return false; } }
 function projektDb(pid){
   const ref = fs.collection('projects').doc(pid);
   return {
@@ -1060,7 +1062,7 @@ async function projektWahl(msg, err){
   let L = [];
   let pFehler = '';
   try { L = await meineProjekte(); } catch (e) { pFehler = 'Projekte konnten nicht geladen werden: ' + (e && e.message || e); }
-  const F = await meineFreigaben(), nurPartner = await istPartnerKonto() || !!LS.get('zugang');
+  const F = await meineFreigaben(), nurPartner = await istPartnerKonto() || !!LS.get('zugang'), darf = !nurPartner && await istErsteller();
   if (pFehler && !nurPartner) { msg = pFehler; err = true; }
   const seen = gesehen(), me = meineMail();
   const v = $('#view');
@@ -1071,9 +1073,9 @@ async function projektWahl(msg, err){
       const neu = p.owner !== me && seen.indexOf(p.id) < 0;
       return '<li><button type="button" class="row" data-pj="' + esc(p.id) + '"><span class="av">' + esc(initial(p.name)) + '</span><span class="row-main"><span class="row-title">' + esc(p.name || 'Projekt') + (neu ? ' <span class="pill st-ok">Einladung</span>' : '') + '</span><span class="row-sub">' + (p.members || []).length + ((p.members || []).length === 1 ? ' Mitglied' : ' Mitglieder') + (p.owner === me ? ' · von dir erstellt' : p.owner ? ' · erstellt von ' + esc(p.owner) : '') + '</span></span>' + I.right + '</button></li>';
     }).join('') + '</ul></section>'
-      : F.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : 'Wurdest du eingeladen? Dann bitte die Person, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und lade danach diese Seite neu. Oder leg unten dein eigenes Projekt an.') + '</p></div>') +
+      : F.length ? '' : '<div class="empty"><h3>' + (nurPartner ? 'Noch nichts freigegeben' : 'Noch kein Projekt') + '</h3><p>' + (nurPartner ? 'Für deine Adresse <strong>' + esc(me) + '</strong> ist gerade nichts freigegeben. Bitte den Veranstalter, dir den Einladungslink noch einmal zu schicken.' : (darf ? 'Leg unten dein erstes Projekt an – oder lass dich in ein bestehendes einladen.' : 'RaveBüro ist nur mit Einladung nutzbar. Bitte jemanden aus eurem Kollektiv, deine Google-Adresse <strong>' + esc(me) + '</strong> im Projekt unter „Profil → Mitglieder“ einzutragen, und tippe danach auf „Neu laden“.')) + '</p></div>') +
     (F.length ? '<section class="panel"><div class="panel-h"><h2>Für dich freigegeben</h2></div><ul class="rows">' + F.map(f => '<li><button type="button" class="row" data-pf="' + esc(f.id) + '"><span class="av">' + esc(initial(f.ort)) + '</span><span class="row-main"><span class="row-title">' + esc(f.ort || 'Location') + '</span><span class="row-sub">von ' + esc(f.projekt || 'Veranstalter') + '</span></span>' + I.right + '</button></li>').join('') + '</ul></section>' : '') +
-    (nurPartner ? '' : '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>') +
+    (!darf ? '' : '<section class="panel"><div class="panel-h"><h2>Neues Projekt</h2></div><form id="pj-form" novalidate style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap"><input class="inp" id="pj-name" maxlength="60" placeholder="Name, z. B. euer Kollektiv" aria-label="Name des neuen Projekts" autocomplete="off" style="flex:1;min-width:180px;font-family:var(--f-body)"><button class="btn btn-primary" type="submit">' + I.plus + 'Erstellen</button></form></section>') +
     '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pj-reload">Neu laden</button><button class="btn btn-ghost" id="pj-out">Abmelden</button></div>';
   $('#conn').className = 'conn'; $('#conn-t').textContent = 'Projekt wählen';
   v.querySelectorAll('[data-pj]').forEach(b => b.onclick = () => oeffneProjekt(L.find(p => p.id === b.getAttribute('data-pj'))));
@@ -1314,20 +1316,30 @@ function renderProfil(msg, err){
     '<h3 style="margin:0 0 4px">Projekt</h3>' +
     '<form id="pf-pname" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-pn" maxlength="60" aria-label="Name des Projekts" autocomplete="off" value="' + esc(projekt.name || '') + '" style="flex:1;font-family:var(--f-body)"><button class="btn" type="submit">Umbenennen</button></form>' +
     '<label class="check" style="margin:0 0 6px"><input type="checkbox" id="pf-sync"' + (projekt.abgleich !== false ? ' checked' : '') + '> Partys & Festivals jeden Freitagabend automatisch abgleichen</label>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px"><button type="button" class="btn" id="pf-wechsel">Projekt wechseln oder neues erstellen</button>' + (projekt.owner !== me ? '<button type="button" class="btn btn-ghost" id="pf-leave" style="color:var(--bad)">Projekt verlassen</button>' : '') + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px"><button type="button" class="btn" id="pf-wechsel">Projekt wechseln</button>' + (projekt.owner !== me ? '<button type="button" class="btn btn-ghost" id="pf-leave" style="color:var(--bad)">Projekt verlassen</button>' : '') + '</div>' +
     '<h3 style="margin:0 0 4px">Mitglieder</h3><p class="hint" style="margin:0 0 12px">Trag hier die Google-Adresse ein, um jemanden einzuladen. Die Person meldet sich mit diesem Google-Konto an und findet „' + esc(projekt.name || 'das Projekt') + '“ dann unter ihren Projekten – in der Web-Version und in der Android-App.</p>' +
     '<form id="pf-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail des neuen Mitglieds" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Einladen</button></form>' +
     (msg ? '<p class="' + (err ? 'err' : 'hint') + '" style="margin:0 0 8px">' + esc(msg) + '</p>' : '') +
     '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + M.map(m =>
       '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span>' + (m === projekt.owner ? '<span class="row-sub">hat das Projekt erstellt</span>' : '') + '</span>' +
       (m === me || m === projekt.owner ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
-    profilBetreiber() +
+    profilBetreiber() + (me === ABGLEICH_MAIL ? '<h3 style="margin:0 0 4px">Eigene Projekte erlauben</h3><p class="hint" style="margin:0 0 12px">RaveBüro ist nur mit Einladung nutzbar. Wer hier steht, darf zusätzlich eigene Projekte anlegen. Alle anderen kommen nur über eine Einladung als Mitglied oder als Location-Betreiber rein.</p><form id="pf-er-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-er-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail, die Projekte anlegen darf" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Erlauben</button></form><ul class="rows" id="pf-er-list" style="border-bottom:1px solid var(--line);margin:6px 0 18px"><li><p class="muted" style="margin:10px 0">Lädt …</p></li></ul>' : '') +
     (me === ABGLEICH_MAIL ? '<h3 style="margin:0 0 4px">Sofort-Abgleich</h3><p class="hint" style="margin:0 0 8px">Für den Knopf „Abgleich“ auf der Startseite der Android-App, damit er den Abgleich direkt startet, ohne dass sich Claude öffnet: Unter <a href="https://claude.ai/code/routines" target="_blank" rel="noopener">claude.ai/code/routines</a> die Aufgabe „RaveBüro: Abgleich“ öffnen → „Add another trigger“ → „API“ → „Generate token“. Adresse und Schlüssel hier einfügen. Nur du kannst sie lesen.</p>' +
       '<form id="pf-key" novalidate style="display:grid;gap:8px;margin:0 0 18px"><input class="inp" id="pf-key-url" type="url" placeholder="https://api.anthropic.com/v1/claude_code/routines/…/fire" aria-label="Adresse des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><input class="inp" id="pf-key-tok" type="password" placeholder="sk-ant-oat01-…" aria-label="Schlüssel des Abgleichs" autocomplete="off" style="font-family:var(--f-body)"><div style="display:flex;gap:8px;align-items:center"><button class="btn" type="submit">Speichern</button><span class="hint" id="pf-key-st"></span></div></form>' : '') +
     (projekt.id === 'ravebuero' ? '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p><button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' : '') +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
   showSheet(h);
   const FV = firebase.firestore.FieldValue;
+  if ($('#pf-er-form')) {
+    const er = fs.collection('ersteller');
+    const liste = async () => { let L = []; try { L = (await er.get()).docs.map(d => d.id).sort(); } catch (e) {} const ul = $('#pf-er-list'); if (!ul) return;
+      ul.innerHTML = '<li><div class="row" style="cursor:default"><span class="av">' + esc(me.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(me) + ' (du)</span><span class="row-sub">Admin</span></span></div></li>' + L.filter(m => m !== me).map(m => '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + '</span></span><button type="button" class="btn btn-ghost" data-er-del="' + esc(m) + '">Entfernen</button></div></li>').join('');
+      ul.querySelectorAll('[data-er-del]').forEach(b => b.onclick = async () => { try { await er.doc(b.getAttribute('data-er-del')).delete(); toast('Entfernt.'); liste(); } catch (e) { toast('Hat nicht geklappt.'); } }); };
+    liste();
+    $('#pf-er-form').onsubmit = async ev => { ev.preventDefault(); const m = $('#pf-er-mail').value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(m)) { toast('Bitte eine gültige E-Mail-Adresse eingeben.'); return; }
+      try { await er.doc(m).set({ at:Date.now() }); $('#pf-er-mail').value = ''; toast(m + ' darf jetzt eigene Projekte anlegen.'); liste(); } catch (e) { toast('Hat nicht geklappt.'); } };
+  }
   if ($('#pf-loc-go')) $('#pf-loc-go').onclick = () => { const v = (S.venues || []).find(x => x.id === $('#pf-loc').value); if (!v) { $('#pf-loc').focus(); return; } partnerSheet(v); };
   $('#pf-form').onsubmit = async ev => {
     ev.preventDefault();
