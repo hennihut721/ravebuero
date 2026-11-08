@@ -609,6 +609,7 @@ a.pill.st-ok,.alert a.pill.st-ok{color:var(--good)}
 
 .pv-floor{margin:0 0 10px}.pv-floor-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:6px 14px 2px;padding:6px 10px;border-radius:8px;background:var(--sunk);font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
 .nm-l{display:grid;gap:8px;margin:0 0 12px}.nm{max-width:86%;justify-self:start;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--sunk);line-height:1.4;overflow-wrap:anywhere}.nm.ich{justify-self:end;border-radius:14px 14px 4px 14px;background:var(--blue-soft)}.nm.neu{box-shadow:inset 0 0 0 2px var(--pink)}.nm-w{font-size:12px;color:var(--ink-3);margin:0 0 2px}.nm-in{display:grid;gap:8px;justify-items:start}
+body.tut-on #view{padding-bottom:300px}#tut{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;width:min(520px,calc(100% - 24px));background:var(--surface);border:2px solid var(--pink);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.28);padding:10px 14px 12px}#tut h3{margin:6px 0 4px;font:800 20px/1.05 var(--f-display);text-transform:uppercase}#tut p{margin:0 0 10px;font-size:14.5px;line-height:1.45;max-height:32vh;overflow:auto}.tut-k{display:flex;justify-content:space-between;align-items:center}.tut-bar{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden}.tut-bar span{display:block;height:100%;background:var(--pink)}.tut-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -1633,7 +1634,7 @@ function nmThread(L, ich){
 }
 function nmEingabe(fid, eid, ev, ph){
   const k = fid + '|' + eid;
-  return '<div class="nm-in"><textarea class="inp" data-nm-k="' + esc(k) + '" rows="2" maxlength="2000" placeholder="' + esc(ph) + '" style="width:100%;font-family:var(--f-body)">' + esc(NM_ENTWURF[k] || '') + '</textarea><button class="btn btn-sm btn-primary" data-nm-send="' + esc(k) + '" data-nm-ev="' + esc(ev || '') + '">Senden</button></div>';
+  return '<div class="nm-in"><textarea class="inp" id="nm-' + esc(k.replace('|', '-')) + '" data-nm-k="' + esc(k) + '" rows="2" maxlength="2000" placeholder="' + esc(ph) + '" style="width:100%;font-family:var(--f-body)">' + esc(NM_ENTWURF[k] || '') + '</textarea><button class="btn btn-sm btn-primary" data-nm-send="' + esc(k) + '" data-nm-ev="' + esc(ev || '') + '">Senden</button></div>';
 }
 async function nmSenden(k, evName, von, wer, btn){
   const [fid, eid] = k.split('|'), t = String(NM_ENTWURF[k] || '').trim();
@@ -2343,7 +2344,7 @@ function openEinstellungen(){
   const bereich = (h, t, d) => '<a class="row" href="#' + h + '" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">' + t + '</span><span class="row-sub">' + d + '</span></span>' + I.right + '</a>';
   const nmN = nmUngelesen();
   showSheet('<h2 id="sheet-title">Einstellungen</h2>' +
-    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px"><li><a class="row" href="#nachrichten" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">💬 Nachrichten' + (nmN ? ' <span class="pill st-warn">' + nmN + ' neu</span>' : '') + '</span><span class="row-sub">Was die Location-Betreiber zu euren Events schreiben</span></span>' + I.right + '</a></li></ul>' +
+    '<ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px"><li><a class="row" href="#nachrichten" data-act="close-sheet" style="text-decoration:none"><span class="row-main"><span class="row-title">💬 Nachrichten' + (nmN ? ' <span class="pill st-warn">' + nmN + ' neu</span>' : '') + '</span><span class="row-sub">Was die Location-Betreiber zu euren Events schreiben</span></span>' + I.right + '</a></li><li><button type="button" class="row" data-tut="start"><span class="row-main"><span class="row-title">🎓 Tutorial</span><span class="row-sub">Einmal mit einem Beispiel-Event durch die ganze App</span></span>' + I.right + '</button></li></ul>' +
     '<p class="kicker" style="margin:0 0 6px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">1 · Bereiche</p><ul class="rows" style="border-bottom:1px solid var(--line);margin:0 0 22px">' + (bereichsAnsicht() ? '<li>' + bereich('events', 'Events', 'Alle Events, Kosten, Line-ups, Aufgaben') + '</li><li>' + bereich('kalender', 'Kalender', 'Termine, freie Abende, Konflikte') + '</li>' : '') + '<li>' + bereich('abend', 'Abend-Modus', 'Running Order, Gästeliste und Nummern für den Eventtag') + '</li>' + '<li>' + bereich('umfeld', 'Umfeld', 'Partys, Festivals, Ferien, Burns, Sperrtermine') + '</li><li>' + bereich('verzeichnis', 'Verzeichnis', 'DJs & Acts, Locations, Veranstalter, Technik-Setups') + '</li><li>' + bereich('verlauf', 'Verlauf', 'Was im Kollektiv passiert ist, nach Event und Person') + '</li>' + (istLight() || ansicht() === 'booking' || ansicht() === 'finanzen' ? '<li>' + bereich('marketing', 'Marketing', 'Posting-Plan, Texte, Flyer, Kanäle') + '</li>' : '') + '</ul>' +
     '<p class="kicker" style="margin:0 0 10px;color:var(--ink-3);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">2 · Ansicht & Aussehen</p><h3 style="margin:0 0 8px">Ansicht</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 8px" role="radiogroup">' + ANSICHTEN.map(a => '<button type="button" class="chip" role="radio" data-ansicht-w="' + a[0] + '" aria-checked="' + (ansicht() === a[0]) + '" aria-pressed="' + (ansicht() === a[0]) + '" style="justify-content:center">' + a[1] + '</button>').join('') + '</div>' +
     '<p class="hint" style="margin:0 0 18px">' + (ansicht() === 'booking' ? 'Booking: eigene Reiter für DJs und Locations – wer nachgehakt werden muss, alle Anfragen, DJ- und Location-Verzeichnis. Alles andere oben unter „Bereiche“.' : ansicht() === 'finanzen' ? 'Finanzen: geplante Ergebnisse, alles was noch offen ist und die Abrechnungen vergangener Events. Alles andere oben unter „Bereiche“.' : istMk() ? 'Marketing: eigene Reiter nur fürs Marketing – Heute (was fällig ist und wie weit jedes Event ist), Content-Kalender, Inhalte und Kanäle. Alles andere findest du oben unter „Bereiche“.' : istLight() ? 'Light: schlanke Startseite (nächstes Event und Aufgaben), keine Erklärtexte, Marketing nur über „Bereiche“.' : 'Pro: alles sichtbar – Kacheln, Erklärungen, Act-Infos und Marketing.') + '</p>' +
@@ -2450,6 +2451,10 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08k', titel:'Tutorial', punkte:[
+    'In den Einstellungen gibt es jetzt „🎓 Tutorial“: Es legt ein Beispiel-Event an und führt dich Schritt für Schritt durch alle Bereiche',
+    'Am Ende kannst du das Beispiel-Event mit einem Knopf wieder löschen'
+  ]},
   { v:'2026-11-08j', titel:'Nachrichten mit den Locations', punkte:[
     'Neu in den Einstellungen ganz oben: 💬 Nachrichten – alles, was die Location-Betreiber zu euren Events schreiben, mit Antwortfeld',
     'Im Event steht die Unterhaltung mit der Location jetzt direkt sichtbar, inklusive Bestätigung der Running Order',
@@ -2527,7 +2532,96 @@ document.addEventListener('click', ev => {
   if (ev.target.closest('[data-act="neu-weg"]')) { LS.set('neuGesehen', NEUES[0].v); S.neuAuf = false; render(); }
   else if (ev.target.closest('[data-act="neu-auf"]')) { S.neuAuf = !S.neuAuf; render(); }
 });
+/* ===== Tutorial (Knopf in den Einstellungen) ===== */
+/* ===== Tutorial: führt mit einem Beispiel-Event durch die ganze App ===== */
+const TUT_COLS = ['lineup', 'money', 'tasks', 'phases', 'floors', 'mkposts'];
+const tutEv = () => LS.get('tutEv') || '';
+const tutStep = () => { const v = LS.get('tutS'); return v === null || v === '' || v === undefined ? -1 : +v; };
+const tutZuEv = tab => { const id = tutEv(); if (!id) return; S.evId = id; S.evTab = tab; if (location.hash !== '#ev-' + id) location.hash = '#ev-' + id; else render(); };
+const TUT = [
+  ['Willkommen im Tutorial', 'Ich habe ein Beispiel-Event angelegt: „🎓 Beispiel-Event“ im Beispiel-Club, mit Line-up, Floors, Kosten, Tickets und Aufgaben. Damit gehen wir einmal durch alles. Du kannst überall draufdrücken und ausprobieren – am Ende kannst du das Beispiel mit einem Knopf wieder löschen.', () => { location.hash = '#events'; }],
+  ['Startseite', 'Oben die Hinweisleiste (heutiges Event, neue Nachrichten, Updates), darunter die Übersicht mit Countdown zum nächsten Event und Kacheln. Mit „Bearbeiten“ stellst du die Kacheln zusammen. Der runde ＋-Knopf unten rechts legt von überall Events, Aufgaben, Acts oder Kosten an. Die Lupe oben sucht über alles.', () => { location.hash = '#events'; }],
+  ['Das Event: Überblick', 'Jedes Event hat diese Seite. Oben der Status und der nächste offene Schritt aus dem Ablauf (Location fix → Line-up fix → Flyer → …). Darunter der Abend-Modus-Knopf, der Ablauf zum Aufklappen und die Details. Gerade siehst du das Beispiel-Event.', () => tutZuEv('ueberblick')],
+  ['Finanzen', 'Hier rechnet die App: Kosten (Miete, Technik), Gagen aus dem Line-up und Ticketphasen (Early Bird 12 €, Regular 15 €). Daraus ergeben sich Ergebnis und Break-even – also wie viele Tickets ihr verkaufen müsst. Nach dem Event trägst du hier die echten Zahlen für die Abrechnung ein.', () => tutZuEv('finanzen')],
+  ['Location & Floors', 'Pro Event legst du Floors an, wählst Technik-Setups (z. B. 2× CDJ-3000, DJM-900) und ordnest Acts zu. Steht die Location im Verzeichnis, kannst du den Betreiber einladen: Er sieht Line-up, Flyer und Technik und kann euch über „Nachrichten“ schreiben.', () => tutZuEv('location')],
+  ['Line-up', 'Alle Acts mit Status: angefragt, zugesagt, abgesagt. Der Live-Act im Beispiel ist seit 8 Tagen angefragt – die App schlägt dir vor nachzuhaken und schreibt die WhatsApp-Nachricht gleich vor. Beim Act trägst du Gage, Slot, Floor, Gästeliste und Kontakt ein; über „Briefing“ bekommen DJs alle Infos auf einmal.', () => tutZuEv('lineup')],
+  ['Aufgaben', 'Aufgaben mit Fälligkeit und Person. Nach rechts wischen = erledigt, nach links = löschen (mit Rückgängig). Wer sich unter „Wer bin ich?“ verknüpft, sieht seine Aufgaben auf der Startseite.', () => tutZuEv('aufgaben')],
+  ['Kalender', 'Alle Events im Monat oder als Jahresübersicht. Die App warnt bei Konflikten (zwei Events am selben Abend, große Partys oder Ferien in der Nähe). „Termin finden“ schlägt freie Abende vor.', () => { location.hash = '#kalender'; }],
+  ['Umfeld', 'Was sonst in der Region los ist: Partys, Festivals, Ferien, Burns und eure Sperrtermine. Das hilft beim Datum aussuchen und erklärt, warum ein Abend schwächer laufen könnte.', () => { location.hash = '#umfeld'; }],
+  ['Marketing', 'Posting-Plan pro Event (Ankündigung, Line-up-Reveal, Reminder …), fertige Textvorlagen mit {event}, {lineup}, {zeit} und die Flyer. In der Marketing-Ansicht bekommt das Team eigene Reiter dafür.', () => { location.hash = '#marketing'; }],
+  ['Abend-Modus', 'Am Eventtag: wer gerade spielt, wer als Nächstes kommt, Ankunftszeiten, Gästeliste zum Abhaken und Nummern. Unter „Einlass & Kasse“ ladet ihr das Einlass-Team ein, scannt Tickets und zählt die Abendkasse.', () => { const id = tutEv(); if (id) location.hash = '#abend-' + id; }],
+  ['Verzeichnis, Verlauf & Nachrichten', 'Im Verzeichnis stehen DJs & Acts, Locations, Veranstalter und Technik-Setups – einmal angelegt, bei jedem Event mit einem Tipp auswählbar. Der Verlauf zeigt, wer was gemacht hat. Unter Nachrichten lest und beantwortet ihr, was Location-Betreiber schreiben.', () => { location.hash = '#verzeichnis'; }],
+  ['Fertig!', 'Das war die Runde. Im Zahnrad findest du alle Bereiche, Ansichten (Pro, Light, Marketing, Booking, Finanzen), Farben und Zugänge – dort startest du das Tutorial auch jederzeit neu. Soll ich das Beispiel-Event jetzt löschen?', () => tutZuEv('ueberblick')]
+];
+async function tutAnlegen(){
+  const id = newId('e'), now = Date.now(), t = today(), d = addDays(t, 35), b = db.batch();
+  const set = (c, x) => b.set(db.collection(c).doc(newId(c[0])), Object.assign({ tut:true, createdAt:now }, x));
+  b.set(db.collection('events').doc(id), { name:'🎓 Beispiel-Event', date:d, start:'23:00', end:'06:00', status:'planung', venue:'Beispiel-Club', capacity:300, notes:'Nur zum Ausprobieren aus dem Tutorial – kann am Ende mit einem Knopf gelöscht werden.', tut:true, createdAt:now });
+  const f1 = newId('f'), f2 = newId('f');
+  b.set(db.collection('floors').doc(f1), { eventId:id, name:'Mainfloor', capacity:250, tech:'2x CDJ-3000\nDJM-900NXS2\nFunktion-One Anlage', tut:true, createdAt:now });
+  b.set(db.collection('floors').doc(f2), { eventId:id, name:'Floor 2', capacity:80, tech:'2x CDJ-2000NXS2\nDJM-750', tut:true, createdAt:now + 1 });
+  set('lineup', { eventId:id, name:'DJ Beispiel A', role:'DJ', status:'zugesagt', start:'23:00', end:'01:00', fee:300, paid:false, floorId:f1, gl:2, glNames:'Anna\nBen', ankunft:'22:30' });
+  set('lineup', { eventId:id, name:'DJ Beispiel B', role:'DJ', status:'zugesagt', start:'01:00', end:'03:00', fee:400, paid:false, floorId:f1, gl:1, glNames:'', ankunft:'00:30' });
+  set('lineup', { eventId:id, name:'Beispiel Live-Act', role:'Live', status:'angefragt', start:'00:00', end:'01:30', fee:250, paid:false, floorId:f2, gl:0, glNames:'', anfrageAm:now - 8 * 86400000 });
+  set('money', { eventId:id, kind:'ausgabe', category:'Club-Miete', label:'Miete Beispiel-Club', amount:800, paid:false });
+  set('money', { eventId:id, kind:'ausgabe', category:'Technik & Licht', label:'Lichttechnik', amount:250, paid:false });
+  set('phases', { eventId:id, name:'Early Bird', price:12, count:100 });
+  set('phases', { eventId:id, name:'Regular', price:15, count:150 });
+  set('tasks', { eventId:id, title:'Rider an die DJs schicken', whoId:'', who:'', prio:'', due:addDays(t, 5), done:false });
+  set('tasks', { eventId:id, title:'Flyer fertig machen', whoId:'', who:'', prio:'hoch', due:addDays(t, 10), done:false });
+  set('tasks', { eventId:id, title:'Getränke bestellen', whoId:'', who:'', prio:'', due:addDays(d, -3), done:true });
+  await b.commit();
+  return id;
+}
+async function tutStart(){
+  closeSheet();
+  if (S.ro || !db) { toast('Das Tutorial braucht ein Projekt, in dem du bearbeiten darfst.'); return; }
+  let id = tutEv();
+  if (!id || !S.events.some(e => e.id === id)) {
+    toast('Beispiel-Event wird angelegt …');
+    try { id = await tutAnlegen(); } catch (e) { toast('Konnte das Beispiel nicht anlegen.'); return; }
+    LS.set('tutEv', id);
+  }
+  tutGo(0);
+}
+function tutGo(i){
+  i = Math.max(0, Math.min(TUT.length - 1, i)); LS.set('tutS', String(i));
+  try { TUT[i][2](); } catch (e) {}
+  setTimeout(() => { tutZeigen(); window.scrollTo(0, 0); }, 60);
+}
+async function tutLoeschen(){
+  const id = tutEv();
+  if (id && db && !S.ro) {
+    try { const b = db.batch(); TUT_COLS.forEach(c => (S[c] || []).filter(x => x.eventId === id).forEach(x => b.delete(db.collection(c).doc(x.id)))); b.delete(db.collection('events').doc(id)); await b.commit(); toast('Beispiel-Event gelöscht.'); } catch (e) { toast('Löschen hat nicht geklappt.'); }
+  }
+  LS.set('tutEv', ''); tutEnde();
+  location.hash = '#events';
+}
+function tutEnde(){ LS.set('tutS', ''); tutZeigen(); }
+function tutZeigen(){
+  let el = document.getElementById('tut'); const i = tutStep();
+  document.body.classList.toggle('tut-on', i >= 0 && !!projekt && !PV.fid);
+  if (i < 0 || !projekt || PV.fid) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'tut'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Tutorial'); document.body.appendChild(el); }
+  const st = TUT[i], letzt = i === TUT.length - 1;
+  el.innerHTML = '<div class="tut-k"><span class="muted small">🎓 Tutorial · Schritt ' + (i + 1) + ' von ' + TUT.length + '</span><span><button class="hw-x" data-tut="klein" aria-label="' + (S.tutKlein ? 'Text zeigen' : 'Text einklappen') + '">' + (S.tutKlein ? '▴' : '▾') + '</button><button class="hw-x" data-tut="ende" aria-label="Tutorial beenden">✕</button></span></div>' +
+    '<div class="tut-bar"><span style="width:' + Math.round((i + 1) / TUT.length * 100) + '%"></span></div><h3>' + esc(st[0]) + '</h3>' + (S.tutKlein ? '' : '<p>' + esc(st[1]) + '</p>') +
+    '<div class="tut-a">' + (i > 0 ? '<button class="btn btn-sm" data-tut="zurueck">Zurück</button>' : '') +
+    (letzt ? '<button class="btn btn-sm" data-tut="behalten">Behalten</button><button class="btn btn-sm btn-primary" data-tut="loeschen">Beispiel löschen</button>' : '<button class="btn btn-sm btn-primary" data-tut="weiter">Weiter</button>') + '</div>';
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-tut]'); if (!b) return;
+  const a = b.dataset.tut, i = tutStep();
+  if (a === 'start') tutStart();
+  else if (a === 'weiter') tutGo(i + 1);
+  else if (a === 'zurueck') tutGo(i - 1);
+  else if (a === 'klein') { S.tutKlein = !S.tutKlein; tutZeigen(); }
+  else if (a === 'loeschen') tutLoeschen();
+  else if (a === 'behalten') { tutEnde(); toast('Das Beispiel-Event bleibt. Löschen kannst du es wie jedes Event.'); }
+  else if (a === 'ende') { if (i === TUT.length - 1) tutEnde(); else tutGo(TUT.length - 1); }
+});
 function render(){
+  try { tutZeigen(); } catch (e) {}
   if (window.firebase && !projekt) return; // Anmeldung oder Projektauswahl wird angezeigt
   const a = document.activeElement, view = $('#view');
   let keep = null;
