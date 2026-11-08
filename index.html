@@ -1159,6 +1159,7 @@ async function projektWahl(msg, err){
 }
 function stopProjekt(){
   try { FG_STOP(); } catch (e) {}
+  try { ekStop(); } catch (e) {}
   if (PV.unsub) { try { PV.unsub(); } catch (e) {} PV.unsub = null; }
   UNSUB.forEach(f => { try { f(); } catch (e) {} }); UNSUB = [];
   COLS.forEach(c => { S[c] = []; }); S.localAll = []; S.got = {}; S.fresh = {}; S.conn = 'connecting';
@@ -1724,7 +1725,9 @@ function viewAbend(id){
   String(e.kontakte || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(z => { const i = z.indexOf(':'); nums.push(i > 0 ? [z.slice(0, i).trim(), z.slice(i + 1).trim()] : ['', z]); });
   h += '<h2 class="ab-sec">Wichtige Nummern' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="kontakte" data-id="' + esc(e.id) + '" style="margin-left:auto">Bearbeiten</button>') + '</h2><div class="ab-list">' + (nums.length ? nums.map(x => '<div class="ab-row"><div class="ab-who"><div class="ab-meta">' + esc(x[0]) + '</div><div class="ab-name2">' + esc(x[1]) + '</div></div>' + (telLink(x[1]) ? '<a class="ab-tel" href="' + telLink(x[1]) + '">📞</a>' : '') + '</div>').join('') : '<p class="muted">Trag Security, Technik, Awareness und Location ein – dann ist am Abend alles mit einem Tipp erreichbar.</p>') + '</div>';
   const G = gaesteAus(e), M = Array.isArray((S.el || {}).emails) ? S.el.emails : (e.einlassEmails || []);
-  h += '<h2 class="ab-sec">Gästeliste' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="einlass" data-id="' + esc(e.id) + '" style="margin-left:auto">' + (M.length ? 'Einlass-Zugang' : 'Einlass einladen') + '</button>') + '</h2><div class="ab-gl">' + glBlock(G, S.el, !S.ro, 'm') + '</div></div>';
+  S.abendEv = e; ekHoeren(projekt.id + '_' + e.id, () => scheduleRender());
+  h += '<h2 class="ab-sec">Einlass & Kasse' + (S.ro ? '' : ' <button class="btn btn-sm" data-o="einlass" data-id="' + esc(e.id) + '" style="margin-left:auto">' + (M.length ? 'Einlass-Team' : 'Einlass-Team einladen') + '</button>') + '</h2>' +
+    ekBlock(projekt.id + '_' + e.id, S.el, !S.ro, e) + (EK.tab === 'gaeste' ? '<div class="ab-gl">' + glBlock(G, S.el, !S.ro, 'm') + '</div>' : '') + '</div>';
   S.abendEv = e;
   if (!S.abendT) S.abendT = setInterval(() => { if (route().view === 'abend' && !document.querySelector('.sheet-open, #sheet:not([hidden])')) render(); else if (route().view !== 'abend') { clearInterval(S.abendT); S.abendT = 0; } }, 60000);
   return h;
@@ -1760,7 +1763,7 @@ function einlassSheet(e){
 async function elSync(){
   for (const e of S.events.filter(x => Array.isArray(x.einlassEmails))) {
     const fid = projekt.id + '_' + e.id, emails = e.einlassEmails.map(x => String(x).toLowerCase());
-    const body = { pid:projekt.id, emails, event:{ name:e.name || '', date:e.date || '', start:e.start || '', end:e.end || '', venue:e.venue || '' }, gaeste:gaesteAus(e) };
+    const body = { pid:projekt.id, emails, event:{ name:e.name || '', date:e.date || '', start:e.start || '', end:e.end || '', venue:e.venue || '', kapazitaet:int(e.capacity) || 0 }, gaeste:gaesteAus(e) };
     const sig = fgHash(JSON.stringify(body));
     try {
       const ref = fs.collection('einlass').doc(fid), d = await ref.get();
@@ -1777,26 +1780,222 @@ async function meineEinlaesse(){
   if (z && !L.some(f => f.id === z)) { try { const d = await fs.collection('einlass').doc(z).get(); if (d.exists) L.push(Object.assign({ id:d.id }, d.data())); } catch (e) {} }
   return L;
 }
-// Ansicht fürs Einlass-Team – nur die Gästeliste
+/* ===== Einlass & Kasse: Scanner, Abendkasse-Zähler, Live-Zahlen, Eventim-Ticketliste ===== */
+const ekId = c => String(c || '').trim().replace(/[\/.#\[\]\s]/g, '_').slice(0, 140);
+const EK = { fid:'', unsub:[], scans:[], kasse:[], tab:'zahlen', zahl:'bar', neu:null };
+function ekHoeren(fid, neu){
+  EK.neu = neu;
+  if (EK.fid === fid) return;
+  ekStop(); EK.fid = fid;
+  const ref = fs.collection('einlass').doc(fid);
+  try {
+    EK.unsub.push(ref.collection('scans').onSnapshot(sn => { EK.scans = sn.docs.map(d => Object.assign({ id:d.id }, d.data())); EK.neu && EK.neu(); }, () => {}));
+    EK.unsub.push(ref.collection('kasse').onSnapshot(sn => { EK.kasse = sn.docs.map(d => Object.assign({ id:d.id }, d.data())).sort((a, b) => (b.at || 0) - (a.at || 0)); EK.neu && EK.neu(); }, () => {}));
+  } catch (e) {}
+}
+function ekStop(){ EK.unsub.forEach(u => { try { u(); } catch (e) {} }); EK.unsub = []; EK.scans = []; EK.kasse = []; EK.fid = ''; }
+// Alle Zahlen des Abends
+function ekZahlen(x, kapE){
+  x = x || {};
+  const T = x.tickets || {}, nT = Object.keys(T).length;
+  const drin = x.drin || {}, frei = x.frei || {}, G = x.gaeste || [];
+  let glGes = 0, glDa = 0;
+  G.forEach(g => { glGes += g.n; glDa += (g.namen || []).filter((n, i) => drin[glKey(g.id, i)]).length + Math.min(int(frei[g.id]) || 0, Math.max(0, g.n - (g.namen || []).length)); });
+  const vvk = EK.scans.length, ak = EK.kasse.length;
+  const bar = EK.kasse.filter(k => k.zahl !== 'karte').reduce((s, k) => s + (num(k.preis) || 0), 0), karte = EK.kasse.filter(k => k.zahl === 'karte').reduce((s, k) => s + (num(k.preis) || 0), 0);
+  const vvkSumme = Object.values(T).reduce((s, t) => s + (num(t[1]) || 0), 0);
+  const zeiten = EK.scans.map(s => s.at).concat(EK.kasse.map(k => k.at), Object.values(drin)).filter(Boolean);
+  return { nT, vvk, ak, bar, karte, glGes, glDa, drinGes:vvk + ak + glDa, vvkSumme, zeiten, kap:int((x.event || {}).kapazitaet) || int(kapE) || 0 };
+}
+function ekKurve(zeiten){
+  if (!zeiten.length) return '<p class="muted">Noch niemand drin.</p>';
+  const slot = 30 * 60000, B = {};
+  zeiten.forEach(t => { const k = Math.floor(t / slot) * slot; B[k] = (B[k] || 0) + 1; });
+  const ks = Object.keys(B).map(Number).sort((a, b) => a - b), max = Math.max.apply(null, ks.map(k => B[k]));
+  return '<div style="display:flex;align-items:flex-end;gap:4px;height:110px;margin:6px 0 4px">' + ks.map(k => '<div title="' + uhr(k) + ': ' + B[k] + '" style="flex:1;min-width:6px;background:#ff4d8d;border-radius:4px 4px 0 0;height:' + Math.max(4, Math.round(B[k] / max * 100)) + '%"></div>').join('') + '</div>' +
+    '<div style="display:flex;justify-content:space-between" class="muted small"><span>' + uhr(ks[0]) + '</span><span>' + uhr(ks[ks.length - 1] + slot) + '</span></div>';
+}
+// Block für Abend-Modus (Mitglieder) und Einlass-Ansicht (Tür)
+function ekBlock(fid, x, mitglied, e){
+  x = x || {};
+  const z = ekZahlen(x, e && e.capacity), tabs = [['zahlen', 'Zahlen'], ['scan', 'Scannen'], ['kasse', 'Kasse'], ['gaeste', 'Gästeliste']];
+  let h = '<div class="seg" role="tablist" style="margin:0 0 12px">' + tabs.map(t => '<button type="button" role="tab" data-ek="tab" data-v="' + t[0] + '" aria-selected="' + (EK.tab === t[0]) + '">' + t[1] + '</button>').join('') + '</div>';
+  if (EK.tab === 'zahlen') {
+    h += '<div class="ab-gl"><div class="ab-big">' + z.drinGes + ' <span>drin' + (z.kap ? ' · ' + Math.round(z.drinGes / z.kap * 100) + ' % von ' + z.kap : '') + '</span></div>' +
+      (z.kap ? '<div style="height:10px;border-radius:99px;background:#262a38;overflow:hidden;margin:8px 0 14px"><div style="height:100%;width:' + Math.min(100, Math.round(z.drinGes / z.kap * 100)) + '%;background:' + (z.drinGes >= z.kap ? '#e5484d' : '#1f8f55') + '"></div></div>' : '') +
+      '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0">' +
+      [['Vorverkauf', z.vvk + (z.nT ? ' / ' + z.nT : ''), 'gescannt'], ['Abendkasse', z.ak, eur(z.bar + z.karte)], ['Gästeliste', z.glDa + ' / ' + z.glGes, 'drin']].map(k => '<div class="ab-card" style="margin:0;padding:10px 8px;min-width:0"><div class="ab-k" style="font-size:11px;overflow:hidden;text-overflow:ellipsis">' + k[0] + '</div><div style="font-size:24px;font-weight:800">' + k[1] + '</div><div class="muted small">' + k[2] + '</div></div>').join('') + '</div>' +
+      '<p style="margin:4px 0">Kasse: <strong>' + eur(z.bar) + '</strong> bar · <strong>' + eur(z.karte) + '</strong> Karte</p>' +
+      '<h3 class="ab-k" style="margin:14px 0 4px">Ankunft (pro halbe Stunde)</h3>' + ekKurve(z.zeiten) + '</div>';
+    if (mitglied && e) {
+      h += '<div class="ab-gl" style="margin-top:10px"><h3 class="ab-k" style="margin:0 0 8px">Ticketliste aus EVENTIM.Light</h3>' +
+        (z.nT ? '<p style="margin:0 0 8px"><strong>' + z.nT + ' Tickets</strong> · ' + eur(z.vvkSumme) + (x.ticketsStand ? ' · Stand ' + wann(x.ticketsStand) : '') + '</p>' : '<p class="muted" style="margin:0 0 8px">Noch keine Liste. In EVENTIM.Light beim Event „Download Einlassdaten“ wählen und die Excel-Datei hier importieren. Dann prüft der Scanner jedes Ticket.</p>') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary" style="cursor:pointer">' + (z.nT ? 'Neue Liste importieren' : 'Eventim-Liste importieren') + '<input type="file" accept=".xlsx,.xls,.csv" data-ek="import" data-id="' + esc(e.id) + '" hidden></label>' +
+        '<a class="btn btn-sm" href="' + esc(safeUrl(e.shopUrl) || 'https://www.eventim-light.de/') + '" target="_blank" rel="noopener">EVENTIM.Light öffnen</a><button type="button" class="btn btn-sm" data-ek="shop" data-id="' + esc(e.id) + '">Shop-Link</button>' +
+        '<button type="button" class="btn btn-sm" data-ek="arten" data-id="' + esc(e.id) + '">Kassenarten</button><button type="button" class="btn btn-sm" data-ek="abr" data-id="' + esc(e.id) + '">In Abrechnung übernehmen</button></div></div>';
+    }
+  } else if (EK.tab === 'scan') {
+    h += '<div class="ab-gl"><button type="button" class="btn btn-primary" data-ek="kamera" style="width:100%;min-height:64px;font-size:20px">📷 Scanner starten</button>' +
+      '<form data-ek="manuell" style="display:flex;gap:8px;margin:12px 0 0"><input class="inp" id="ek-code" placeholder="Barcode-Nummer eintippen" inputmode="numeric" autocomplete="off" style="flex:1;background:#0d0f17;color:#f5f6fa;border-color:#262a38"><button class="btn" type="submit">Prüfen</button></form>' +
+      '<p class="muted small" style="margin:10px 0 0">' + (z.nT ? z.nT + ' Tickets in der Liste · ' + z.vvk + ' gescannt.' : 'Keine Ticketliste importiert – jeder Scan wird nur gezählt, nicht geprüft.') + ' Bitte nur mit RaveBüro scannen, nicht parallel mit der Eventim-App.</p>' +
+      (EK.scans.length ? '<h3 class="ab-k" style="margin:14px 0 6px">Zuletzt</h3>' + EK.scans.slice().sort((a, b) => b.at - a.at).slice(0, 5).map(s => '<div class="ab-row" style="padding:8px 0"><div class="ab-time" style="font-size:16px">' + uhr(s.at) + '</div><div class="ab-who"><div class="ab-name2" style="font-size:16px">' + esc(s.code || s.id) + '</div><div class="ab-meta">' + esc(s.kat || '') + '</div></div></div>').join('') : '') + '</div>';
+  } else if (EK.tab === 'kasse') {
+    const A = Array.isArray(x.kassenArten) ? x.kassenArten : [];
+    h += '<div class="ab-gl"><div class="seg" role="radiogroup" style="margin:0 0 12px">' + [['bar', '💶 Bar'], ['karte', '💳 Karte']].map(o => '<button type="button" role="radio" data-ek="zahl" data-v="' + o[0] + '" aria-checked="' + (EK.zahl === o[0]) + '">' + o[1] + '</button>').join('') + '</div>' +
+      (A.length ? A.map((a, i) => '<button type="button" class="btn btn-primary" data-ek="verkauf" data-v="' + i + '" style="width:100%;min-height:64px;font-size:20px;margin:0 0 8px;justify-content:space-between"><span>+1 ' + esc(a.n) + '</span><span>' + eur(a.p) + '</span></button>').join('') : '<p class="muted">Noch keine Kassenarten. ' + (mitglied ? 'Leg sie unter „Zahlen → Kassenarten“ an.' : 'Bitte die Veranstalter, sie anzulegen.') + '</p>') +
+      '<p style="margin:10px 0 4px">Heute: <strong>' + z.ak + '</strong> verkauft · ' + eur(z.bar) + ' bar · ' + eur(z.karte) + ' Karte</p>' +
+      (EK.kasse.length ? '<h3 class="ab-k" style="margin:12px 0 6px">Zuletzt</h3>' + EK.kasse.slice(0, 5).map(k => '<div class="ab-row" style="padding:8px 0"><div class="ab-time" style="font-size:16px">' + uhr(k.at) + '</div><div class="ab-who"><div class="ab-name2" style="font-size:16px">' + esc(k.art) + ' · ' + eur(k.preis) + '</div><div class="ab-meta">' + (k.zahl === 'karte' ? 'Karte' : 'Bar') + '</div></div>' + (mitglied || k.mail === meineMail() ? '<button type="button" class="btn btn-sm" data-ek="storno" data-id="' + esc(k.id) + '">Storno</button>' : '') + '</div>').join('') : '') + '</div>';
+  }
+  return h;
+}
+function ekArtenForm(e){
+  const x = S.el || {}, A = Array.isArray(x.kassenArten) && x.kassenArten.length ? x.kassenArten : phasesOf(e.id).filter(p => /abend|ak\b|tageskasse/i.test(p.name || '')).map(p => ({ n:p.name, p:num(p.price) || 0 }));
+  showSheet('<h2 id="sheet-title">Kassenarten</h2><form class="f" id="ka-form" novalidate>' +
+    field('ka-t', 'Eine pro Zeile: „Name: Preis“', '<textarea id="ka-t" rows="5" maxlength="600" placeholder="Abendkasse: 15\nErmäßigt: 10\nMember: 8">' + esc(A.map(a => a.n + ': ' + numIn(a.p)).join('\n')) + '</textarea>') +
+    '<p class="hint">Jede Zeile wird an der Kasse ein großer Knopf. 0 € geht auch, z. B. für Freikarten.</p><p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+  $('#ka-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const L = $('#ka-t').value.split('\n').map(z => z.trim()).filter(Boolean).map(z => { const i = z.lastIndexOf(':'); return i > 0 ? { n:z.slice(0, i).trim(), p:num(z.slice(i + 1)) } : { n:z, p:NaN }; });
+    if (L.some(a => !a.n || isNaN(a.p) || a.p < 0)) return formErr($('#ka-form'), 'Schreib jede Zeile als „Name: Preis“, z. B. „Abendkasse: 15“.');
+    if (await save(() => fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:(e.einlassEmails || []).map(q => String(q).toLowerCase()), kassenArten:L.slice(0, 8) }, { merge:true }), 'Gespeichert')) closeSheet();
+  };
+}
+function ekShopForm(e){
+  showSheet('<h2 id="sheet-title">Link zum Ticketshop</h2><form class="f" id="sh-form" novalidate>' + field('sh-u', 'Adresse eures Events bei EVENTIM.Light', '<input id="sh-u" type="url" maxlength="400" placeholder="https://www.eventim-light.com/de/a/…" value="' + esc(e.shopUrl || '') + '">') +
+    '<p class="hint">Den Link findest du in EVENTIM.Light bei deinem Event. Anmelden musst du dich dort selbst – RaveBüro speichert keine Zugangsdaten.</p><p class="err" hidden></p><div class="actions"><button type="button" class="btn" data-act="close-sheet">Abbrechen</button><button class="btn btn-primary" type="submit">Speichern</button></div></form>');
+  $('#sh-form').onsubmit = async ev => { ev.preventDefault(); const u = $('#sh-u').value.trim(); if (u && !safeUrl(u)) return formErr($('#sh-form'), 'Der Link muss mit https:// beginnen.'); if (await save(() => db.doc('events/' + e.id).update({ shopUrl:u }), 'Gespeichert')) closeSheet(); };
+}
+let XLSX_P = null;
+const ladeSkript = src => new Promise((ok, f) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = f; document.head.appendChild(s); });
+// Excel „Einlassdaten“ aus EVENTIM.Light einlesen
+async function ekImport(e, file){
+  try {
+    if (!window.XLSX) { XLSX_P = XLSX_P || ladeSkript('vendor/xlsx.mini.min.js'); await XLSX_P; }
+    const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type:'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:false, defval:'' });
+    const hi = rows.findIndex(r => r.some(c => /barcode|ticketnummer|ticket-?nr/i.test(String(c))));
+    if (hi < 0) { toast('In der Datei wurde keine Spalte „Barcode“ gefunden.'); return; }
+    const H = rows[hi].map(c => String(c).toLowerCase()), col = re => H.findIndex(c => re.test(c));
+    const cB = col(/barcode|ticketnummer|ticket-?nr/), cS = col(/status/), cK = col(/bereich|kategorie|ticketart/), cK2 = col(/preisstufe/), cP = H.findIndex(c => /preis|price|betrag/.test(c) && !/stufe|kategorie/.test(c));
+    const T = {}; let weg = 0;
+    rows.slice(hi + 1).forEach(r => {
+      const code = ekId(r[cB]); if (!code) return;
+      if (cS >= 0 && /storn|cancel|ungültig|invalid|erstatt|refund|gesperrt/i.test(String(r[cS]))) { weg++; return; }
+      T[code] = [[cK >= 0 ? r[cK] : '', cK2 >= 0 ? r[cK2] : ''].map(q => String(q).trim()).filter(Boolean).join(' · ').slice(0, 60), cP >= 0 ? (num(String(r[cP]).replace(/[^\d,.-]/g, '')) || 0) : 0];
+    });
+    const n = Object.keys(T).length;
+    if (!n) { toast('Keine gültigen Tickets in der Datei.'); return; }
+    if (await save(() => fs.collection('einlass').doc(projekt.id + '_' + e.id).set({ pid:projekt.id, emails:(e.einlassEmails || []).map(q => String(q).toLowerCase()), tickets:T, ticketsStand:Date.now() }, { merge:true }), n + ' Tickets importiert' + (weg ? ' (' + weg + ' storniert übersprungen)' : ''))) logA('hat die Eventim-Ticketliste importiert: ' + n + ' Tickets (' + (e.name || 'Event') + ')', e.id);
+  } catch (x) { console.warn(x); toast('Die Datei konnte nicht gelesen werden.'); }
+}
+// Ticketliste beim Import komplett ersetzen (alte Barcodes raus)
+async function ekTicketsErsetzen(fid){ try { await fs.collection('einlass').doc(fid).update({ tickets:firebase.firestore.FieldValue.delete() }); } catch (e) {} }
+// Ton und Vibration für das Scan-Ergebnis
+function ekSignal(ok){
+  try { navigator.vibrate && navigator.vibrate(ok ? 80 : [120, 80, 120]); } catch (e) {}
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = ok ? 880 : 220; o.connect(g); g.connect(a.destination); g.gain.value = .15; o.start(); setTimeout(() => { o.stop(); a.close(); }, ok ? 120 : 350); } catch (e) {}
+}
+function ekErgebnis(art, titel, sub){
+  const box = document.getElementById('ek-erg'); if (!box) { toast(titel + (sub ? ' – ' + sub : '')); return; }
+  const farbe = { ok:'#1f8f55', warn:'#d18b00', bad:'#e5484d' }[art];
+  box.style.background = farbe; box.innerHTML = '<div style="font-size:30px;font-weight:800">' + esc(titel) + '</div>' + (sub ? '<div style="font-size:17px;margin-top:4px">' + esc(sub) + '</div>' : '');
+  clearTimeout(EK.ergT); EK.ergT = setTimeout(() => { box.style.background = '#141722'; box.innerHTML = '<div class="muted">Bereit – Ticket in die Kamera halten</div>'; }, 2600);
+}
+async function ekPruefen(fid, x, roh){
+  const code = ekId(roh); if (!code) return;
+  if (EK.letzt === code && Date.now() - EK.letztAt < 3000) return;
+  EK.letzt = code; EK.letztAt = Date.now();
+  const T = (x && x.tickets) || {}, hat = Object.keys(T).length > 0, t = T[code];
+  if (hat && !t) { ekSignal(false); ekErgebnis('bad', '✕ Ungültig', 'Nicht in der Ticketliste · ' + code); return; }
+  const ref = fs.collection('einlass').doc(fid).collection('scans').doc(code);
+  const schon = d => { const s = d.data() || {}; ekSignal(false); ekErgebnis('bad', '✕ Schon drin', 'seit ' + uhr(s.at) + ' Uhr' + (s.wer ? ' · gescannt von ' + s.wer : '')); };
+  try {
+    const d = await ref.get();
+    if (d.exists) { schon(d); return; }
+    await ref.set({ code:String(roh).trim().slice(0, 140), kat:t ? t[0] : '', at:Date.now(), mail:meineMail(), wer:(projekt ? meinName() : meineMail().split('@')[0]) });
+    ekSignal(true); ekErgebnis(hat ? 'ok' : 'warn', hat ? '✓ Gültig' : '✓ Gezählt', hat ? (t[0] || 'Ticket') : 'Ohne Ticketliste nicht geprüft');
+  } catch (e) {
+    try { const d = await ref.get(); if (d.exists) { schon(d); return; } } catch (x2) {}
+    ekSignal(false); ekErgebnis('warn', 'Nicht gespeichert', 'Keine Verbindung? Nochmal versuchen.');
+  }
+}
+let ZX_P = null;
+async function ekKamera(fid, getX){
+  if (document.getElementById('ek-ov')) return;
+  const ov = document.createElement('div'); ov.id = 'ek-ov';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100;background:#07080d;color:#f5f6fa;display:flex;flex-direction:column;padding:12px;gap:10px';
+  ov.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:18px">Tickets scannen</strong><button type="button" class="btn" id="ek-zu">Schließen</button></div>' +
+    '<video id="ek-vid" playsinline muted style="width:100%;flex:1;min-height:0;object-fit:cover;border-radius:16px;background:#000"></video>' +
+    '<div id="ek-erg" style="border-radius:16px;padding:18px;text-align:center;background:#141722;min-height:96px;display:grid;place-content:center"><div class="muted">Kamera startet …</div></div>' +
+    '<form id="ek-man" style="display:flex;gap:8px"><input class="inp" id="ek-man-c" placeholder="Barcode eintippen" inputmode="numeric" autocomplete="off" style="flex:1;background:#0d0f17;color:#f5f6fa;border-color:#262a38"><button class="btn" type="submit">Prüfen</button></form>';
+  document.body.appendChild(ov);
+  let reader = null;
+  const zu = () => { try { reader && reader.reset(); } catch (e) {} ov.remove(); };
+  ov.querySelector('#ek-zu').onclick = zu;
+  ov.querySelector('#ek-man').onsubmit = ev => { ev.preventDefault(); const i = ov.querySelector('#ek-man-c'); EK.letzt = ''; ekPruefen(fid, getX(), i.value); i.value = ''; };
+  try {
+    if (!window.ZXing) { ZX_P = ZX_P || ladeSkript('vendor/zxing.min.js'); await ZX_P; }
+    reader = new ZXing.BrowserMultiFormatReader();
+    await reader.decodeFromConstraints({ video:{ facingMode:'environment' } }, ov.querySelector('#ek-vid'), r => { if (r) ekPruefen(fid, getX(), r.getText()); });
+    ekErgebnis('ok', 'Bereit', 'Ticket in die Kamera halten'); setTimeout(() => { const b = document.getElementById('ek-erg'); if (b) b.style.background = '#141722'; }, 800);
+  } catch (e) {
+    console.warn(e);
+    const b = document.getElementById('ek-erg'); if (b) { b.style.background = '#141722'; b.innerHTML = '<div>Kamera nicht verfügbar. Erlaube den Kamerazugriff im Browser – oder tipp die Barcode-Nummer unten ein.</div>'; }
+  }
+}
+async function ekVerkauf(fid, x, i){
+  const a = ((x && x.kassenArten) || [])[i]; if (!a) return;
+  try {
+    await fs.collection('einlass').doc(fid).collection('kasse').add({ art:a.n, preis:num(a.p) || 0, zahl:EK.zahl, at:Date.now(), mail:meineMail() });
+    ekSignal(true); toast('+1 ' + a.n + ' · ' + eur(a.p) + (EK.zahl === 'karte' ? ' (Karte)' : ' (bar)'));
+  } catch (e) { toast('Hat nicht geklappt – bist du online?'); }
+}
+// Klicks im Einlass-Block (Abend-Modus und Tür)
+function ekKontext(){ return projekt && S.abendEv ? { fid:projekt.id + '_' + S.abendEv.id, x:S.el || {}, e:S.abendEv, neu:() => scheduleRender() } : S.elDoc ? { fid:S.elDoc.ref.id, x:S.elDoc.x, e:null, neu:() => elZeichnen() } : null; }
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-ek]'); if (!el || el.tagName === 'FORM' || el.tagName === 'INPUT') return;
+  const k = ekKontext(); if (!k) return;
+  const a = el.dataset.ek, v = el.dataset.v;
+  if (a === 'tab') { EK.tab = v; k.neu(); }
+  else if (a === 'zahl') { EK.zahl = v; k.neu(); }
+  else if (a === 'kamera') ekKamera(k.fid, () => (ekKontext() || k).x);
+  else if (a === 'verkauf') ekVerkauf(k.fid, k.x, Number(v));
+  else if (a === 'storno') { if (confirm('Diesen Verkauf stornieren?')) fs.collection('einlass').doc(k.fid).collection('kasse').doc(el.dataset.id).delete().then(() => toast('Storniert.')).catch(() => toast('Hat nicht geklappt.')); }
+  else if (a === 'arten' && k.e) ekArtenForm(k.e);
+  else if (a === 'shop' && k.e) ekShopForm(k.e);
+  else if (a === 'abr' && k.e) {
+    const z = ekZahlen(k.x, k.e.capacity), ist = Object.assign({}, k.e.ist || {}, { ak:z.bar + z.karte, gaeste:z.drinGes });
+    if (z.nT) ist.vvk = z.vvkSumme;
+    save(() => db.doc('events/' + k.e.id).update({ ist }), 'In die Abrechnung übernommen: Abendkasse ' + eur(z.bar + z.karte) + (z.nT ? ', VVK ' + eur(z.vvkSumme) : '') + ', ' + z.drinGes + ' Gäste');
+  }
+});
+document.addEventListener('submit', ev => { const f = ev.target.closest('[data-ek="manuell"]'); if (!f) return; ev.preventDefault(); const k = ekKontext(); if (!k) return; const i = $('#ek-code'); EK.letzt = ''; ekPruefen(k.fid, k.x, i.value).then(() => k.neu()); i.value = ''; });
+document.addEventListener('change', ev => { const i = ev.target.closest('[data-ek="import"]'); if (!i || !i.files || !i.files[0]) return; const f = i.files[0], k = ekKontext(); if (k && k.e) ekTicketsErsetzen(k.fid).then(() => ekImport(k.e, f)); i.value = ''; });
+
+// Ansicht fürs Einlass-Team – Scanner, Kasse, Gästeliste
 function einlassView(fid){
   stopProjekt(); LS.set('elzuletzt', fid);
   document.querySelector('.tabbar').hidden = true; $('#fb-prof').hidden = true; $('#fb-set').hidden = true;
   $('#conn').className = 'conn wait'; $('#conn-t').textContent = 'Lädt …';
   const ref = fs.collection('einlass').doc(fid);
-  PV.unsub = ref.onSnapshot(d => {
-    const v = $('#view'), x = d.exists ? d.data() : null;
-    $('#conn').className = 'conn ' + (x ? 'live' : 'bad'); $('#conn-t').textContent = x ? 'Einlass' : 'Kein Zugang';
-    const fuss = '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-wahl">Übersicht</button><button class="btn btn-ghost" id="pv-out">Abmelden</button></div><p class="muted small" style="margin-top:10px">Angemeldet als ' + esc(meineMail()) + '</p>';
-    if (!x || (x.emails || []).indexOf(meineMail()) < 0) v.innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Für diese Gästeliste ist deine Adresse nicht (mehr) eingetragen.</p></div>' + fuss;
-    else {
-      const ev = x.event || {}, a = document.activeElement, keep = a && a.id === 'gl-q' ? [a.selectionStart] : null;
-      v.innerHTML = '<div class="abend"><h1 class="ab-h1">' + esc(ev.name || 'Event') + '</h1><p class="ab-sub">' + [fmtD(ev.date), ev.start ? ev.start + ' Uhr' : '', ev.venue].filter(Boolean).map(esc).join(' · ') + '</p><h2 class="ab-sec">Gästeliste</h2><div class="ab-gl">' + glBlock(x.gaeste || [], x, true, 'e') + '</div></div>' + fuss;
-      if (keep) { const q = $('#gl-q'); q.focus(); try { q.setSelectionRange(keep[0], keep[0]); } catch (e) {} }
-      S.elDoc = { ref, x };
-    }
-    $('#pv-wahl').onclick = () => projektWahl();
-    $('#pv-out').onclick = () => { LS.set('einlass', ''); firebase.auth().signOut().then(() => location.reload()); };
-  }, () => { $('#view').innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Melde dich mit der Google-Adresse an, an die die Einladung ging.</p></div>'; });
+  S.elDoc = { ref, x:null, fid };
+  PV.unsub = ref.onSnapshot(d => { S.elDoc.x = d.exists ? d.data() : null; if (S.elDoc.x && (S.elDoc.x.emails || []).indexOf(meineMail()) >= 0) ekHoeren(fid, () => elZeichnen()); elZeichnen(); },
+    () => { $('#view').innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Melde dich mit der Google-Adresse an, an die die Einladung ging.</p></div>'; });
+}
+function elZeichnen(){
+  const s = S.elDoc; if (!s || projekt) return;
+  const v = $('#view'), x = s.x;
+  $('#conn').className = 'conn ' + (x ? 'live' : 'bad'); $('#conn-t').textContent = x ? 'Einlass' : 'Kein Zugang';
+  const fuss = '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-wahl">Übersicht</button><button class="btn btn-ghost" id="pv-out">Abmelden</button></div><p class="muted small" style="margin-top:10px">Angemeldet als ' + esc(meineMail()) + '</p>';
+  if (!x || (x.emails || []).indexOf(meineMail()) < 0) v.innerHTML = '<div class="empty" style="margin-top:30px"><h3>Kein Zugang</h3><p>Für diesen Einlass ist deine Adresse nicht (mehr) eingetragen.</p></div>' + fuss;
+  else {
+    const ev = x.event || {}, a = document.activeElement, keep = a && a.id && /^(gl-q|ek-code)$/.test(a.id) ? [a.id, a.value, a.selectionStart] : null;
+    v.innerHTML = '<div class="abend"><h1 class="ab-h1">' + esc(ev.name || 'Event') + '</h1><p class="ab-sub">' + [fmtD(ev.date), ev.start ? ev.start + ' Uhr' : '', ev.venue].filter(Boolean).map(esc).join(' · ') + '</p>' +
+      ekBlock(s.fid, x, false, null) + (EK.tab === 'gaeste' ? '<div class="ab-gl">' + glBlock(x.gaeste || [], x, true, 'e') + '</div>' : '') + '</div>' + fuss;
+    if (keep) { const q = document.getElementById(keep[0]); if (q) { q.value = keep[1]; q.focus(); try { q.setSelectionRange(keep[2], keep[2]); } catch (e) {} } }
+  }
+  $('#pv-wahl').onclick = () => { ekStop(); projektWahl(); };
+  $('#pv-out').onclick = () => { LS.set('einlass', ''); firebase.auth().signOut().then(() => location.reload()); };
 }
 (function(){ try { const z = new URLSearchParams(location.search).get('einlass'); if (z && /^[\w-]{3,200}$/.test(z)) { LS.set('einlass', z); history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} })();
 
@@ -2094,6 +2293,14 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-08d', titel:'Neu: Einlass & Kasse', punkte:[
+    'Abend-Modus → „Einlass & Kasse“: Live-Zahlen, wie viele drin sind, Kapazität und Ankunftskurve',
+    'Ticket-Scanner mit der Handykamera – zeigt grün „gültig“ oder rot „schon drin“ bzw. „ungültig“',
+    'Eventim-Ticketliste importieren: in EVENTIM.Light „Download Einlassdaten“, dann hier hochladen',
+    'Abendkasse-Zähler mit großen Knöpfen, getrennt nach Bar und Karte, mit Storno',
+    'Das Einlass-Team kann per Link scannen, kassieren und die Gästeliste abhaken',
+    '„In Abrechnung übernehmen“ trägt Abendkasse, VVK und Gäste in die Abrechnung ein'
+  ] },
   { v:'2026-11-08c', titel:'Neu in RaveBüro', punkte:[
     'Ablauf pro Event mit Fristen – vieles hakt sich selbst ab',
     'Booking: „Anfragen“ und „Nachhaken“ öffnen WhatsApp mit fertigem Text',
@@ -2107,9 +2314,11 @@ const NEUES = [
   ] }
 ];
 function neuHinweis(){
-  const n = NEUES[0]; if (!n || LS.get('neuGesehen') === n.v) return '';
-  return '<section class="panel" id="neu-hinweis" style="border:2px solid var(--pink)"><div class="panel-h"><h2>' + esc(n.titel) + '</h2><button class="btn btn-ghost" data-act="neu-weg" aria-label="Hinweis schließen">✕</button></div>' +
-    '<ul style="margin:0;padding:0 14px 14px 32px;line-height:1.55">' + n.punkte.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul></section>';
+  // alle Updates seit dem letzten Wegklicken (höchstens drei)
+  const g = LS.get('neuGesehen'), i = NEUES.findIndex(n => n.v === g), L = (i < 0 ? NEUES : NEUES.slice(0, i)).slice(0, 3);
+  if (!L.length) return '';
+  return '<section class="panel" id="neu-hinweis" style="border:2px solid var(--pink)"><div class="panel-h"><h2>' + esc(L[0].titel) + '</h2><button class="btn btn-ghost" data-act="neu-weg" aria-label="Hinweis schließen">✕</button></div>' +
+    L.map((n, j) => (j ? '<h3 style="margin:4px 14px 6px;font-size:15px">' + esc(n.titel) + '</h3>' : '') + '<ul style="margin:0;padding:0 14px 12px 32px;line-height:1.55">' + n.punkte.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>').join('') + '</section>';
 }
 document.addEventListener('click', ev => { if (ev.target.closest('[data-act="neu-weg"]')) { LS.set('neuGesehen', NEUES[0].v); const x = $('#neu-hinweis'); if (x) x.remove(); } });
 function render(){
