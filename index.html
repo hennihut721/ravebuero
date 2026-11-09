@@ -1443,8 +1443,16 @@ async function fgLauf(){
   await elSync();
   await crewSync();
 }
+/* Einladungen (Mitglieder, Betreiber, Einlass, Mitarbeiter) verwaltet nur der Ersteller des Projekts */
+const darfEinladen = () => !!projekt && (projekt.owner === meineMail() || istAdmin());
+function nurBesitzerSheet(titel, M){
+  showSheet('<h2 id="sheet-title">' + esc(titel) + '</h2><p class="muted" style="margin:0 0 14px">Einladungen verwaltet nur der Ersteller des Projekts' + (projekt && projekt.owner ? ' (' + esc(projekt.owner) + ')' : '') + '. Bitte ihn, Leute hinzuzufügen oder zu entfernen.</p>' +
+    (M.length ? '<h3 style="margin:0 0 6px">Eingeladen</h3><ul class="rows" style="margin:0 0 14px">' + M.map(m => '<li><div class="row" style="cursor:default"><span class="av">' + esc(initial(m)) + '</span><span class="row-main"><span class="row-title">' + esc(m) + '</span></span></div></li>').join('') + '</ul>' : '<p class="muted">Noch niemand eingeladen.</p>') +
+    '<div class="actions"><button type="button" class="btn btn-primary" data-act="close-sheet">OK</button></div>');
+}
 function partnerSheet(v){
   const fel = fgFelder(v), M = fgMails(v);
+  if (!darfEinladen()) return nurBesitzerSheet('Zugang für ' + (v.name || 'Location'), M);
   showSheet('<h2 id="sheet-title">Zugang für ' + esc(v.name) + '</h2>' +
     '<p class="muted" style="margin:0 0 14px">Der Betreiber bekommt ein eigenes, schlankes Profil: Er sieht nur eure Events in ' + esc(v.name) + ' mit den Infos, die du hier anhakst – keine Kosten, Aufgaben oder sonstigen Daten. Ein eigenes Projekt kann er nicht anlegen.</p>' +
     '<form class="f" id="pz-form" novalidate>' +
@@ -2038,6 +2046,7 @@ function kontakteForm(e){
 const elLink = e => APP_URL + '?einlass=' + encodeURIComponent(projekt.id + '_' + e.id);
 function einlassSheet(e){
   const M = (e.einlassEmails || []).map(x => String(x).toLowerCase());
+  if (!darfEinladen()) return nurBesitzerSheet('Einlass · ' + (e.name || 'Event'), M);
   const txt = () => 'Hi! Für „' + (e.name || 'unser Event') + '“ am ' + fmtD(e.date) + ' hast du Zugriff auf unsere Gästeliste zum Abhaken am Einlass:\n\n' + elLink(e) + '\n\nMelde dich dort mit deinem Google-Konto (' + M.join(' oder ') + ') an.';
   showSheet('<h2 id="sheet-title">Einlass · ' + esc(e.name || 'Event') + '</h2><p class="muted" style="margin:0 0 14px">Die Person am Einlass sieht nur die Gästeliste dieses Events und hakt Namen ab. Ihr seht im Abend-Modus live, wer schon drin ist. Keine Kosten, kein Line-up, kein eigenes Projekt.</p>' +
     '<form class="f" id="el-form" novalidate>' + field('el-mail', 'Google-Adressen fürs Einlass-Team', '<textarea id="el-mail" rows="2" maxlength="600" placeholder="eine Adresse pro Zeile">' + esc(M.join('\n')) + '</textarea>') +
@@ -2345,6 +2354,7 @@ const CR = { fid:'', chat:[], unsub:null, cb:null, doc:null, docUnsub:null, t:0 
 const CR_ENTWURF = {};
 function crewSheet(e){
   const M = (e.crewEmails || []).map(x => String(x).toLowerCase());
+  if (!darfEinladen()) return nurBesitzerSheet('Mitarbeiter · ' + (e.name || 'Event'), M);
   const txt = () => 'Hi! Für „' + (e.name || 'unser Event') + '“ am ' + fmtD(e.date) + ' bist du als Mitarbeiter:in eingetragen. Hier siehst du Running Order, wichtige Nummern und den Chat fürs Team am Abend:\n\n' + crLink(e) + '\n\nMelde dich dort mit deinem Google-Konto (' + M.join(' oder ') + ') an.';
   showSheet('<h2 id="sheet-title">Mitarbeiter · ' + esc(e.name || 'Event') + '</h2><p class="muted" style="margin:0 0 14px">Mitarbeiter:innen (Bar, Technik, Awareness, Garderobe …) kommen nur über diese Einladung rein. Sie sehen den Abend-Modus dieses Events – Running Order, wer gerade spielt, wichtige Nummern – und schreiben im Chat mit euch. Keine Kosten, keine Gästeliste, kein eigenes Projekt.</p>' +
     '<form class="f" id="cr-form" novalidate>' + field('cr-mail', 'Google-Adressen der Mitarbeiter:innen', '<textarea id="cr-mail" rows="3" maxlength="1500" placeholder="eine Adresse pro Zeile">' + esc(M.join('\n')) + '</textarea>') +
@@ -2565,7 +2575,8 @@ async function openProfil(){
 function profilBetreiber(){
   const V = (S.venues || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de')), A = V.filter(v => fgMails(v).length);
   let h = '<h3 style="margin:0 0 4px">Location-Betreiber</h3><p class="hint" style="margin:0 0 12px">Betreiber sind keine Mitglieder: Sie sehen nur eure Events an ihrer Location – Line-up, Flyer, Technik, je nachdem was du freigibst. Keine Kosten, keine Aufgaben, kein eigenes Projekt. Sie kommen nur über den Einladungslink rein.</p>';
-  if (V.length) h += '<div style="display:flex;gap:8px;margin:0 0 8px"><select class="inp" id="pf-loc" aria-label="Location wählen" style="flex:1;font-family:var(--f-body)"><option value="">Location wählen …</option>' + V.map(v => '<option value="' + esc(v.id) + '">' + esc(v.name) + (fgMails(v).length ? ' (Zugang aktiv)' : '') + '</option>').join('') + '</select><button type="button" class="btn btn-primary" id="pf-loc-go">' + I.plus + 'Einladen</button></div>';
+  if (!darfEinladen()) h += '<p class="hint" style="margin:0 0 8px">Betreiber einladen kann nur der Ersteller des Projekts.</p>';
+  else if (V.length) h += '<div style="display:flex;gap:8px;margin:0 0 8px"><select class="inp" id="pf-loc" aria-label="Location wählen" style="flex:1;font-family:var(--f-body)"><option value="">Location wählen …</option>' + V.map(v => '<option value="' + esc(v.id) + '">' + esc(v.name) + (fgMails(v).length ? ' (Zugang aktiv)' : '') + '</option>').join('') + '</select><button type="button" class="btn btn-primary" id="pf-loc-go">' + I.plus + 'Einladen</button></div>';
   else h += '<p class="muted" style="margin:0 0 8px">Leg zuerst eine Location im Verzeichnis an.</p><button type="button" class="btn" data-act="close-sheet" onclick="location.hash=\'#verzeichnis\'" style="margin:0 0 8px">Zum Verzeichnis</button>';
   h += '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + (A.length ? A.map(v => '<li><div class="row" style="cursor:default"><span class="av">' + esc(initial(v.name)) + '</span><span class="row-main"><span class="row-title">' + esc(v.name) + '</span><span class="row-sub">' + esc(fgMails(v).join(', ')) + ' · ' + fgEvents(v).length + (fgEvents(v).length === 1 ? ' Event' : ' Events') + ' sichtbar</span></span><button type="button" class="btn btn-ghost" data-vz="partner" data-id="' + esc(v.id) + '">Verwalten</button></div></li>').join('') : '<li><p class="muted" style="margin:10px 0">Noch keine Betreiber eingeladen.</p></li>') + '</ul>';
   return h;
@@ -2580,11 +2591,11 @@ function renderProfil(msg, err){
     '<label class="check" style="margin:0 0 6px"><input type="checkbox" id="pf-sync"' + (projekt.abgleich !== false ? ' checked' : '') + '> Partys & Festivals jeden Freitagabend automatisch abgleichen</label>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px"><button type="button" class="btn" id="pf-wechsel">Projekt wechseln</button>' + (projekt.owner !== me ? '<button type="button" class="btn btn-ghost" id="pf-leave" style="color:var(--bad)">Projekt verlassen</button>' : '') + '</div>' +
     '<h3 style="margin:0 0 4px">Mitglieder</h3><p class="hint" style="margin:0 0 12px">Trag hier die Google-Adresse ein, um jemanden einzuladen. Die Person meldet sich mit diesem Google-Konto an und findet „' + esc(projekt.name || 'das Projekt') + '“ dann unter ihren Projekten – in der Web-Version und in der Android-App.</p>' +
-    '<form id="pf-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail des neuen Mitglieds" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Einladen</button></form>' +
+    (darfEinladen() ? '<form id="pf-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail des neuen Mitglieds" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Einladen</button></form>' : '<p class="hint" style="margin:0 0 8px">Nur der Ersteller des Projekts (' + esc(projekt.owner || '') + ') kann Leute einladen oder entfernen.</p>') +
     (msg ? '<p class="' + (err ? 'err' : 'hint') + '" style="margin:0 0 8px">' + esc(msg) + '</p>' : '') +
     '<ul class="rows" style="border-bottom:1px solid var(--line);margin:6px 0 18px">' + M.map(m =>
       '<li><div class="row" style="cursor:default"><span class="av">' + esc(m.charAt(0).toUpperCase()) + '</span><span class="row-main"><span class="row-title">' + esc(m) + (m === me ? ' (du)' : '') + '</span>' + (m === projekt.owner ? '<span class="row-sub">hat das Projekt erstellt</span>' : '') + '</span>' +
-      (m === me || m === projekt.owner ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
+      (m === me || m === projekt.owner || !darfEinladen() ? '' : '<button type="button" class="btn btn-ghost" data-pf-del="' + esc(m) + '">Entfernen</button>') + '</div></li>').join('') + '</ul>' +
     profilBetreiber() + (me === ABGLEICH_MAIL ? '<h3 style="margin:0 0 4px">Eigene Projekte erlauben</h3><p class="hint" style="margin:0 0 12px">RaveBüro ist nur mit Einladung nutzbar. Wer hier steht, darf zusätzlich eigene Projekte anlegen. Alle anderen kommen nur über eine Einladung als Mitglied oder als Location-Betreiber rein.</p><form id="pf-er-form" novalidate style="display:flex;gap:8px;margin:0 0 8px"><input class="inp" id="pf-er-mail" type="email" inputmode="email" maxlength="120" placeholder="name@gmail.com" aria-label="E-Mail, die Projekte anlegen darf" autocomplete="off" style="flex:1"><button class="btn btn-primary" type="submit">' + I.plus + 'Erlauben</button></form><ul class="rows" id="pf-er-list" style="border-bottom:1px solid var(--line);margin:6px 0 18px"><li><p class="muted" style="margin:10px 0">Lädt …</p></li></ul>' : '') +
     (projekt.id === 'ravebuero' ? '<h3 style="margin:0 0 4px">Alte Daten</h3><p class="hint" style="margin:0 0 10px">Übernimmt den Endstand der alten Claude-Version. Es wird nur ergänzt, was fehlt – nichts, was ihr schon geändert habt, wird überschrieben.</p><button type="button" class="btn" id="pf-imp" style="margin:0 0 18px">Alle alten Daten importieren</button>' : '') +
     '<div class="actions"><button type="button" class="btn" id="pf-out">Abmelden</button><button type="button" class="btn btn-primary" data-act="close-sheet">Fertig</button></div>';
@@ -2601,7 +2612,7 @@ function renderProfil(msg, err){
       try { await er.doc(m).set({ at:Date.now() }); $('#pf-er-mail').value = ''; toast(m + ' darf jetzt eigene Projekte anlegen.'); liste(); } catch (e) { toast('Hat nicht geklappt.'); } };
   }
   if ($('#pf-loc-go')) $('#pf-loc-go').onclick = () => { const v = (S.venues || []).find(x => x.id === $('#pf-loc').value); if (!v) { $('#pf-loc').focus(); return; } partnerSheet(v); };
-  $('#pf-form').onsubmit = async ev => {
+  if ($('#pf-form')) $('#pf-form').onsubmit = async ev => {
     ev.preventDefault();
     const m = $('#pf-mail').value.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(m)) { renderProfil('Bitte eine gültige E-Mail-Adresse eingeben.', true); return; }
@@ -2767,6 +2778,10 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 /* ---------- Was ist neu: Hinweis nach jedem Update, wegklickbar ---------- */
 // Neueste Version zuerst. Bei jedem Update einen Eintrag ergänzen.
 const NEUES = [
+  { v:'2026-11-09a', titel:'Einladungen nur durch den Ersteller', punkte:[
+    'Mitglieder, Location-Betreiber, Einlass-Team und Mitarbeiter:innen kann jetzt nur noch der Ersteller des Projekts einladen oder entfernen',
+    'Alle anderen sehen, wer eingeladen ist, können aber nichts daran ändern'
+  ]},
   { v:'2026-11-08o', titel:'Ticketshop wählen', punkte:[
     'Jedes Kollektiv wählt jetzt seinen Ticketshop: EVENTIM.Light, pretix, Eventbrite, Ticket Tailor, RA, Shotgun, DICE, tixforgigs, TICKETINO oder einen eigenen',
     'Einstellungen → Ticketshop oder im Abend-Modus bei Einlass & Kasse → „Ticketshop wählen“',
