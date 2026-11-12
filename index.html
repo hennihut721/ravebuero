@@ -613,7 +613,7 @@ body.tut-on #view{padding-bottom:300px}body.tut-on #fab{display:none}#tut{positi
 .ad-m .row-main{flex:1 1 60%}.ad-m .row-title{overflow-wrap:anywhere}
 .cr-chat{margin:4px 0 6px}.cr-in{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.cr-in .inp{font-family:var(--f-body);width:100%}.cr-l{display:grid;gap:8px;margin-top:12px;max-height:55vh;overflow:auto}.cr-m{padding:9px 12px;border-radius:12px;background:rgba(127,127,127,.14);line-height:1.4;overflow-wrap:anywhere;max-width:92%;justify-self:start}.cr-m.ich{justify-self:end;background:rgba(214,30,112,.18)}.cr-w{font-size:12.5px;opacity:.75;margin-bottom:2px}.cr-r{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:6px;background:rgba(214,30,112,.25)}
 .shop-w{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
-.klapp[data-k=evnext]{margin:0 0 16px}.klapp[data-k=evnext]>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}.ev-nx-k{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--pink)}.ev-nx-n{font:800 20px/1.1 var(--f-display);text-transform:uppercase}.klapp[data-k=evnext]>summary .muted{flex-basis:100%}.klapp[data-k=evnext] .klapp-b .wgrid{margin:0}
+details.klapp.dash-more{margin:0}details.klapp.dash-more>summary,details.klapp.dash-more[open]>summary{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:12px 16px;font-size:14.5px;color:var(--ink-2)}
 /* Line-up */
 .lu{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:12px;align-items:center}
 .lu .time{font:500 13px var(--f-mono);color:var(--ink-2)}
@@ -2781,7 +2781,7 @@ const CONN = { connecting:['Verbinde …','wait'], live:['Live','live'], slow:['
 const NEUES = [
   { v:'2026-11-12a', titel:'Ruhigeres Dashboard', punkte:[
     'Die kleine Hinweis-Leiste oben im Dashboard („In 33 Tagen …“, „Partys diese Woche“ …) ist weg',
-    'Im Reiter Events ist das nächste Event jetzt zugeklappt – ein Tipp darauf zeigt alle Infos'
+    'Im Reiter Events zeigt das nächste Event oben wie gewohnt Countdown, Name, Datum und Location – die Details klappst du mit „Alle Infos“ auf'
   ]},
   { v:'2026-11-09a', titel:'Einladungen nur durch den Ersteller', punkte:[
     'Mitglieder, Location-Betreiber, Einlass-Team und Mitarbeiter:innen kann jetzt nur noch der Ersteller des Projekts einladen oder entfernen',
@@ -3053,12 +3053,7 @@ function viewEvents(){
 
   // Nächstes Event groß, die folgenden darunter klein
   const nx = up && !waiting('events') ? nextEvent() : null;
-  if (nx) {
-    curW = 'next'; const dd = dayDiff(today(), nx.date);
-    const info = [fmtD(nx.date), dd === 0 ? 'heute' : dd === 1 ? 'morgen' : 'in ' + dd + ' Tagen', nx.venue].filter(Boolean).join(' · ');
-    h += klapp('evnext', '<span class="ev-nx-k">Nächstes Event</span><strong class="ev-nx-n">' + esc(nx.name || 'Event') + '</strong>', info,
-      '<div class="wgrid ev-next"><div class="wcell ws-l" data-w="next">' + widget('next', nx, 'l') + '</div></div>', false);
-  }
+  if (nx) { curW = 'next'; h += '<div class="wgrid ev-next"><div class="wcell ws-l" data-w="next">' + dashNext(nx, 'klapp') + '</div></div>'; }
   h += '<div class="toolbar"><div class="seg" role="group" aria-label="Zeitraum"><button data-act="filter" data-v="kommend" aria-pressed="' + up + '">Kommend<span class="n">' + nUp + '</span></button><button data-act="filter" data-v="vergangen" aria-pressed="' + !up + '">Vergangen<span class="n">' + nPast + '</span></button></div></div>';
   if (waiting('events')) return h + loading();
   if (!list.length) {
@@ -3280,11 +3275,14 @@ function dashNext(e, size){
     kpi('Aufgaben', String(open.length), open.length ? (od.length ? od.length + ' überfällig' : 'offen') : (T.length ? 'alle erledigt' : 'keine angelegt'), od.length ? 'neg' : '');
   let h = '<section class="dash" aria-label="Nächstes Event"><a class="dash-h" href="#ev-' + esc(e.id) + '"><div class="dash-cd">' + cd + '</div><div class="dash-t"><div class="kick">Nächstes Event</div><h2>' + esc(e.name || 'Ohne Titel') + '</h2><div class="meta"><span>' + fmtD(e.date) + '</span>' + (timeStr(e) ? '<span class="num">' + esc(timeStr(e)) + '</span>' : '') + (e.venue ? '<span>' + esc(e.venue) + '</span>' : '') + statusPill(e.status) + extPill(e) + '</div></div>' + I.right + '</a>';
   if (size === 's') return h + '</section>';
+  // Events-Reiter: Kopf wie gewohnt, Details zum Aufklappen
+  const zu = size === 'klapp';
+  if (zu) { let m = {}; try { m = JSON.parse(LS.get('klapp') || '{}') || {}; } catch (x) {} h += '<details class="klapp dash-more" data-k="evnext"' + (m.evnext ? ' open' : '') + '><summary>Alle Infos</summary>'; size = 'l'; }
   h += '<div class="kpis">' + kp + '</div>';
   h += '<div class="dash-sec"><h3>Check</h3><ul class="checks">' + (ck.length ? ck.slice(0, size === 'm' ? 4 : 8).map(x => '<li class="' + x[0] + '">' + (x[0] === 'w' ? I.warn : I.info) + '<span>' + x[1] + '</span></li>').join('') : '<li class="ok">' + I.check + '<span>Keine Konflikte, nichts überfällig, alles eingetragen.</span></li>') + '</ul></div>';
   if (size !== 'm') h += '<div class="dash-sec"><h3>Als Nächstes zu tun</h3>' + (nextT.length ? '<ul class="rows">' + nextT.map(taskRow).join('') + '</ul>' : '<p class="muted small" style="margin:0 0 4px">' + (T.length ? 'Alle Aufgaben erledigt.' : 'Noch keine Aufgaben angelegt.') + '</p>') + '</div>';
   h += '<div class="dash-f">' + (open.length > 3 ? '<span class="muted small">' + (open.length - 3) + ' weitere offen</span>' : '') + '<a class="btn btn-sm" href="#ev-' + esc(e.id) + '" data-act="ev-tasks" data-id="' + esc(e.id) + '">Aufgaben</a><a class="btn btn-sm btn-primary" href="#ev-' + esc(e.id) + '">Zum Event</a></div>';
-  return h + '</section>';
+  return h + (zu ? '</details>' : '') + '</section>';
 }
 function ticket(e){
   const d = pd(e.date), c = calc(e);
